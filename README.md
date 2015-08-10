@@ -50,3 +50,33 @@ Under that folder, the file called `<module_name>-combined.hex` is the one which
 can be flashed to the target; the file called `<module_name>` is an ELF binary
 containing useful symbols; whereas `<module_name>.hex` can be used for Firmware-
 over-the-Air.
+
+Notable Differences from mbed-2 Demos
+=====================================
+
+Prior to mbed OS, all application callbacks would execute in handler mode
+(i.e. interrupt context). mbed OS comes with its own scheduler,
+[minar](https://github.com/ARMmbed/minar), which enables callbacks to run in
+thread mode (i.e. non-interrupt user context). Application code developed for
+mbed OS is made up entirely of callback handlers. There isn't even a main();
+it has been replaced with `app_start(int argc, char *argv[])`.
+
+If you're porting a mebd-2 application for mbed OS, please do the following:
+
+* Replace `main()` with `void app_start(int argc, char *argv[])`. app_start()
+  will be given control after system initialization; but like any other
+  callback handler it will be expected to finish quickly without blocking. If
+  application initialization needs to issue blocking calls, app_start() can
+  pend callbacks for later activity.
+
+* Unlike the former main(), app_start() should *not* finish with an infinite
+  wait loop for system events or for entering sleep. app_start() is expected
+  to return quickly. The system will be put to low-power sleep automatically
+  when there are no pending callbacks; and event handling should be done by
+  posting callbacks.
+
+* Any objects which are expected to persist across callbacks need to be
+  allocated either from the global static context or from the free-store (i.e.
+  using malloc() or new()). This was also true for mbed-2 except for objects
+  allocated on the stack of main(). Objects allocated locally within
+  app_start() will be destroyed upon its return.

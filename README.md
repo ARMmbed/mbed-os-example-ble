@@ -51,8 +51,24 @@ can be flashed to the target; the file called `<module_name>` is an ELF binary
 containing useful symbols; whereas `<module_name>.hex` can be used for Firmware-
 over-the-Air.
 
-Notable Differences from mbed-2 Demos
-=====================================
+Creating new BLE yotta Application-modules
+==========================================
+
+Please refer to yotta documentation on [creating an executable](http://docs.yottabuild.org/tutorial/tutorial.html#Creating%20an%20Executable).
+BLE applications would typically depend on the `ble` module to use
+[BLE API](https://github.com/ARMmbed/ble), as can be seen from https://github.com/ARMmbed/mbedOS-ble-demos/blob/master/BLE_Beacon/module.json#L13.
+Applications would also need the mbed-drivers module to bring in mbed OS APIs, minar, and capabilities of the target platform.
+
+Suggested BLE targets
+=====================
+
+Currently, we support an initial port of mbed OS to the following targets:
+
+* mkit-armgcc
+* mkit-armcc
+
+Porting mbed-2 BLE Applications
+===============================
 
 Prior to mbed OS, all application callbacks would execute in handler mode
 (i.e. interrupt context). mbed OS comes with its own scheduler,
@@ -86,3 +102,4 @@ If you're porting a mebd-2 application for mbed OS, please do the following:
 
 It might be beneficial to study the documents around [Minar
 scheduler](https://github.com/ARMmbed/minar#minar-scheduler).
+

@@ -26,3 +26,8 @@
 *.exe
 *.out
 *.app
+
+.yotta.json
+build/
+yotta_modules/
+yotta_targets/

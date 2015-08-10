@@ -1,5 +1,5 @@
-# mbedOS-ble-demos
-This repo contains a collection of standard BLE demos based on mbedOS and
+# ble-examples
+This repo contains a collection of standard BLE example applications based on mbed OS and
 yotta.
 
 Each demo (subfolder) contains a separate yotta-module meant for building an
@@ -56,7 +56,7 @@ Creating new BLE yotta Application-modules
 
 Please refer to yotta documentation on [creating an executable](http://docs.yottabuild.org/tutorial/tutorial.html#Creating%20an%20Executable).
 BLE applications would typically depend on the `ble` module to use
-[BLE API](https://github.com/ARMmbed/ble), as can be seen from https://github.com/ARMmbed/mbedOS-ble-demos/blob/master/BLE_Beacon/module.json#L13.
+[BLE API](https://github.com/ARMmbed/ble), as can be seen from https://github.com/ARMmbed/ble-examples/blob/master/BLE_Beacon/module.json#L13.
 Applications would also need the mbed-drivers module to bring in mbed OS APIs, minar, and capabilities of the target platform.
 
 Suggested BLE targets

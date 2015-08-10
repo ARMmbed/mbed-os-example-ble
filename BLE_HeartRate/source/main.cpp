@@ -17,7 +17,6 @@
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/HeartRateService.h"
-#include "ble/services/DeviceInformationService.h"
 
 BLE        ble;
 DigitalOut led1(LED1, 1);
@@ -67,10 +66,6 @@ void app_start(int argc, char *argv[])
 
     /* Setup primary service. */
     hrServicePtr = new HeartRateService(ble, hrmCounter, HeartRateService::LOCATION_FINGER);
-
-    // /* Setup auxiliary service. */
-    // DeviceInformationService *deviceInfo = new DeviceInformationService(ble, "ARM", "Model1", "SN1", "hw-rev1", "fw-rev1", "soft-rev1");
-    // printf("app_start: line %u\r\n", __LINE__);
 
     /* Setup advertising. */
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);

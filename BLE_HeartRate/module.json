@@ -1,6 +1,6 @@
 {
   "name": "ble-heartrate",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "BLE Heartreate example, building with yotta",
   "licenses": [
     {
@@ -9,8 +9,8 @@
     }
   ],
   "dependencies": {
-      "mbed-drivers": "*",
-      "ble": "ARMmbed/BLE_API"
+    "mbed-drivers": "*",
+    "ble": "ARMmbed/BLE_API"
   },
   "targetDependencies": {},
   "bin": "./source"

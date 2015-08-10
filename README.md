@@ -56,10 +56,12 @@ Notable Differences from mbed-2 Demos
 
 Prior to mbed OS, all application callbacks would execute in handler mode
 (i.e. interrupt context). mbed OS comes with its own scheduler,
-[minar](https://github.com/ARMmbed/minar), which enables callbacks to run in
-thread mode (i.e. non-interrupt user context). Application code developed for
-mbed OS is made up entirely of callback handlers. There isn't even a main();
-it has been replaced with `app_start(int argc, char *argv[])`.
+[minar](https://github.com/ARMmbed/minar), which encourages an asychronous
+programming style based upon callbacks which run in thread mode (i.e. non-
+interrupt user context). With mbed OS, application code is made up entirely of
+callback handlers. There isn't even a main(); it has been replaced with an
+`app_start()`. Please refer to [minar documentation](https://github.com/ARMmbed/minar#impact)
+to understand its impact.
 
 If you're porting a mebd-2 application for mbed OS, please do the following:
 
@@ -80,3 +82,6 @@ If you're porting a mebd-2 application for mbed OS, please do the following:
   using malloc() or new()). This was also true for mbed-2 except for objects
   allocated on the stack of main(). Objects allocated locally within
   app_start() will be destroyed upon its return.
+
+It might be beneficial to study the documents around [Minar
+scheduler](https://github.com/ARMmbed/minar#minar-scheduler).

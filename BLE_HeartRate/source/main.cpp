@@ -21,9 +21,8 @@
 BLE        ble;
 DigitalOut led1(LED1, 1);
 
-const static char     DEVICE_NAME[] = "HRM1";
-static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE,
-                                       GattService::UUID_DEVICE_INFORMATION_SERVICE};
+const static char     DEVICE_NAME[] = "HRM";
+static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE};
 
 static uint8_t hrmCounter = 100; // init HRM to 100bps
 static HeartRateService *hrServicePtr;
@@ -43,13 +42,11 @@ void updateSensorValue() {
         hrmCounter = 100;
     }
 
-    // update bps
     hrServicePtr->updateHeartRate(hrmCounter);
 }
 
 void periodicCallback(void)
 {
-    // printf("periodicCallback\r\n");
     led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
     if (ble.getGapState().connected) {
@@ -73,7 +70,6 @@ void app_start(int argc, char *argv[])
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::GENERIC_HEART_RATE_SENSOR);
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000);
+    ble.gap().setAdvertisingInterval(1000); /* 1000ms */
     ble.gap().startAdvertising();
-    printf("at the end of app_start\r\n");
 }

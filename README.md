@@ -1,9 +1,18 @@
 # ble-examples
-This repo contains a collection of standard BLE example applications based on mbed OS and
-yotta.
+This repo contains a collection of standard BLE example applications based on
+mbed OS and [yotta](https://github.com/ARMmbed/yotta). Each demo (sub-folder) contains a separate yotta-module
+meant for building an executable.
 
-Each demo (subfolder) contains a separate yotta-module meant for building an
-executable. Yotta modules come with a `module.json` to describe its metadata
+Modules
+=======
+
+yotta is a tool that we're building at mbed, to make it easier to build better
+software written in C, C++ or other C-family languages. yotta describes
+programs in terms of dependencies upon software components (a.k.a. modules).
+yotta also controls the build of your software in order to ensure
+downloaded modules are available to use in your code.
+
+Yotta modules come with a `module.json` to describe its metadata
 and dependencies.
 
 As an example, the BLE_Beacon demo comes with the following module.json:
@@ -28,10 +37,16 @@ As an example, the BLE_Beacon demo comes with the following module.json:
 ```
 
 From the above, the `name` field provides the name of the module: `ble-beacon`,
-and `dependencies` lists its dependencies upon other modules
-(referring to Git repos). More can be learnt about
-[yotta](https://github.com/ARMmbed/yotta) from [this
+`dependencies` lists its dependencies upon other modules (referring
+to Git repos in Github by default), and `description` provides a synopsis.
+
+For most application modules, there is a `source` sub-folder containing C/C++
+sources which get picked up automatically for builds--in the case of
+BLE_BEacon, there's a `main.cpp` under source.
+
+More can be learnt about yotta from [this
 tutorial](http://docs.yottabuild.org/tutorial/tutorial.html).
+
 
 Build Instructions
 ==================
@@ -64,7 +79,10 @@ Suggested BLE targets
 
 Currently, we support an initial port of mbed OS to the following targets:
 
-* mkit-armgcc
+* nrf51dk-armcc
+* nrf51dk-gcc
+* bbcmicro-armcc
+* mkit-gcc
 * mkit-armcc
 
 Porting mbed-2 BLE Applications
@@ -72,7 +90,7 @@ Porting mbed-2 BLE Applications
 
 Prior to mbed OS, all application callbacks would execute in handler mode
 (i.e. interrupt context). mbed OS comes with its own scheduler,
-[minar](https://github.com/ARMmbed/minar), which encourages an asychronous
+[minar](https://github.com/ARMmbed/minar), which encourages an asynchronous
 programming style based upon thread-mode callbacks (i.e. non-interrupt user
 context). With mbed OS, application code is made up entirely of callback
 handlers. There isn't even a main(); it has been replaced with an
@@ -90,16 +108,45 @@ If you're porting a mebd-2 application for mbed OS, please do the following:
 
 * Unlike the former main(), app_start() should *not* finish with an infinite
   wait loop for system events or for entering sleep. app_start() is expected
-  to return quickly. The system will be put to low-power sleep automatically
-  when there are no pending callbacks; and event handling should be done by
-  posting callbacks.
+  to return quickly and yield to the scheduler for callback execution. The
+  system will be put to low-power sleep automatically when there are no
+  pending callbacks; and event handling should be done by posting callbacks.
+  Please remove any equivalent of the following from your app_start():
+
+  ```C++
+  while (true) {
+      ble.waitForEvent();
+  }
+  ```
 
 * Any objects which are expected to persist across callbacks need to be
   allocated either from the global static context or from the free-store (i.e.
   using malloc() or new()). This was also true for mbed-2 except for objects
-  allocated on the stack of main(). Objects allocated locally within
-  app_start() will be destroyed upon its return.
+  allocated on the stack of main()--they would persist for the lifetime of the
+  application because main() would never return. This is no longer true from
+  app_start(); objects allocated locally within app_start() will be destroyed
+  upon its return.
+
+* Applications need to migrate to newer system APIs. For instance, with
+  mbed-2, applications would use the Ticker to post time-deferred callbacks.
+  This should now be achieved using minar's postCallback APIs directly. Refer
+  to https://github.com/ARMmbed/minar#using-events. The replacement code would
+  look something like:
+
+  ```C++
+  minar::Scheduler::postCallback(callback).delay(minar::milliseconds(DELAY));
+  ```
+
+  or if we are more explicit:
+
+  ```C++
+  Event e(FunctionPointer0<void>(callback).bind());
+  minar::Scheduler::postCallback(e).delay(minar::milliseconds(DELAY));
+  ```
+
+  Using Minar to schedule callbacks would mean that callback handler would
+  execute in thread mode (non-interrupt context), which would result in a more
+  stable system.
 
 It might be beneficial to study the documents around [Minar
 scheduler](https://github.com/ARMmbed/minar#minar-scheduler).
-

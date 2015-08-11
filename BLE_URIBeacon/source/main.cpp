@@ -30,7 +30,7 @@
  *
  * The following help with this switch.
  */
-static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 10;  // Duration after power-on that config service is available.
+static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 60;  // Duration after power-on that config service is available.
 
 /* global static objects */
 BLE ble;

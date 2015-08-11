@@ -86,5 +86,6 @@ void app_start(int, char *[])
     ble.startAdvertising(); /* Set the whole thing in motion. After this call a GAP central can scan the URIBeaconConfig
                              * service. This can then be switched to the normal URIBeacon functionality after a timeout. */
 
+    /* Post a timeout callback to be invoked in ADVERTISEMENT_TIMEOUT_SECONDS to affect the switch to beacon mode. */
     minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
 }

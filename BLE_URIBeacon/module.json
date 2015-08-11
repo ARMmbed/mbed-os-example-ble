@@ -1,0 +1,17 @@
+{
+  "name": "ble-uribeacon",
+  "version": "0.0.1",
+  "description": "BLE URIBeacon example, building with yotta",
+  "licenses": [
+    {
+      "url": "https://spdx.org/licenses/Apache-2.0",
+      "type": "Apache-2.0"
+    }
+  ],
+  "dependencies": {
+    "mbed-drivers": "*",
+    "ble": "ARMmbed/ble"
+  },
+  "targetDependencies": {},
+  "bin": "./source"
+}

@@ -3,6 +3,8 @@ This repo contains a collection of standard BLE example applications based on
 mbed OS and [yotta](https://github.com/ARMmbed/yotta). Each demo (sub-folder) contains a separate yotta-module
 meant for building an executable.
 
+Please browse to sub-folders for specific documentation.
+
 Modules
 =======
 

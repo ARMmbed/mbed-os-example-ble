@@ -6,6 +6,21 @@ is tell the beacon what to broadcast.
 Technical details are better presented [here](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_URIBeacon/),
 which happens to be the mbed-classic equivalent of this example. Please also refer to [Google's URIBeacon project](https://github.com/google/uribeacon).
 
+What You’ll Need
+================
+
+To get this going, you’ll need:
+
+* To see BLE devices and their advertisement or beacon information, get one of the following installed on your phone:
+
+** The `physical web` app. You can get that app for [iOS](https://itunes.apple.com/us/app/physical-web/id927653608?mt=8) and for [Android](https://play.google.com/store/apps/details?id=physical_web.org.physicalweb).
+
+** For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/detailsid=no.nordicsemi.android.mcp&hl=en).
+
+** For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
+
+* An nRF51 DK board.
+
 Build Instructions
 ==================
 
@@ -32,3 +47,5 @@ to your target hardware, and reset the device. You should have an active
 beacon detectable by BLE scanners (e.g. a smartphone).
 
 You'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`.
+
+*Please note that the URIBeacon spec. requires the URIBeacon app to remain in config mode for the first 60 seconds before switching to being a beacon.*

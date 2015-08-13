@@ -46,6 +46,6 @@ If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/sou
 to your target hardware, and reset the device. You should have an active
 beacon detectable by BLE scanners (e.g. a smartphone).
 
-You'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`.
+This may or may not be useful, but you'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`. But you should begin with the links to android apps mentioned above.
 
-*Please note that the URIBeacon spec. requires the URIBeacon app to remain in config mode for the first 60 seconds before switching to being a beacon.*
+**Please note that the URIBeacon spec. requires the URIBeacon app to remain in config mode for the first 60 seconds before switching to being a beacon.**

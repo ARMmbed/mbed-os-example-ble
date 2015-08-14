@@ -9,7 +9,6 @@
     }
   ],
   "dependencies": {
-    "mbed-drivers": "*",
     "ble": "ARMmbed/ble"
   },
   "targetDependencies": {},

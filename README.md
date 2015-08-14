@@ -14,7 +14,7 @@ programs in terms of dependencies upon software components (a.k.a. modules).
 yotta also controls the build of your software in order to ensure
 downloaded modules are available to use in your code.
 
-Yotta modules come with a `module.json` to describe its metadata
+Yotta modules come with a `module.json` to describe their metadata
 and dependencies.
 
 As an example, the BLE_Beacon demo comes with the following module.json:
@@ -40,15 +40,14 @@ As an example, the BLE_Beacon demo comes with the following module.json:
 
 From the above, the `name` field provides the name of the module: `ble-beacon`,
 `dependencies` lists its dependencies upon other modules (referring
-to Git repos in Github by default), and `description` provides a synopsis.
+to Git repos on Github by default), and `description` provides a synopsis.
 
 For most application modules, there is a `source` sub-folder containing C/C++
 sources which get picked up automatically for builds--in the case of
-BLE_BEacon, there's a `main.cpp` under source.
+BLE_BEacon, there's a `main.cpp` under its `source/`.
 
 More can be learnt about yotta from [this
 tutorial](http://docs.yottabuild.org/tutorial/tutorial.html).
-
 
 Build Instructions
 ==================
@@ -62,13 +61,24 @@ yotta install
 yotta build
 ```
 
+A yotta `target` is a supported combination of hardware platform and toolchain.
+Here's the list of available yotta targets for mbed OS:
+
+* nrf51dk-armcc
+* nrf51dk-gcc
+* mkit-gcc
+* mkit-armcc
+
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
 Under that folder, the file called `<module_name>-combined.hex` is the one which
 can be flashed to the target; the file called `<module_name>` is an ELF binary
 containing useful symbols; whereas `<module_name>.hex` can be used for Firmware-
 over-the-Air.
 
-Creating new BLE yotta Application-modules
+Read on if you wish to create your own yotta based application or to port
+mbed-classic applications to mbed OS.
+
+Creating new BLE yotta application-modules
 ==========================================
 
 Please refer to yotta documentation on [creating an executable](http://docs.yottabuild.org/tutorial/tutorial.html#Creating%20an%20Executable).
@@ -76,19 +86,8 @@ BLE applications would typically depend on the `ble` module to use
 [BLE API](https://github.com/ARMmbed/ble), as can be seen from https://github.com/ARMmbed/ble-examples/blob/master/BLE_Beacon/module.json#L13.
 Applications would also need the mbed-drivers module to bring in mbed OS APIs, minar, and capabilities of the target platform.
 
-Suggested BLE targets
-=====================
-
-Currently, we support an initial port of mbed OS to the following targets:
-
-* nrf51dk-armcc
-* nrf51dk-gcc
-* bbcmicro-armcc
-* mkit-gcc
-* mkit-armcc
-
-Porting mbed-2 BLE Applications
-===============================
+Porting mbed-classic BLE Applications
+=====================================
 
 Prior to mbed OS, all application callbacks would execute in handler mode
 (i.e. interrupt context). mbed OS comes with its own scheduler,

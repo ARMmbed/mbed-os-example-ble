@@ -19,7 +19,6 @@
 #include "ble/Gap.h"
 #include "ble/services/HeartRateService.h"
 
-BLE        ble;
 DigitalOut led1(LED1, 1);
 
 const static char     DEVICE_NAME[] = "HRM";
@@ -30,7 +29,7 @@ static HeartRateService *hrServicePtr;
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
-    ble.gap().startAdvertising(); // restart advertising
+    BLE::Instance().gap().startAdvertising(); // restart advertising
 }
 
 void updateSensorValue() {
@@ -50,7 +49,7 @@ void periodicCallback(void)
 {
     led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
-    if (ble.getGapState().connected) {
+    if (BLE::Instance().getGapState().connected) {
         minar::Scheduler::postCallback(updateSensorValue);
     }
 }
@@ -59,6 +58,7 @@ void app_start(int argc, char *argv[])
 {
     minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
 
+    BLE &ble = BLE::Instance();
     ble.init();
     ble.gap().onDisconnection(disconnectionCallback);
 

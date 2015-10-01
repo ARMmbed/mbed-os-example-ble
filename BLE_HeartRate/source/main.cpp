@@ -16,6 +16,7 @@
 
 #include "mbed.h"
 #include "ble/BLE.h"
+#include "ble/Gap.h"
 #include "ble/services/HeartRateService.h"
 
 BLE        ble;
@@ -27,7 +28,7 @@ static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE};
 static uint8_t hrmCounter = 100; // init HRM to 100bps
 static HeartRateService *hrServicePtr;
 
-void disconnectionCallback(Gap::Handle_t, Gap::DisconnectionReason_t)
+void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
     ble.gap().startAdvertising(); // restart advertising
 }

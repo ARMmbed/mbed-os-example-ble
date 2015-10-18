@@ -17,7 +17,8 @@ To get this going, you’ll need:
 
   - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
 
-- An nRF51 DK board.
+- One of the BLE platforms listed in the README.md of this repository, for example a
+  Nordic DK board.
 
 Build Instructions
 ==================
@@ -31,15 +32,30 @@ yotta install
 yotta build
 ```
 
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+The targets you can use are described in the main README.md for this repository
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-beacon-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-beacon`
-is an ELF binary containing useful symbols; whereas `ble-beacon.hex`
-can be used for Firmware-over-the-Air.
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-beacon-combined.hex`
-to your target hardware, and reset the device. You should have an active
-beacon detectable by BLE scanners (e.g. a smartphone).
+Under that folder, the file called `ble-beacon<-combined>.hex` is the one which
+can be flashed to the target using mbed's DAP over USB; The parent README or the
+documentation for your yotta target will explain how to choose between the available
+binaries and hex files.
+
+If you're building for the `nrf51dk-armcc` target, copy
+`build/nrf51dk-armcc/source/ble-beacon-combined.hex` to your target hardware, and
+reset the device.
+
+Checking for Success
+====================
+
+You will need to use another device to determine whether the beacon is running
+properly. Using one of the BLE scanning apps above, search for nearby devices and you
+should see an iBeacon device nearby.
+
+If you are in an area with many BLE devices, try powering down your board and ensuring
+that the beacon is not present when you rescan (some OSs cache the nearby beacons, so
+be sure to do a new scan, rather than expecting the GUI to update to show the beacon
+has gone).
+
+
+

@@ -19,7 +19,8 @@ To get this going, you’ll need:
 
   - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
 
-- An nRF51 DK board.
+- One of the BLE platforms listed in the README.md of this repository, for example a
+  Nordic DK board.
 
 Build Instructions
 ==================
@@ -32,24 +33,33 @@ yotta target <an_appropriate_target_such_as_mkit-gcc>
 yotta install
 yotta build
 ```
-
 Assuming that you're building for the nRF51 DK platform, available targets are
 `nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
 
+The other targets you can use are described in the main README.md for this repository
+
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-uribeacon-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-uribeacon`
-is an ELF binary containing useful symbols; whereas `ble-uribeacon.hex`
-can be used for Firmware-over-the-Air.
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-uribeacon-combined.hex`
-to your target hardware, and reset the device. You should have an active
-beacon detectable by BLE scanners (e.g. a smartphone).
+Under that folder, the file called `ble-uribeacon<-combined>.hex` is the one which
+can be flashed to the target using mbed's DAP over USB; The parent README or the
+documentation for your yotta target will explain how to choose between the available
+binaries and hex files.
 
-This may or may not be useful, but you'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`. But you should begin with the links to android apps mentioned above.
+If you're building for the `nrf51dk-armcc` target, copy
+`build/nrf51dk-armcc/source/ble-uribeacon-combined.hex` to your target hardware, and
+reset the device.
+
+Checking for Success
+====================
+
+Your URI beacon should be detectable by BLE scanners (e.g. a smartphone) and by the
+Google Physical Web app.
 
 **Please note that the URIBeacon spec requires the URIBeacon app to remain in
 config mode for the first 60 seconds before switching to being a beacon. So if
 you're using a physical-web app, you'll only see the beacon after this period;
 if you're using one of the generic apps for BLE scanning, you should see a
 configurable beacon being advertised for the first 60 seconds.**
+
+You'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`. But you should begin with the links to android apps mentioned above.
+

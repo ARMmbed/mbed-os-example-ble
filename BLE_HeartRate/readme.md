@@ -20,8 +20,8 @@ To get this going, you’ll need:
 
   - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
 
-- An nRF51 DK board.
-
+- One of the BLE platforms listed in the README.md of this repository, for example a
+  Nordic DK board. 
 
 Build Instructions
 ==================
@@ -38,12 +38,26 @@ yotta build
 Assuming that you're building for the nRF51 DK platform, available targets are
 `nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-heartrate-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-heartrate`
-is an ELF binary containing useful symbols; whereas `ble-heartrate.hex`
-can be used for Firmware-over-the-Air.
+The other targets you can use are described in the main README.md for this repository
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-heartrate-combined.hex`
-to your target hardware, and reset the device. You should have an active
-heart-rate detectable by heart-rate apps on smartphones.
+The resulting binaries would be under `build/<yotta_target_name>/source/`.
+
+Under that folder, the file called `ble-heartrate<-combined>.hex` is the one which
+can be flashed to the target using mbed's DAP over USB; The parent README or the
+documentation for your yotta target will explain how to choose between the available
+binaries and hex files.
+
+If you're building for the `nrf51dk-armcc` target, copy
+`build/nrf51dk-armcc/source/ble-heartrate-combined.hex` to your target hardware, and
+reset the device.
+
+Checking for Success
+====================
+
+By default the heart rate monitor is called HRM, but you can change this on line 24 of
+`source\main.cpp`.
+
+Using one of the apps suggested above, connect to the device, and observe that the
+heartrate is constantly increasing up to 175 and wrapping back to 100.
+
+

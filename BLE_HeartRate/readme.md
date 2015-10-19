@@ -38,12 +38,12 @@ yotta build
 Assuming that you're building for the nRF51 DK platform, available targets are
 `nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
 
-The other targets you can use are described in the main README.md for this repository
+The other targets you can use are described in the main README.md for this repository.
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
 
 Under that folder, the file called `ble-heartrate<-combined>.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; The parent README or the
+can be flashed to the target using mbed's DAP over USB; the parent README or the
 documentation for your yotta target will explain how to choose between the available
 binaries and hex files.
 

@@ -21,8 +21,7 @@ or
 
  * A supported target, such as the FRDM K64f, whith a shield or external BLE peripheral, such as an ST shield
 
-
-The [`ble` yotta module](https://github.com/ARMmbed/BLE_API) is responsible for
+The [`ble` yotta module](https://github.com/ARMmbed/ble) is responsible for
 providing the BLE APIs on mbed OS. The `ble` module uses yotta targets and yotta
 target dependencies in order to provide the appropriate implementation of the BLE API
 for your chosen hardware combination.
@@ -32,7 +31,6 @@ A yotta `target` is a supported combination of hardware platform and toolchain.
 As such, for any of the hardware combinations above, you will need to use or create a
 yotta target that describes your configuration. The existing supported configurations
 are descibed below.
-
 
 Targets for BLE
 ---------------
@@ -95,7 +93,7 @@ Read on if you wish to create your own yotta based application or to port
 mbed-classic applications to mbed OS.
 
 Modules
--------
+~~~~~~~
 
 yotta is a tool that we're building at mbed, to make it easier to build better
 software written in C, C++ or other C-family languages. yotta describes
@@ -139,7 +137,7 @@ tutorial](http://docs.yottabuild.org/tutorial/tutorial.html).
 
 
 Creating new BLE yotta application-modules
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please refer to yotta documentation on [creating an executable](http://docs.yottabuild.org/tutorial/tutorial.html#Creating%20an%20Executable).
 BLE applications would typically depend on the `ble` module to use

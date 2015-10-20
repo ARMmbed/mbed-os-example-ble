@@ -1,7 +1,7 @@
 {
-  "name": "ble-uriobserver",
+  "name": "ble-eddystoneobserver",
   "version": "0.0.1",
-  "description": "BLE URIObserver example, building with yotta",
+  "description": "BLE EddystoneObserver example, building with yotta",
   "licenses": [
     {
       "url": "https://spdx.org/licenses/Apache-2.0",

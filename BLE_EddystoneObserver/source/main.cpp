@@ -16,9 +16,6 @@
 
 #include "mbed.h"
 #include "ble/BLE.h"
-#include "ble/services/URIBeaconConfigService.h"
-#include "ble/services/DFUService.h"
-#include "ble/services/DeviceInformationService.h"
 
 static const int URI_MAX_LENGTH = 18;             // Maximum size of service data in ADV packets
 
@@ -94,13 +91,14 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params)
 
     struct ApplicationData_t {
         uint8_t applicationSpecificId[2];
-        uint8_t flags;
+        uint8_t frameType;
         uint8_t advPowerLevels;
         uint8_t uriData[URI_MAX_LENGTH];
     } AppDataPacket;
 
-    const uint8_t BEACON_UUID[sizeof(UUID::ShortUUIDBytes_t)] = {0xD8, 0xFE};
-    const uint8_t APPLICATION_DATA_OFFSET = sizeof(ApplicationData_t) + sizeof(AdvDataPacket.dataType) - sizeof(AppDataPacket.uriData);
+    const uint8_t BEACON_UUID[sizeof(UUID::ShortUUIDBytes_t)] = {0xAA, 0xFE};
+    const uint8_t FRAME_TYPE_URL                              = 0x10;
+    const uint8_t APPLICATION_DATA_OFFSET                     = sizeof(ApplicationData_t) + sizeof(AdvDataPacket.dataType) - sizeof(AppDataPacket.uriData);
 
     AdvertisingData_t *pAdvData;
     size_t index = 0;
@@ -108,7 +106,7 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params)
         pAdvData = (AdvertisingData_t *)&params->advertisingData[index];
         if (pAdvData->dataType == GapAdvertisingData::SERVICE_DATA) {
             ApplicationData_t *pAppData = (ApplicationData_t *) pAdvData->data;
-            if(!memcmp(&(pAppData->applicationSpecificId[0]), &BEACON_UUID[0], sizeof(BEACON_UUID))) {
+            if(!memcmp(&(pAppData->applicationSpecificId[0]), &BEACON_UUID[0], sizeof(BEACON_UUID)) && pAppData->frameType == FRAME_TYPE_URL) {
                 decodeURI(pAppData->uriData, pAdvData->length - APPLICATION_DATA_OFFSET);
                 break;
             }

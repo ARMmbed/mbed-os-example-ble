@@ -18,7 +18,7 @@ To get this going, you’ll need:
 Build Instructions
 ==================
 
-After cloning the parent repository, switch to the subfolder BLE_URIObserver, and
+After cloning the parent repository, switch to the subfolder BLE_EddystoneObserver, and
 execute the following:
 
 ```Shell
@@ -31,11 +31,11 @@ Assuming that you're building for the nRF51 DK platform, available targets are
 `nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-uriobserver-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-uriobserver`
-is an ELF binary containing useful symbols; whereas `ble-uriobserver.hex`
+Under that folder, the file called `ble-eddystoneobserver-combined.hex` is the one which
+can be flashed to the target using mbed's DAP over USB; the file called `ble-eddystoneobserver`
+is an ELF binary containing useful symbols; whereas `ble-eddystoneobserver.hex`
 can be used for Firmware-over-the-Air.
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-uriobserver-combined.hex`
+If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-eddystoneobserver-combined.hex`
 to your target hardware, and reset the device. You should have an active beacon
 detectable by BLE scanners (e.g. a smartphone) for something to be printed in the console.

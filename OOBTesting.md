@@ -54,12 +54,17 @@ ST (using the st-ble module):
 
 * frdm-k64f-st-ble-gcc (a FRDM-k64f with an ST BLE shield)
 
-*When adding a new BLE-capable target, you should test it with these examples (most
+* When adding a new BLE-capable target, you should test it with these examples (most
 of which are already included in the test-suite anyway) and then submit a pull request
 on this repository to add the target to this list*
 
 Building and testing the examples
 ---------------------------------
+
+If using Nordic, please note that some of the Nordic repositories are still
+limited to the ARM-private yotta registry. These will be published to the
+public registry very shortly. This would require you to switch to the private
+registry.
 
 After cloning this repository, switch to any of the demo subdirectories, say
 BLE_HeartRate, and execute the following:

@@ -53,14 +53,13 @@ void app_start(int, char**)
     minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
 
     BLE &ble = BLE::Instance();
+    ble.init();
 
     /* Setup Eddystone Service */
     eddyBeaconPtr = new EddystoneService(ble, beaconPeriodus, radioTxPower);
 
-    ble.init();
-
     /* Set Eddystone Frame Data (TLM,UID,URI...etc) */
-    eddyBeaconPtr->setTLMFrameData(tlmVersion,5.0);
+    eddyBeaconPtr->setTLMFrameData(tlmVersion, 5.0);
     eddyBeaconPtr->setURLFrameData(advTxPower, Url, 2.0);
     eddyBeaconPtr->setUIDFrameData(advTxPower, UIDnamespace, UIDinstance, 3.0);
 

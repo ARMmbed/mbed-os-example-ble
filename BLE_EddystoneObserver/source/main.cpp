@@ -106,7 +106,7 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params)
         pAdvData = (AdvertisingData_t *)&params->advertisingData[index];
         if (pAdvData->dataType == GapAdvertisingData::SERVICE_DATA) {
             ApplicationData_t *pAppData = (ApplicationData_t *) pAdvData->data;
-            if(!memcmp(&(pAppData->applicationSpecificId[0]), &BEACON_UUID[0], sizeof(BEACON_UUID)) && pAppData->frameType == FRAME_TYPE_URL) {
+            if (!memcmp(pAppData->applicationSpecificId, BEACON_UUID, sizeof(BEACON_UUID)) && (pAppData->frameType == FRAME_TYPE_URL)) {
                 decodeURI(pAppData->uriData, pAdvData->length - APPLICATION_DATA_OFFSET);
                 break;
             }

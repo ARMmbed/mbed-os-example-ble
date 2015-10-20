@@ -1,6 +1,6 @@
 {
   "name": "ble-eddystonebeacon",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "This example demonstrates how to set up and initialize a Eddystone Beacon.",
   "licenses": [
     {
@@ -9,7 +9,8 @@
     }
   ],
   "dependencies": {
-    "ble": "~0.4.8"
+    "ble": "^1.0.0"
   },
+  "targetDependencies": {},
   "bin": "./source"
 }

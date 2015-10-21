@@ -93,7 +93,7 @@ Read on if you wish to create your own yotta based application or to port
 mbed-classic applications to mbed OS.
 
 Modules
-~~~~~~~
+-------
 
 yotta is a tool that we're building at mbed, to make it easier to build better
 software written in C, C++ or other C-family languages. yotta describes
@@ -137,7 +137,7 @@ tutorial](http://docs.yottabuild.org/tutorial/tutorial.html).
 
 
 Creating new BLE yotta application-modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------
 
 Please refer to yotta documentation on [creating an executable](http://docs.yottabuild.org/tutorial/tutorial.html#Creating%20an%20Executable).
 BLE applications would typically depend on the `ble` module to use

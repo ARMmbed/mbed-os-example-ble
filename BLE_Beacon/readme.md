@@ -36,14 +36,10 @@ The targets you can use are described in the main README.md for this repository.
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
 
-Under that folder, the file called `ble-beacon<-combined>.hex` is the one which
+Under that folder, the file called `ble-beacon-combined.hex` is the one which
 can be flashed to the target using mbed's DAP over USB; the parent README or the
 documentation for your yotta target will explain how to choose between the available
 binaries and hex files.
-
-If you're building for the `nrf51dk-armcc` target, copy
-`build/nrf51dk-armcc/source/ble-beacon-combined.hex` to your target hardware, and
-reset the device.
 
 Checking for Success
 ====================

@@ -42,14 +42,10 @@ The other targets you can use are described in the main README.md for this repos
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
 
-Under that folder, the file called `ble-heartrate<-combined>.hex` is the one which
+Under that folder, the file called `ble-heartrate-combined.hex` is the one which
 can be flashed to the target using mbed's DAP over USB; the parent README or the
 documentation for your yotta target will explain how to choose between the available
 binaries and hex files.
-
-If you're building for the `nrf51dk-armcc` target, copy
-`build/nrf51dk-armcc/source/ble-heartrate-combined.hex` to your target hardware, and
-reset the device.
 
 Checking for Success
 ====================
@@ -59,5 +55,3 @@ By default the heart rate monitor is called HRM, but you can change this on line
 
 Using one of the apps suggested above, connect to the device, and observe that the
 heartrate is constantly increasing up to 175 and wrapping back to 100.
-
-

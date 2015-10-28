@@ -22,7 +22,7 @@ DigitalOut  led1(LED1, 1);
 InterruptIn button(BUTTON1);
 uint8_t count;
 
-const char DEVICE_NAME[] = "Button";
+const char DEVICE_NAME[] = "GapButton";
 
 void buttonPressedCallback(void)
 {

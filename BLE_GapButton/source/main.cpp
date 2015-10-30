@@ -22,33 +22,46 @@ DigitalOut  led1(LED1, 1);
 InterruptIn button(BUTTON1);
 uint8_t count;
 
+// Change your device name below
 const char DEVICE_NAME[] = "GapButton";
 
+// This function is called when button is released
 void buttonPressedCallback(void)
 {
     count++;
+    // modify the ble advertising payload
     ble.gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
 }
 
+// Do blinky on LED1 to indicate system aliveness.
 void blinkCallback(void)
 {
-    led1 = !led1; /* Do blinky on LED1 to indicate system aliveness. */
+    led1 = !led1;
 }
 
 void app_start(int, char**)
 {
+    // initialise count
+    count = 0;
+    // initialise ble stack
     ble.init();
 
-    /* setup advertising */
+    // setup advertising
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
+    // Put the device name in the advertising payload
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* 1000ms. */
-
-    count = 0;
+    // Broadcast the value of count in the MANUFACTURER_SPECIFIC_DATA field
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
+    // It is not connectable as we are just boardcasting
+    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
+    // Send out the advertising payload every 1000ms
+    ble.gap().setAdvertisingInterval(1000);
+
+    // Blink LED every 500 ms
     minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+    // register call back function to be called when button is released
     button.rise(buttonPressedCallback);
 
+    // start advertising
     ble.gap().startAdvertising();
 }

@@ -4,8 +4,8 @@ Broadcasting a count of button clicks over GAP. This is the simplest way to tran
 
 What You’ll Need
 ================
-- You can use one of the generic apps to scan BLE peripherals:
-  - For Android [nRF Master Control Panel](https://play.google.com/store/apps/detailsid=no.nordicsemi.android.mcp&hl=en).
+- You can use one of the generic apps to scan BLE peripherals.
+  - For Android [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp&hl=en).
   - For iPhone [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
 - One of the BLE platforms listed in the [README.md](https://github.com/ARMmbed/ble-examples/tree/oob-oct15) of this repository, for example a Nordic DK board.
 

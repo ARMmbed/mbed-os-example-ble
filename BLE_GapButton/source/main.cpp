@@ -25,15 +25,15 @@ uint8_t count;
 // Change your device name below
 const char DEVICE_NAME[] = "GapButton";
 
-// This function is called when button is released
+// This function is called when the button is released
 void buttonPressedCallback(void)
 {
     count++;
-    // modify the BLE advertising payload
+    // Modify the BLE advertising payload
     ble.gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
 }
 
-// Do blinky on LED1 to indicate system aliveness.
+// Do blinky on LED1 to indicate system aliveness
 void blinkCallback(void)
 {
     led1 = !led1;
@@ -41,12 +41,12 @@ void blinkCallback(void)
 
 void app_start(int, char**)
 {
-    // initialise count
+    // Initialise count
     count = 0;
-    // initialise BLE stack
+    // Initialise BLE stack
     ble.init();
 
-    // setup advertising
+    // Set up advertising
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
     // Put the device name in the advertising payload
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
@@ -59,9 +59,9 @@ void app_start(int, char**)
 
     // Blink LED every 500 ms
     minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
-    // register call back function to be called when button is released
+    // Register callback function to be called when button is released
     button.rise(buttonPressedCallback);
 
-    // start advertising
+    // Start advertising
     ble.gap().startAdvertising();
 }

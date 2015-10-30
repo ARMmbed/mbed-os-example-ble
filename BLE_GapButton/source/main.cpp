@@ -29,7 +29,7 @@ const char DEVICE_NAME[] = "GapButton";
 void buttonPressedCallback(void)
 {
     count++;
-    // modify the ble advertising payload
+    // modify the BLE advertising payload
     ble.gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
 }
 
@@ -43,7 +43,7 @@ void app_start(int, char**)
 {
     // initialise count
     count = 0;
-    // initialise ble stack
+    // initialise BLE stack
     ble.init();
 
     // setup advertising

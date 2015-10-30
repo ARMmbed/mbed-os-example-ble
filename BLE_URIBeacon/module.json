@@ -9,7 +9,7 @@
     }
   ],
   "dependencies": {
-    "ble": "ARMmbed/ble"
+    "ble": "^1.0.0"
   },
   "targetDependencies": {},
   "bin": "./source"

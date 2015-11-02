@@ -16,12 +16,12 @@ To get this going, you’ll need:
 
 - You could also use one of the generic apps to scan BLE peripherals.
 
-  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/detailsid=no.nordicsemi.android.mcp&hl=en).
+  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp).
 
   - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
 
 - One of the BLE platforms listed in the README.md of this repository, for example a
-  Nordic DK board. 
+  Nordic DK board.
 
 Build Instructions
 ==================

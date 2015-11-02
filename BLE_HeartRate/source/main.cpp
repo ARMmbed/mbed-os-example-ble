@@ -54,12 +54,22 @@ void periodicCallback(void)
     }
 }
 
-void app_start(int argc, char *argv[])
+void onBleInitError(BLE &ble, ble_error_t error)
 {
-    minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
+   /* Initialization error handling should go here */
+}
 
-    BLE &ble = BLE::Instance();
-    ble.init();
+void bleInitComplete(BLE &ble, ble_error_t error)
+{
+    if (error != BLE_ERROR_NONE) {
+        onBleInitError(ble, error);
+        return;
+    }
+
+    if (ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
+        return;
+    }
+
     ble.gap().onDisconnection(disconnectionCallback);
 
     /* Setup primary service. */
@@ -73,4 +83,11 @@ void app_start(int argc, char *argv[])
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
     ble.gap().setAdvertisingInterval(1000); /* 1000ms */
     ble.gap().startAdvertising();
+}
+
+void app_start(int, char **)
+{
+    minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
+
+    BLE::Instance().init(bleInitComplete);
 }

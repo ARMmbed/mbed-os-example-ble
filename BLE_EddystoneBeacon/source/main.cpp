@@ -48,12 +48,29 @@ void tlmTemperatureCallback(void){
     eddyBeaconPtr->updateTlmBeaconTemp(temp++);
 }
 
-void app_start(int, char**)
+/**
+ * This function is called when the ble initialization process has failled
+ */
+void onBleInitError(BLE &ble, ble_error_t error)
 {
-    minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+    // Initialization error handling should go here
+}
 
-    BLE &ble = BLE::Instance();
-    ble.init();
+/**
+ * Callback triggered when the ble initialization process has finished
+ */
+void bleInitComplete(BLE &ble, ble_error_t error)
+{
+    if (error != BLE_ERROR_NONE) {
+        // in case of error, forward the error handling to onBleInitError
+        onBleInitError(ble, error);
+        return;
+    }
+
+    // ensure that it is the default instance of BLE
+    if(ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
+        return;
+    }
 
     /* Setup Eddystone Service */
     eddyBeaconPtr = new EddystoneService(ble, beaconPeriodus, radioTxPower);
@@ -70,4 +87,12 @@ void app_start(int, char**)
     /* Start Advertising the eddystone service. */
     eddyBeaconPtr->start();
     ble.gap().startAdvertising();
+}
+
+void app_start(int, char**)
+{
+    minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+
+    BLE &ble = BLE::Instance();
+    ble.init(bleInitComplete);
 }

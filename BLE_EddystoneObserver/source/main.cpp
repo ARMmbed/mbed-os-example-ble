@@ -115,12 +115,29 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params)
     }
 }
 
+void onBleInitError(BLE &ble, ble_error_t error)
+{
+   /* Initialization error handling should go here */
+}
+
+void bleInitComplete(BLE &ble, ble_error_t error)
+{
+    if (error != BLE_ERROR_NONE) {
+        onBleInitError(ble, error);
+        return;
+    }
+
+    if (ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
+        return;
+    }
+
+    ble.gap().setScanParams(1800 /* scan interval */, 1500 /* scan window */);
+    ble.gap().startScan(advertisementCallback);
+}
+
 void app_start(int, char *[])
 {
     minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
 
-    BLE &ble = BLE::Instance();
-    ble.init();
-    ble.gap().setScanParams(1800 /* scan interval */, 1500 /* scan window */);
-    ble.gap().startScan(advertisementCallback);
+    BLE::Instance().init(bleInitComplete);
 }

@@ -47,6 +47,8 @@ void timeout(void)
     if (!state.connected) { /* don't switch if we're in a connected state. */
         uriBeaconConfig->setupURIBeaconAdvertisements();
         ble.startAdvertising();
+    } else {
+        minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
     }
 }
 

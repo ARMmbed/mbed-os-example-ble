@@ -1,4 +1,4 @@
-GapButton
+GAPButton
 ============
 Broadcasting a count of button clicks over GAP. This is the simplest way to transmit information over BLE: all listening devices in range will see the broadcast and be able to read the button clicks.
 
@@ -35,6 +35,6 @@ If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/sou
 Checking for Success
 ====================
 
-By default the BLE device is called GapButton, but you can change this in `source\main.cpp`.
+By default the BLE device is called GAPButton, but you can change this in `source\main.cpp`.
 
-Open the BLE monitoring app on your phone and find the GapButton device. The button click count should show up in the "Manufacturer Data" field. Press Button 1 on your board and the number should change on your phone.
+Open the BLE monitoring app on your phone and find the GAPButton device. The button click count should show up in the "Manufacturer Data" field. Press Button 1 on your board and the number should change on your phone.

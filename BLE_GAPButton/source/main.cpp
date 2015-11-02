@@ -23,7 +23,7 @@ InterruptIn button(BUTTON1);
 uint8_t count;
 
 // Change your device name below
-const char DEVICE_NAME[] = "GapButton";
+const char DEVICE_NAME[] = "GAPButton";
 
 // This function is called when the button is released
 void buttonPressedCallback(void)

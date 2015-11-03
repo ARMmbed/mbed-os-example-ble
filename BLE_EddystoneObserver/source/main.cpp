@@ -120,8 +120,11 @@ void onBleInitError(BLE &ble, ble_error_t error)
    /* Initialization error handling should go here */
 }
 
-void bleInitComplete(BLE &ble, ble_error_t error)
+void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 {
+    BLE&        ble   = params->ble;
+    ble_error_t error = params->error;
+
     if (error != BLE_ERROR_NONE) {
         onBleInitError(ble, error);
         return;

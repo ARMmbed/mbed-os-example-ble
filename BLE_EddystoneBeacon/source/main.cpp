@@ -59,8 +59,11 @@ void onBleInitError(BLE &ble, ble_error_t error)
 /**
  * Callback triggered when the ble initialization process has finished
  */
-void bleInitComplete(BLE &ble, ble_error_t error)
+void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 {
+    BLE&        ble   = params->ble;
+    ble_error_t error = params->error;
+
     if (error != BLE_ERROR_NONE) {
         // in case of error, forward the error handling to onBleInitError
         onBleInitError(ble, error);

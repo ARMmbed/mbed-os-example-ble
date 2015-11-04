@@ -25,15 +25,22 @@ uint8_t count;
 // Change your device name below
 const char DEVICE_NAME[] = "GAPButton";
 
-// This function is called when the button is released
+/* We can arbiturarily choose the GAPButton service UUID to be 0xAA00
+ * as long as it does not overlap with the UUIDs defined here:
+ * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
+#define GAPButtonUUID 0xAA00
+const uint16_t uuid16_list[] = {GAPButtonUUID};
+
+uint8_t service_data[3];
+
 void buttonPressedCallback(void)
 {
     count++;
-    // Modify the BLE advertising payload
-    ble.gap().updateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
+    // Update the count in the SERVICE_DATA field of the advertising payload
+    service_data[2] = count;
+    ble.gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
 }
 
-// Do blinky on LED1 to indicate system aliveness
 void blinkCallback(void)
 {
     led1 = !led1;
@@ -41,31 +48,34 @@ void blinkCallback(void)
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *)
 {
-    // Set up advertising
+    // Set up the advertising payload
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
     // Put the device name in the advertising payload
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    // Broadcast the value of count in the MANUFACTURER_SPECIFIC_DATA field
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::MANUFACTURER_SPECIFIC_DATA, &count, sizeof(count));
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
+
+    // First two bytes of SERVICE_DATA field should contain the UUID of the service
+    service_data[0] = GAPButtonUUID & 0xff;
+    service_data[1] = GAPButtonUUID >> 8;
+    service_data[2] = count; // Put the button click count in the third byte
+    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
 
     // It is not connectable as we are just boardcasting
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
     // Send out the advertising payload every 1000ms
     ble.gap().setAdvertisingInterval(1000);
 
-    // Start advertising
     ble.gap().startAdvertising();
 }
 
 void app_start(int, char**)
 {
-    // Initialise count
     count = 0;
-    // Initialise BLE stack, bleInitComplete will be called after the initialisatin is completed
     ble.init(bleInitComplete);
 
-    // Blink LED every 500 ms
+    // Blink LED every 500 ms to indicate system aliveness
     minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+
     // Register function to be called when button is released
     button.rise(buttonPressedCallback);
 }

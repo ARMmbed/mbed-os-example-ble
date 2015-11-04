@@ -37,4 +37,4 @@ Checking for Success
 
 By default the BLE device is called GAPButton, but you can change this in `source\main.cpp`.
 
-Open the BLE monitoring app on your phone and find the GAPButton device. The button click count should show up in the "Manufacturer Data" field. Press Button 1 on your board and the number should change on your phone.
+Open the BLE monitoring app on your phone and find the GAPButton device. The button click count should show up in the "Service Data" field. Press Button 1 on your board and the number should change on your phone.

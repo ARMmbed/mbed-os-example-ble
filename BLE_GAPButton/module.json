@@ -7,6 +7,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "mbed-drivers": "",
-    "ble": "^1.0.0"
+    "ble": "^2.0.3"
   }
 }

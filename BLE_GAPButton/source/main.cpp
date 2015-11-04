@@ -33,12 +33,60 @@ const uint16_t uuid16_list[] = {GAPButtonUUID};
 
 uint8_t service_data[3];
 
+void print_error(ble_error_t error, const char* msg)
+{
+    printf("%s: ", msg);
+    switch(error) {
+        case BLE_ERROR_NONE:
+            printf("BLE_ERROR_NONE: No error");
+            break;
+        case BLE_ERROR_BUFFER_OVERFLOW:
+            printf("BLE_ERROR_BUFFER_OVERFLOW: The requested action would cause a buffer overflow and has been aborted");
+            break;
+        case BLE_ERROR_NOT_IMPLEMENTED:
+            printf("BLE_ERROR_NOT_IMPLEMENTED: Requested a feature that isn't yet implement or isn't supported by the target HW");
+            break;
+        case BLE_ERROR_PARAM_OUT_OF_RANGE:
+            printf("BLE_ERROR_PARAM_OUT_OF_RANGE: One of the supplied parameters is outside the valid range");
+            break;
+        case BLE_ERROR_INVALID_PARAM:
+            printf("BLE_ERROR_INVALID_PARAM: One of the supplied parameters is invalid");
+            break;
+        case BLE_STACK_BUSY:
+            printf("BLE_STACK_BUSY: The stack is busy");
+            break;
+        case BLE_ERROR_INVALID_STATE:
+            printf("BLE_ERROR_INVALID_STATE: Invalid state");
+            break;
+        case BLE_ERROR_NO_MEM:
+            printf("BLE_ERROR_NO_MEM: Out of Memory");
+            break;
+        case BLE_ERROR_OPERATION_NOT_PERMITTED:
+            printf("BLE_ERROR_OPERATION_NOT_PERMITTED");
+            break;
+        case BLE_ERROR_INITIALIZATION_INCOMPLETE:
+            printf("BLE_ERROR_INITIALIZATION_INCOMPLETE");
+            break;
+        case BLE_ERROR_ALREADY_INITIALIZED:
+            printf("BLE_ERROR_ALREADY_INITIALIZED");
+            break;
+        case BLE_ERROR_UNSPECIFIED:
+            printf("BLE_ERROR_UNSPECIFIED: Unknown error");
+            break;
+    }
+    printf("\r\n");
+}
+
 void buttonPressedCallback(void)
 {
     count++;
     // Update the count in the SERVICE_DATA field of the advertising payload
     service_data[2] = count;
-    ble.gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
+    ble_error_t err = ble.gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Updating payload failed");
+        return;
+    }
 }
 
 void blinkCallback(void)
@@ -46,32 +94,67 @@ void blinkCallback(void)
     led1 = !led1;
 }
 
-void bleInitComplete(BLE::InitializationCompleteCallbackContext *)
+void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 {
-    // Set up the advertising payload
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
+    ble_error_t err = context->error;
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "BLE initialisation failed");
+        return;
+    }
+
+    // Set up the advertising flags. Note: not all combination of flags are valid
+    // BREDR_NOT_SUPPORTED: Device does not support Basic Rate or Enchanced Data Rate, It is Low Energy only.
+    // LE_GENERAL_DISCOVERABLE: Peripheral device is discoverable at any moment
+    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Setting GAP flags failed");
+        return;
+    }
+
     // Put the device name in the advertising payload
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
+    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Setting device name failed");
+        return;
+    }
+
+    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Setting service UUID failed");
+        return;
+    }
 
     // First two bytes of SERVICE_DATA field should contain the UUID of the service
     service_data[0] = GAPButtonUUID & 0xff;
     service_data[1] = GAPButtonUUID >> 8;
     service_data[2] = count; // Put the button click count in the third byte
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
+    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Setting service data failed");
+        return;
+    }
 
     // It is not connectable as we are just boardcasting
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
+
     // Send out the advertising payload every 1000ms
     ble.gap().setAdvertisingInterval(1000);
 
-    ble.gap().startAdvertising();
+    err = ble.gap().startAdvertising();
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "Sart advertising failed");
+        return;
+    }
 }
 
 void app_start(int, char**)
 {
     count = 0;
-    ble.init(bleInitComplete);
+    ble_error_t err = ble.init(bleInitComplete);
+    if (err != BLE_ERROR_NONE) {
+        print_error(err, "BLE initialisation failed");
+        return;
+    }
 
     // Blink LED every 500 ms to indicate system aliveness
     minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));

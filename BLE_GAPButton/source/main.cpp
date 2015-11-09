@@ -31,8 +31,6 @@ const char DEVICE_NAME[] = "GAPButton";
 #define GAPButtonUUID 0xAA00
 const uint16_t uuid16_list[] = {GAPButtonUUID};
 
-uint8_t service_data[3];
-
 void print_error(ble_error_t error, const char* msg)
 {
     printf("%s: ", msg);
@@ -77,16 +75,24 @@ void print_error(ble_error_t error, const char* msg)
     printf("\r\n");
 }
 
-void buttonPressedCallback(void)
+void updatePayload(void)
 {
-    count++;
     // Update the count in the SERVICE_DATA field of the advertising payload
-    service_data[2] = count;
+    uint8_t service_data[3];
+    service_data[0] = GAPButtonUUID & 0xff;
+    service_data[1] = GAPButtonUUID >> 8;
+    service_data[2] = count; // Put the button click count in the third byte
     ble_error_t err = ble.gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
     if (err != BLE_ERROR_NONE) {
         print_error(err, "Updating payload failed");
         return;
     }
+}
+
+void buttonPressedCallback(void)
+{
+    count++;
+    minar::Scheduler::postCallback(updatePayload);
 }
 
 void blinkCallback(void)
@@ -125,6 +131,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
     }
 
     // First two bytes of SERVICE_DATA field should contain the UUID of the service
+    uint8_t service_data[3];
     service_data[0] = GAPButtonUUID & 0xff;
     service_data[1] = GAPButtonUUID >> 8;
     service_data[2] = count; // Put the button click count in the third byte

@@ -12,7 +12,7 @@ What You’ll Need
 Build Instructions
 ==================
 
-After cloning the parent repository, switch to the subfolder BLE_HeartRate, and
+After cloning the parent repository, switch to the subfolder BLE_GAPButton, and
 execute the following:
 
 ```Shell
@@ -35,6 +35,6 @@ If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/sou
 Checking for Success
 ====================
 
-By default the BLE device is called GAPButton, but you can change this in `source\main.cpp`.
+By default the BLE device is called GAPButton, but you can change this in `source/main.cpp`.
 
 Open the BLE monitoring app on your phone and find the GAPButton device. The button click count should show up in the "Service Data" field. Press Button 1 on your board and the number should change on your phone.

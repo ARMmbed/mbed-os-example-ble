@@ -17,7 +17,6 @@
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 
-BLE ble;
 DigitalOut  led1(LED1, 1);
 InterruptIn button(BUTTON1);
 uint8_t count;
@@ -82,7 +81,7 @@ void updatePayload(void)
     service_data[0] = GAPButtonUUID & 0xff;
     service_data[1] = GAPButtonUUID >> 8;
     service_data[2] = count; // Put the button click count in the third byte
-    ble_error_t err = ble.gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
+    ble_error_t err = BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
     if (err != BLE_ERROR_NONE) {
         print_error(err, "Updating payload failed");
         return;
@@ -102,7 +101,9 @@ void blinkCallback(void)
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 {
+    BLE&        ble = context->ble;
     ble_error_t err = context->error;
+
     if (err != BLE_ERROR_NONE) {
         print_error(err, "BLE initialisation failed");
         return;
@@ -157,7 +158,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 void app_start(int, char**)
 {
     count = 0;
-    ble_error_t err = ble.init(bleInitComplete);
+    ble_error_t err = BLE::Instance().init(bleInitComplete);
     if (err != BLE_ERROR_NONE) {
         print_error(err, "BLE initialisation failed");
         return;

@@ -3,7 +3,7 @@ used to program BLE client devices. Hence, the client LEDBlinker device will
 scan for advertising connections. Then it connects to an LED peripheral and
 attempts to write the LED characteristic to toggle the LED state.
 
-*Before you try this demo, make sure that the `peedAddr` filter os updated based on
+*Before you try this demo, make sure that the `peerAddr` filter is updated based on
 the peripheral's MAC address.*
 
 What You’ll Need

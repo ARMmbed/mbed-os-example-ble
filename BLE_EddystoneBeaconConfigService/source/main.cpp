@@ -19,18 +19,17 @@
 #include "ble/services/EddystoneConfigService.h"
 #include "ConfigParamsPersistence.h"
 
-BLE ble;
 EddystoneConfigService *EddystoneBeaconConfig;
 EddystoneConfigService::Params_t params;
 
 /**
- * URIBeaconConfig service can operate in two modes: a configuration mode which
- * allows a user to update settings over a connection; and normal URIBeacon mode
- * which involves advertising a URI. Constructing an object from URIBeaconConfig
- * service sets up advertisements for the configuration mode. It is then up to
- * the application to switch to URIBeacon mode based on some timeout.
+ * EddystoneConfigService can operate in two modes: a configuration mode which
+ * allows a user to update settings over a connection; and normal Eddystone beacon mode
+ * which involves advertising a URL. Constructing an object from EddystoneConfigService
+ * sets up advertisements for the configuration mode. Then when the application calls
+ * setupEddystoneAdvertisements() it switches to normal Eddystone beacon mode.
  *
- * The following help with this switch.
+ * The following helps with this switch.
  */
 static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 30;  // Duration after power-on that config service is available.
 
@@ -40,7 +39,7 @@ static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 30;  // Duration after p
 void timeout(void)
 {
     Gap::GapState_t state;
-    state = ble.gap().getState();
+    state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         EddystoneBeaconConfig->setupEddystoneAdvertisements();
     } else {
@@ -58,7 +57,7 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *cbParams)
         timeout();
     } else{
         /* eddystone is not configured, continue advertising */
-        ble.gap().startAdvertising();
+        BLE::Instance().gap().startAdvertising();
     }
 }
 
@@ -132,5 +131,5 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *initContext)
 
 void app_start(int, char *[])
 {
-    ble.init(bleInitComplete);
+    BLE::Instance().init(bleInitComplete);
 }

@@ -29,12 +29,12 @@ ButtonService *buttonServicePtr;
 
 void buttonPressedCallback(void)
 {
-    buttonServicePtr->updateButtonState(true);
+    minar::Scheduler::postCallback(mbed::util::FunctionPointer1<void, bool>(buttonServicePtr, &ButtonService::updateButtonState).bind(true));
 }
 
 void buttonReleasedCallback(void)
 {
-    buttonServicePtr->updateButtonState(false);
+    minar::Scheduler::postCallback(mbed::util::FunctionPointer1<void, bool>(buttonServicePtr, &ButtonService::updateButtonState).bind(false));
 }
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
@@ -49,7 +49,7 @@ void blinkCallback(void)
 
 void onBleInitError(BLE &ble, ble_error_t error)
 {
-    // Initialization error handling should go here
+    /* Initialization error handling should go here */
 }
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
@@ -58,12 +58,12 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble_error_t error = params->error;
 
     if (error != BLE_ERROR_NONE) {
-        // in case of error, forward the error handling to onBleInitError
+        /* In case of error, forward the error handling to onBleInitError */
         onBleInitError(ble, error);
         return;
     }
 
-    // ensure that it is the default instance of BLE
+    /* Ensure that it is the default instance of BLE */
     if(ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
         return;
     }

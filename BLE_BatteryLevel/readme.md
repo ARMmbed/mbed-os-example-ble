@@ -1,5 +1,5 @@
-This example creates and updates a standard Battery Level service, and a single
-GATT characteristic that contains the battery level.
+This example creates and updates a standard Battery Level service containing a single
+GATT characteristic.
 
 Checking for Success
 ====================

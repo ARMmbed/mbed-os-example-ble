@@ -45,7 +45,8 @@ void blinkCallback(void)
 {
     led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
-    if (BLE::Instance().getGapState().connected) {
+    BLE &ble = BLE::Instance();
+    if (ble.gap().getState().connected) {
         minar::Scheduler::postCallback(updateSensorValue);
     }
 }

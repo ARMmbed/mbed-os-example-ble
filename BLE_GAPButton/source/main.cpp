@@ -91,6 +91,9 @@ void updatePayload(void)
 void buttonPressedCallback(void)
 {
     count++;
+
+    // Calling BLE api in interrupt context may cause race conditions
+    // Using minar to schedule calls to BLE api for safety
     minar::Scheduler::postCallback(updatePayload);
 }
 

@@ -134,6 +134,8 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
         return;
     }
 
+    // The Service Data data type consists of a service UUID with the data associated with that service.
+    // We will encode the number of button clicks in the Service Data field
     // First two bytes of SERVICE_DATA field should contain the UUID of the service
     uint8_t service_data[3];
     service_data[0] = GAPButtonUUID & 0xff;

@@ -30,3 +30,5 @@ Building instructions for all samples are in the [main readme](https://github.co
 **Tip:** If you are in an area with many BLE devices, it may be difficult to identify your beacon. The simplest solution is to turn your board off and on, initiate a new scan on your BLE scanner every time, and look for the beacon that appears only when your board is on. 
 
 If you can see the beacon and all its information, the application worked properly. 
+
+For more information, see the [mbed Classic version of this application](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_iBeacon/).

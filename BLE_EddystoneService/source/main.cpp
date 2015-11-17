@@ -17,7 +17,6 @@
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "EddystoneService.h"
-#include "ConfigParamsPersistence.h"
 
 BLE ble;
 EddystoneService *eddyServicePtr;
@@ -46,9 +45,6 @@ static void timeout(void)
     if (!state.connected) { /* don't switch if we're in a connected state. */
         EddystoneService::EddystoneParams_t eddyParams;
         eddyServicePtr->startBeaconService(5, 5, 5);
-        /* Write params to persistent storage */
-        eddyServicePtr->getEddystoneParams(&eddyParams);
-        saveURIBeaconConfigParams(&eddyParams);
     } else {
         minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
     }
@@ -77,16 +73,6 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     ble.gap().onDisconnection(disconnectionCallback);
 
-    /*
-     * Load parameters from (platform specific) persistent storage. Parameters
-     * can be set to non-default values while the URIBeacon is in configuration
-     * mode (within the first 60 seconds of power-up). Thereafter, parameters
-     * get copied out to persistent storage before switching to normal URIBeacon
-     * operation.
-     */
-    EddystoneService::EddystoneParams_t eddyParams;
-    bool fetchedFromPersistentStorage = loadURIBeaconConfigParams(&eddyParams);
-
     /* Set UID and TLM frame data */
     const EddystoneService::UIDNamespaceID_t uidNamespaceID = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
     const EddystoneService::UIDInstanceID_t  uidInstanceID = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
@@ -96,17 +82,13 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
     static const EddystoneService::PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13}; // Values for ADV packets related to firmware levels, calibrated based on measured values at 1m
     static const EddystoneService::PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};    // Values for radio power levels, provided by manufacturer.
 
-    if (fetchedFromPersistentStorage) {
-        eddyServicePtr = new EddystoneService(ble, eddyParams, defaultAdvPowerLevels, radioPowerLevels, 500);
-    } else {
-        /* Set everything to defaults */
-        eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, 500);
+    /* Set everything to defaults */
+    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, 500);
 
-        /* Set default URL, UID and TLM frame data if not initialized through the config service */
-        eddyServicePtr->setURLData("http://mbed.org");
-        eddyServicePtr->setUIDData(&uidNamespaceID, &uidInstanceID);
-        eddyServicePtr->setTLMData(tlmVersion);
-    }
+    /* Set default URL, UID and TLM frame data if not initialized through the config service */
+    eddyServicePtr->setURLData("http://mbed.org");
+    eddyServicePtr->setUIDData(&uidNamespaceID, &uidInstanceID);
+    eddyServicePtr->setTLMData(tlmVersion);
 
     /* Start Eddystone in config mode */
     eddyServicePtr->startConfigService();

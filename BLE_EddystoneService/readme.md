@@ -1,12 +1,12 @@
-This is the EddystoneBeaconConfigService. This code starts up and for a user
+This is the EddystoneService demo. This code starts up and for a user
 configured time period (default 30 seconds) will advertise the configuration
 service.
 
-The configuration service allows for modifying various frames of the eddystone
+The configuration service allows you to modify various frames of the eddystone
 specification. For more details on the Configuration Service please check
 [here](https://github.com/google/eddystone/blob/master/eddystone-url/docs/config-service-spec.md).
 
-Once the initial time period is up, the EddystoneBeaconConfigService will broadcast
+Once the initial configuration time is up, the EddystoneService will broadcast
 advertisement packets with the configured eddystone frames.
 
 What You’ll Need
@@ -28,7 +28,7 @@ To get this going, you’ll need:
 Build Instructions
 ==================
 
-After cloning the parent repository, switch to the subfolder BLE_EddystoneBeaconConfigService, and
+After cloning the parent repository, switch to the subfolder BLE_EddystoneService, and
 execute the following:
 
 ```Shell
@@ -41,18 +41,20 @@ Assuming that you're building for the nRF51 DK platform, available targets are
 `nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
 
 The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-eddystonebeaconconfigservice-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-eddystonebeaconconfigservice`
-is an ELF binary containing useful symbols; whereas `ble-eddystonebeaconconfigservice.hex`
+Under that folder, the file called `ble-eddystoneservice-combined.hex` is the one which
+can be flashed to the target using mbed's DAP over USB; the file called `ble-eddystoneservice`
+is an ELF binary containing useful symbols; whereas `ble-eddystoneservice.hex`
 can be used for Firmware-over-the-Air.
 
 If you're building for the `nrf51dk-armcc` target, copy
-`build/nrf51dk-armcc/source/ble-eddystonebeaconconfigservice-combined.hex` to your target hardware,
+`build/nrf51dk-armcc/source/ble-eddystoneservice-combined.hex` to your target hardware,
 and reset the device.
 
+If your target has very tight memory constraints, you can modify the `config.json`
+to suit your needs. For instance, by changing the SoftDevice from S130 to S110.
 
 Checking for Success
 ====================
 
-Your EddystoneBeaconConfigService should be detectable by BLE scanners (e.g. a smartphone) and by the
+Your EddystoneService should be detectable by BLE scanners (e.g. a smartphone) and by the
 Google Physical Web app.

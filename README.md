@@ -45,16 +45,42 @@ ST (using the st-ble module):
 Building and testing the examples
 ---------------------------------
 
-After obtaining sources for this repository (very likely from a ‘$git clone’), switch to any of the example subdirectories, like
-BLE_HeartRate, and execute the following:
+__To build an example:__
 
-```Shell
-yotta target <an_appropriate_target_from_the_list_above>
-yotta install
-yotta build
-```
+1. Clone the repository containing the collection of examples:
 
-The resulting binaries will be under `build/<yotta_target_name>/source/`.
+	```
+	$ git clone https://github.com/ARMmbed/ble-examples.git
+	```
+
+
+	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/ARMmbed/ble-examples/archive/master.zip) of the repository.
+
+1. Using a command-line tool, navigate to any of the example directories, like BLE_Beacon:
+
+	```
+	$ cd ble-examples
+	$ cd BLE_Beacon
+	```
+
+1. Set a yotta target. For example, if you have and Nordic nRF51 and the GCC toolchain:
+
+	```
+	yotta target nrf51dk-gcc
+	```
+
+
+
+1. Run the build:
+
+	```yotta build```
+
+__To run the application on your board:__
+
+1. Connect your mbed board to your computer over USB. It appears as removable storage.
+
+1. When you run the ``yotta build`` command, as you did above, yotta creates a BIN or a combined HEX file in a ```build/<target-name>/source``` directory under the example's directory. Drag and drop the file to the removable storage.
+
 
 Exactly which executables are generated depends on the target that you have
 chosen. For Nordic Semiconductor targets, the following .hex files will be present:
@@ -63,19 +89,6 @@ chosen. For Nordic Semiconductor targets, the following .hex files will be prese
  * `<module_name>` is an ELF binary containing symbols (useful for debugging).
  * `<module_name>.hex` contains only the application (not the SoftDevice binary) and can be used for Firmware Over the Air.
 
-The .hex files (above) are in [Intel HEX file format](https://en.wikipedia.org/wiki/Intel_HEX), which is human readable text. In most cases, builds result in binary files (in BIN format); Nordic targets require HEX files because they embed settings for some configuration registers located at large addresses that would require very large BIN files to encode.
-
-For other targets, typically those that use external hardware like a shield, the
-`<module_name>` or `<module_name>.bin` file (in BIN format) will be generated under `build/<yotta_target_name>/source/`. `<module_name>` is typically an ELF file containing debugging symbols; `<module_name>.bin` can be flashed to the board,  using the mbed interface chip.
-
-At this point, you should have the following
-
-* A board with the appropriate hardware for BLE.
-* An application binary (in HEX, BIN, ELF or similar format), meant for the target board, that makes use of the BLE APIs.
-
-To verify that the example are working properly, you should follow the
-README.md of the specific example, which will explain in more detail what the example
-does and how to test it.
 
 Creating your own applications using BLE in mbed OS
 ======================================================

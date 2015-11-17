@@ -43,7 +43,6 @@ static void timeout(void)
     Gap::GapState_t state;
     state = ble.getGapState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
-        EddystoneService::EddystoneParams_t eddyParams;
         eddyServicePtr->startBeaconService(5, 5, 5);
     } else {
         minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));

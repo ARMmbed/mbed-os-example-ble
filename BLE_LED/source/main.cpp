@@ -17,7 +17,6 @@
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "LEDService.h"
-#include <stdio.h>
 
 DigitalOut alivenessLED(LED1, 0);
 DigitalOut actuatedLED(LED2, 0);

@@ -1,57 +1,32 @@
-Beacons are handy when there is a need to advertise a small amount of
-information (usually a URL) to any nearby device. They’re really easy to set
-up: the code is fully available on the mbed website, so all you’ll need to do
-is tell the beacon what to broadcast.
+This example creates a BLE beacon: a method of advertising a small amount of information to nearby devices. The information doesn't have to be human-readable; it can be in a format that only an application can use.
 
-Technical details are better presented [here](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_iBeacon/),
-which happens to be the mbed-classic equivalent of this example.
+Beacons are very easy to set up: the code for all beacons is the same, and only the information you want to advertise - the beacon payload - needs to change. 
 
-What You’ll Need
-================
+This example advertises a UUID, a major and minor number and the transmission strength. The major and minor numbers are an example of information that is not (normally) meaningful to humans, but that an application can use to identify the beacon and display related information. For example, if the major number is a store ID and the minor number is a location in that store, then a matching application can use these numbers to query a database and display location-specific information.
 
-To get this going, you’ll need:
+# Running the application
 
-- One of the generic apps to scan BLE peripherals.
+## Requirements
 
-  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp).
+The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
-  - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
-- One of the BLE platforms listed in the README.md of this repository, for example a
-  Nordic DK board.
+- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
-Build Instructions
-==================
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-After cloning the parent repository, switch to the subfolder BLE_Beacon, and
-execute the following:
+## Building instructions
 
-```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
-```
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-The targets you can use are described in the main README.md for this repository.
+## Checking for success
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
+1. Build the application and install it on your board as explained in the building instructions.
+1. Open the BLE scanner on your phone.
+1. Find your device.
+1. View the beacon's details; the exact steps depend on which scanner you're using.
 
-Under that folder, the file called `ble-beacon-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the parent README or the
-documentation for your yotta target will explain how to choose between the available
-binaries and hex files.
+**Tip:** If you are in an area with many BLE devices, it may be difficult to identify your beacon. The simplest solution is to turn your board off and on, initiate a new scan on your BLE scanner every time, and look for the beacon that appears only when your board is on. 
 
-Checking for Success
-====================
-
-You will need to use another device to determine whether the beacon is running
-properly. Using one of the BLE scanning apps above, search for nearby devices and you
-should see an iBeacon device nearby.
-
-If you are in an area with many BLE devices, try powering down your board and ensuring
-that the beacon is not present when you rescan (some OSs cache the nearby beacons, so
-be sure to do a new scan, rather than expecting the GUI to update to show the beacon
-has gone).
-
-
-
+If you can see the beacon and all its information, the application worked properly. 

@@ -53,6 +53,11 @@ and reset the device.
 If your target has very tight memory constraints, you can modify the `config.json`
 to suit your needs. For instance, by changing the SoftDevice from S130 to S110.
 
+*NOTE:* This demo is known to fail if you are building the application for nRF51-based
+16K targets using the SoftDevice 130 (S130). This is because the program runs out of memory.
+To fix this problem, before you build the software open the `config.json` and change the
+“softdevice” to “S110”.
+
 Checking for Success
 ====================
 

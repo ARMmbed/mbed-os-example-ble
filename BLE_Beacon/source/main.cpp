@@ -56,7 +56,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
      * Note: please remember to calibrate your beacons TX Power for more accurate results.
      */
     static const uint8_t uuid[] = {0xE2, 0x0A, 0x39, 0xF4, 0x73, 0xF5, 0x4B, 0xC4,
-                            0xA1, 0x2F, 0x17, 0xD1, 0xAD, 0x07, 0xA9, 0x61};
+                                   0xA1, 0x2F, 0x17, 0xD1, 0xAD, 0x07, 0xA9, 0x61};
     uint16_t majorNumber = 1122;
     uint16_t minorNumber = 3344;
     uint16_t txPower     = 0xC8;

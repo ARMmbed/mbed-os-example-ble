@@ -84,13 +84,12 @@ void updatePayload(void)
     ble_error_t err = BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
     if (err != BLE_ERROR_NONE) {
         print_error(err, "Updating payload failed");
-        return;
     }
 }
 
 void buttonPressedCallback(void)
 {
-    count++;
+    ++count;
 
     // Calling BLE api in interrupt context may cause race conditions
     // Using minar to schedule calls to BLE api for safety

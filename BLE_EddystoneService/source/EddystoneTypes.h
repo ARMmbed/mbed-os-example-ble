@@ -43,13 +43,6 @@ const char DEVICE_NAME[] = "EDDYSTONE CONFIG";
 
 const char DEFAULT_URL[] = "http://www.mbed.com/";
 
-enum FrameType {
-    EDDYSTONE_FRAME_URL,
-    EDDYSTONE_FRAME_UID,
-    EDDYSTONE_FRAME_TLM,
-    NUM_EDDYSTONE_FRAMES
-};
-
 enum PowerModes {
     TX_POWER_MODE_LOWEST,
     TX_POWER_MODE_LOW,

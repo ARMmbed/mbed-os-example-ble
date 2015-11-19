@@ -80,6 +80,13 @@ public:
         EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL
     };
 
+    enum FrameType {
+        EDDYSTONE_FRAME_URL,
+        EDDYSTONE_FRAME_UID,
+        EDDYSTONE_FRAME_TLM,
+        NUM_EDDYSTONE_FRAMES
+    };
+
     /* Initialise the EddystoneService using parameters from persistent storage */
     EddystoneService(BLE                 &bleIn,
                      EddystoneParams_t   &paramsIn,

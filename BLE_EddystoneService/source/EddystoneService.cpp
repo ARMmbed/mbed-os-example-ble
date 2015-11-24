@@ -387,7 +387,7 @@ void EddystoneService::radioNotificationCallback(bool radioActive)
 #ifdef YOTTA_CFG_MBED_OS
     minar::Scheduler::postCallback(this, &EddystoneService::swapAdvertisedFrame);
 #else
-    swapAdvertisedFrameTimeout.attach_us(this, &EddystoneService::swapAdvertisedFrame);
+    swapAdvertisedFrameTimeout.attach_us(this, &EddystoneService::swapAdvertisedFrame, 1);
 #endif
 }
 

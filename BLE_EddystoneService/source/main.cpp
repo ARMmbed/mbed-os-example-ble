@@ -18,7 +18,6 @@
 #include "ble/BLE.h"
 #include "EddystoneService.h"
 
-BLE ble;
 EddystoneService *eddyServicePtr;
 
 /* Duration after power-on that config service is available. */
@@ -32,7 +31,7 @@ DigitalOut led(LED1, 1);
 static void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *cbParams)
 {
     (void) cbParams;
-    ble.gap().startAdvertising();
+    BLE::Instance().startAdvertising();
 }
 
 /**
@@ -41,7 +40,7 @@ static void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *cbPa
 static void timeout(void)
 {
     Gap::GapState_t state;
-    state = ble.getGapState();
+    state = BLE::Instance().getGapState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         eddyServicePtr->startBeaconService(5, 5, 5);
     } else {
@@ -104,5 +103,6 @@ void app_start(int, char *[])
 
     minar::Scheduler::postCallback(blinky).period(minar::milliseconds(500));
 
+    BLE &ble = BLE::Instance();
     ble.init(bleInitComplete);
 }

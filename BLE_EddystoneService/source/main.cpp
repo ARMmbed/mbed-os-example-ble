@@ -31,7 +31,7 @@ DigitalOut led(LED1, 1);
 static void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *cbParams)
 {
     (void) cbParams;
-    BLE::Instance().startAdvertising();
+    BLE::Instance().gap().startAdvertising();
 }
 
 /**
@@ -40,7 +40,7 @@ static void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *cbPa
 static void timeout(void)
 {
     Gap::GapState_t state;
-    state = BLE::Instance().getGapState();
+    state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         eddyServicePtr->startBeaconService(5, 5, 5);
     } else {

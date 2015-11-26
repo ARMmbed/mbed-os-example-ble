@@ -293,6 +293,7 @@ void EddystoneService::setupBeaconService(void)
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
     ble.gap().setAdvertisingInterval(beaconPeriod);
     ble.gap().onRadioNotification(this, &EddystoneService::radioNotificationCallback);
+    ble.gap().initRadioNotification();
 
     /* Set advertisement packet payload */
     swapAdvertisedFrame();

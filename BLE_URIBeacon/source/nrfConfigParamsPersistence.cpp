@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
+extern "C" {
 #include "pstorage.h"
+}
+
 #include "nrf_error.h"
 #include "ConfigParamsPersistence.h"
 

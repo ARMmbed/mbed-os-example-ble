@@ -228,7 +228,7 @@ private:
     TlmUpdateCallback_t                                             tlmBeaconTemperatureCallback;
 
     Timer                                                           timeSinceBootTimer;
-#ifdef YOTTA_CFG_MBED_OS
+#ifndef YOTTA_CFG_MBED_OS
     Timeout                                                         swapAdvertisedFrameTimeout;
 #endif
 

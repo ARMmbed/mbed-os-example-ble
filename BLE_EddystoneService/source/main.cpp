@@ -18,10 +18,32 @@
 #include "ble/BLE.h"
 #include "EddystoneService.h"
 
+#ifdef TARGET_NRF51822
+    #include "nrfPersistentStorageHelper/ConfigParamsPersistence.h"
+#endif
+
 EddystoneService *eddyServicePtr;
 
 /* Duration after power-on that config service is available. */
 static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 30;
+
+/* Default UID frame data */
+static const UIDNamespaceID_t uidNamespaceID = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
+static const UIDInstanceID_t  uidInstanceID  = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
+
+/* Default version in TLM frame */
+static const uint8_t tlmVersion = 0x00;
+
+/* Default configuration advertising interval */
+static const uint32_t advConfigInterval = 500;
+
+/* Default URL */
+static const char defaultUrl[] = "http://mbed.org";
+
+/* Values for ADV packets related to firmware levels, calibrated based on measured values at 1m */
+static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
+/* Values for radio power levels, provided by manufacturer. */
+static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
 
 DigitalOut led(LED1, 1);
 
@@ -43,6 +65,11 @@ static void timeout(void)
     state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         eddyServicePtr->startBeaconService(5, 5, 5);
+#ifdef TARGET_NRF51822
+        EddystoneService::EddystoneParams_t params;
+        eddyServicePtr->getEddystoneParams(&params);
+        saveEddystoneServiceConfigParams(&params);
+#endif
     } else {
         minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
     }
@@ -59,6 +86,17 @@ static void onBleInitError(BLE::InitializationCompleteCallbackContext* initConte
     (void) initContext;
 }
 
+static void initializeEddystoneToDefaults(BLE &ble)
+{
+    /* Set everything to defaults */
+    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, advConfigInterval);
+
+    /* Set default URL, UID and TLM frame data if not initialized through the config service */
+    eddyServicePtr->setURLData(defaultUrl);
+    eddyServicePtr->setUIDData(&uidNamespaceID, &uidInstanceID);
+    eddyServicePtr->setTLMData(tlmVersion);
+}
+
 static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initContext)
 {
     BLE         &ble  = initContext->ble;
@@ -71,22 +109,16 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     ble.gap().onDisconnection(disconnectionCallback);
 
-    /* Set UID and TLM frame data */
-    const UIDNamespaceID_t uidNamespaceID = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
-    const UIDInstanceID_t  uidInstanceID  = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-    uint8_t tlmVersion = 0x00;
-
-    /* Initialize a EddystoneBeaconConfig service providing config params, default URI, and power levels. */
-    static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13}; // Values for ADV packets related to firmware levels, calibrated based on measured values at 1m
-    static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};    // Values for radio power levels, provided by manufacturer.
-
-    /* Set everything to defaults */
-    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, 500);
-
-    /* Set default URL, UID and TLM frame data if not initialized through the config service */
-    eddyServicePtr->setURLData("http://mbed.org");
-    eddyServicePtr->setUIDData(&uidNamespaceID, &uidInstanceID);
-    eddyServicePtr->setTLMData(tlmVersion);
+#ifdef TARGET_NRF51822
+    EddystoneService::EddystoneParams_t params;
+    if (loadEddystoneServiceConfigParams(&params)) {
+        eddyServicePtr = new EddystoneService(ble, params, defaultAdvPowerLevels, radioPowerLevels, advConfigInterval);
+    } else {
+        initializeEddystoneToDefaults(ble);
+    }
+#else
+    initializeEddystoneToDefaults(ble);
+#endif
 
     /* Start Eddystone in config mode */
     eddyServicePtr->startConfigService();

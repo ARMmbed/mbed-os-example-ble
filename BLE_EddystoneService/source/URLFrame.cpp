@@ -27,13 +27,10 @@ URLFrame::URLFrame(const char *urlDataIn)
     encodeURL(urlDataIn);
 }
 
-URLFrame::URLFrame(UrlData_t urlDataIn, uint8_t urlDataLength)
+URLFrame::URLFrame(UrlData_t urlDataIn, uint8_t urlDataLengthIn)
 {
-    if (urlDataLength > URL_DATA_MAX) {
-        memcpy(urlData, urlDataIn, URL_DATA_MAX);
-    } else {
-        memcpy(urlData, urlDataIn, urlDataLength);
-    }
+    urlDataLength = (urlDataLengthIn > URL_DATA_MAX) ? URL_DATA_MAX : urlDataLengthIn;
+    memcpy(urlData, urlDataIn, urlDataLength);
 }
 
 void URLFrame::constructURLFrame(uint8_t* rawFrame, int8_t advPowerLevel)

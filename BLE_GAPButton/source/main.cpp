@@ -19,7 +19,7 @@
 
 DigitalOut  led1(LED1, 1);
 InterruptIn button(BUTTON1);
-uint8_t count;
+uint8_t cnt;
 
 // Change your device name below
 const char DEVICE_NAME[] = "GAPButton";
@@ -80,7 +80,7 @@ void updatePayload(void)
     uint8_t service_data[3];
     service_data[0] = GAPButtonUUID & 0xff;
     service_data[1] = GAPButtonUUID >> 8;
-    service_data[2] = count; // Put the button click count in the third byte
+    service_data[2] = cnt; // Put the button click count in the third byte
     ble_error_t err = BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
     if (err != BLE_ERROR_NONE) {
         print_error(err, "Updating payload failed");
@@ -89,7 +89,7 @@ void updatePayload(void)
 
 void buttonPressedCallback(void)
 {
-    ++count;
+    ++cnt;
 
     // Calling BLE api in interrupt context may cause race conditions
     // Using minar to schedule calls to BLE api for safety
@@ -139,7 +139,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
     uint8_t service_data[3];
     service_data[0] = GAPButtonUUID & 0xff;
     service_data[1] = GAPButtonUUID >> 8;
-    service_data[2] = count; // Put the button click count in the third byte
+    service_data[2] = cnt; // Put the button click count in the third byte
     err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
     if (err != BLE_ERROR_NONE) {
         print_error(err, "Setting service data failed");
@@ -161,7 +161,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 
 void app_start(int, char**)
 {
-    count = 0;
+    cnt = 0;
     ble_error_t err = BLE::Instance().init(bleInitComplete);
     if (err != BLE_ERROR_NONE) {
         print_error(err, "BLE initialisation failed");

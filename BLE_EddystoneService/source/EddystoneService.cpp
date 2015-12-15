@@ -89,7 +89,7 @@ void EddystoneService::setURLData(const char *urlDataIn)
     urlFrame.setURLData(urlDataIn);
 }
 
-void EddystoneService::setUIDData(const UIDNamespaceID_t *uidNamespaceIDIn, const UIDInstanceID_t *uidInstanceIDIn)
+void EddystoneService::setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn)
 {
     uidFrame.setUIDData(uidNamespaceIDIn, uidInstanceIDIn);
 }

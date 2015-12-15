@@ -112,7 +112,7 @@ public:
 
     void setURLData(const char *urlDataIn);
 
-    void setUIDData(const UIDNamespaceID_t *uidNamespaceIDIn, const UIDInstanceID_t *uidInstanceIDIn);
+    void setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn);
 
     EddystoneError_t startConfigService(void);
 

@@ -28,7 +28,7 @@ UIDFrame::UIDFrame(const UIDNamespaceID_t uidNamespaceIDIn, const UIDInstanceID_
     memcpy(uidInstanceID,  uidInstanceIDIn,  sizeof(UIDInstanceID_t));
 }
 
-void UIDFrame::setUIDData(const UIDNamespaceID_t *uidNamespaceIDIn, const UIDInstanceID_t *uidInstanceIDIn)
+void UIDFrame::setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn)
 {
     memcpy(uidNamespaceID, uidNamespaceIDIn, sizeof(UIDNamespaceID_t));
     memcpy(uidInstanceID,  uidInstanceIDIn,  sizeof(UIDInstanceID_t));

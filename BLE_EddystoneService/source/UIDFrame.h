@@ -27,7 +27,7 @@ public:
 
     UIDFrame(const UIDNamespaceID_t uidNamespaceIDIn, const UIDInstanceID_t  uidInstanceIDIn);
 
-    void setUIDData(const UIDNamespaceID_t *uidNamespaceIDIn, const UIDInstanceID_t *uidInstanceIDIn);
+    void setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn);
 
     void constructUIDFrame(uint8_t *rawFrame, int8_t advPowerLevel);
 

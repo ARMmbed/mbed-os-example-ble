@@ -85,7 +85,7 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     /* Set default URL, UID and TLM frame data if not initialized through the config service */
     eddyServicePtr->setURLData("http://mbed.org");
-    eddyServicePtr->setUIDData(&uidNamespaceID, &uidInstanceID);
+    eddyServicePtr->setUIDData(uidNamespaceID, uidInstanceID);
     eddyServicePtr->setTLMData(tlmVersion);
 
     /* Start Eddystone in config mode */

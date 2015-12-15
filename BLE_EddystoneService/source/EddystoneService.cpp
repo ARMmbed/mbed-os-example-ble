@@ -161,21 +161,21 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t
  * configured values that need to be stored and the main application
  * takes care of storing them.
  */
-void EddystoneService::getEddystoneParams(EddystoneParams_t *params)
+void EddystoneService::getEddystoneParams(EddystoneParams_t &params)
 {
-    params->lockState     = lockState;
-    params->flags         = flags;
-    params->txPowerMode   = txPowerMode;
-    params->beaconPeriod  = beaconPeriod;
-    params->tlmVersion    = tlmFrame.getTLMVersion();
-    params->urlDataLength = urlFrame.getEncodedURLDataLength();
+    params.lockState     = lockState;
+    params.flags         = flags;
+    params.txPowerMode   = txPowerMode;
+    params.beaconPeriod  = beaconPeriod;
+    params.tlmVersion    = tlmFrame.getTLMVersion();
+    params.urlDataLength = urlFrame.getEncodedURLDataLength();
 
-    memcpy(params->advPowerLevels, advPowerLevels,               sizeof(PowerLevels_t));
-    memcpy(params->lock,           lock,                         sizeof(Lock_t));
-    memcpy(params->unlock,         unlock,                       sizeof(Lock_t));
-    memcpy(params->urlData,        urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
-    memcpy(params->uidNamespaceID, uidFrame.getUIDNamespaceID(), sizeof(UIDNamespaceID_t));
-    memcpy(params->uidInstanceID,  uidFrame.getUIDInstanceID(),  sizeof(UIDInstanceID_t));
+    memcpy(params.advPowerLevels, advPowerLevels,               sizeof(PowerLevels_t));
+    memcpy(params.lock,           lock,                         sizeof(Lock_t));
+    memcpy(params.unlock,         unlock,                       sizeof(Lock_t));
+    memcpy(params.urlData,        urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
+    memcpy(params.uidNamespaceID, uidFrame.getUIDNamespaceID(), sizeof(UIDNamespaceID_t));
+    memcpy(params.uidInstanceID,  uidFrame.getUIDInstanceID(),  sizeof(UIDInstanceID_t));
 }
 
 /* Helper function used only once during constructing the object to avoid

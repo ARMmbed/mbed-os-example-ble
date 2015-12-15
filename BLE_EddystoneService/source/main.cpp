@@ -67,7 +67,7 @@ static void timeout(void)
         eddyServicePtr->startBeaconService(5, 5, 5);
 #ifdef TARGET_NRF51822
         EddystoneService::EddystoneParams_t params;
-        eddyServicePtr->getEddystoneParams(&params);
+        eddyServicePtr->getEddystoneParams(params);
         saveEddystoneServiceConfigParams(&params);
 #endif
     } else {

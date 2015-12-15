@@ -124,7 +124,7 @@ public:
      * configured values that need to be stored and the main application
      * takes care of storing them.
      */
-    void getEddystoneParams(EddystoneParams_t *params);
+    void getEddystoneParams(EddystoneParams_t &params);
 
 private:
     /* Helper function used only once during constructing the object to avoid

@@ -27,7 +27,7 @@ public:
 
     URLFrame(const char *urlDataIn);
 
-    URLFrame(UrlData_t urlDataIn, uint8_t urlDataLength);
+    URLFrame(UrlData_t urlDataIn, uint8_t urlDataLengthIn);
 
     void constructURLFrame(uint8_t* rawFrame, int8_t advPowerLevel);
 

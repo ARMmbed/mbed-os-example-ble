@@ -1,68 +1,37 @@
-Eddystone-Beacons are handy when there is a need to advertise a small amount of
-information (usually a URL) to any nearby device. They’re really easy to set
-up: the code is fully available on the mbed website, so all you’ll need to do
-is tell the beacon what to broadcast. This example scans for Eddystone-Beacon
-broadcasts and prints the URLs in the advertising packets to the console.
+The Eddystone Observer scans for Eddystone beacons that are running the [Eddystone Service example](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) (see there for general information about Eddystone beacons). It reads the advertising packets broadcast by these beacons, and prints a human-readable version of the advertised URLs to the serial console.
 
-Technical details are better presented [here](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_URIBeacon/).
+# Running the application
 
-What You’ll Need
-================
+## Requirements
 
-To get this going, you’ll need:
+General hardware information is in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-- An nRF51-DK board.
+This sample requires two devices - one to [broadcast the beacon](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) and one to scan for the broadcast. If you have more devices, you can use them as extra beacons.
 
-- A device that acts as an Eddystone-Beacon. You can run the BLE_EddystoneBeacon
-  example in this repository if you have multiple nRF51-DK boards.
+You need a terminal program to listen to the observer's output through a serial port. You can download one, for example:
 
-Build Instructions
-==================
+* Tera Term for Windows.
 
-After cloning the parent repository, switch to the subfolder BLE_EddystoneObserver, and
-execute the following:
+* CoolTerm for Mac OS X.
 
-```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
-```
+* GNU Screen for Linux.
 
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+## Building instructions
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-eddystoneobserver-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-eddystoneobserver`
-is an ELF binary containing useful symbols; whereas `ble-eddystoneobserver.hex`
-can be used for Firmware-over-the-Air.
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-eddystoneobserver-combined.hex`
-to your target hardware, and reset the device. You should have an active beacon
-detectable by BLE scanners (e.g. a smartphone) for something to be printed in the console.
+1. Build and run the [Eddystone beacon](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) on one or more other devices. 
 
-Checking Console Output
-=======================
+1. Build the Eddystone Observer application and install it on your board as explained in the building instructions. Leave the board connected to your computer.
 
-The Eddystone-Observer will scan for advertising packets and print to the serial
-console a human-readable version of the URLs encoded within the Eddystone URL
-frames. To observe the URLs you will need a terminal program that will listen to
-the output through a serial port. There are many such programs available online
-depending on your operating system. For Windows you can use 'Tera Term', for
-Mac OS X a good option is 'CoolTerm' and for Linux you can use 'GNU Screen'
-through the commanline.
+## Checking console output
 
-Before trying to listen for output, make sure that your serial terminal is
-listening through the correct serial port. Also, ensure that you set the
-correct baud rate for your target platform. For instance, the NRF51-DK board
-requires a baud rate of 9600; therefore, if I was trying to listen for output
-using 'GNU Screen' the command to start the serial terminal will look like
-this:
+To see the application's output: 
 
-```Shell
-screen /dev/tty.usbmodem1412 9600
-```
+1. Check which serial port your Eddystone Observer is connected to.
 
-Note that in my case `/dev/tty.usbmodem1412` is where the terminal program
-will be listening.
+1. Check the baud rate of your Eddystone Observer board.
 
+1. Run a terminal program with the correct serial port and baud rate. For example, to use GNU Screen, run: ``screen /dev/tty.usbmodem1412 9600``.
+
+1. The Eddystone Observer should start printing URLs to the terminal. 

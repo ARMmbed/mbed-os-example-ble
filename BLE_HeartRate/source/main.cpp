@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mbed.h"
+#include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "ble/services/HeartRateService.h"
@@ -56,6 +56,8 @@ void periodicCallback(void)
 
 void onBleInitError(BLE &ble, ble_error_t error)
 {
+    (void)ble;
+    (void)error;
    /* Initialization error handling should go here */
 }
 

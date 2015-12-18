@@ -1,65 +1,55 @@
-This is the EddystoneService demo. This code starts up and for a user
-configured time period (default 30 seconds) will advertise the configuration
-service.
+Eddystone beacons broadcast a small amount of information, like URLs, to nearby BLE devices. 
 
-The configuration service allows you to modify various frames of the eddystone
-specification. For more details on the Configuration Service please check
-[here](https://github.com/google/eddystone/blob/master/eddystone-url/docs/config-service-spec.md).
+The Eddystone Beacon sample application runs in two stages:
 
-Once the initial configuration time is up, the EddystoneService will broadcast
-advertisement packets with the configured eddystone frames.
+1. On startup, the Configuration Service (which allows [modification of the beacon](https://github.com/google/eddystone/blob/master/eddystone-url/docs/config-service-spec.md)) runs for a user-defined period (default - 30 seconds).
 
-What You’ll Need
-================
+1. When the Configuration Service period ends, the Eddystone Service broadcasts advertisement packets.
 
-To get this going, you’ll need:
 
-- To see BLE devices and their advertisement or beacon information, get one of the following installed on your phone:
 
-  - The `physical web` app. You can get that app for [iOS](https://itunes.apple.com/us/app/physical-web/id927653608?mt=8) and for [Android](https://play.google.com/store/apps/details?id=physical_web.org.physicalweb).
+# Running the application
 
-  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp&hl=en).
+## Requirements
 
-  - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
+The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
-- One of the BLE platforms listed in the README.md of this repository, for example a
-  Nordic DK board.
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
-Build Instructions
-==================
+- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
-After cloning the parent repository, switch to the subfolder BLE_EddystoneService, and
-execute the following:
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
-```
+## Building instructions
 
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
-Under that folder, the file called `ble-eddystoneservice-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the file called `ble-eddystoneservice`
-is an ELF binary containing useful symbols; whereas `ble-eddystoneservice.hex`
-can be used for Firmware-over-the-Air.
+### Working with nRF51-based 16K targets
 
-If you're building for the `nrf51dk-armcc` target, copy
-`build/nrf51dk-armcc/source/ble-eddystoneservice-combined.hex` to your target hardware,
-and reset the device.
+Because of memory constraints, you can't use the SoftDevice 130 (S130) to build for nRF51-based 16K targets. If you are using these targets, then before building:
 
-If your target has very tight memory constraints, you can modify the `config.json`
-to suit your needs. For instance, by changing the SoftDevice from S130 to S110.
+1. Open the ``config.json`` file in this sample.
+1. Change ``soft device`` to ``S110``.
+1. Save.
 
-*NOTE:* This demo is known to fail if you are building the application for nRF51-based
-16K targets using the SoftDevice 130 (S130). This is because the program runs out of memory.
-To fix this problem, before you build the software open the `config.json` and change the
-“softdevice” to “S110”.
+You can now build for nRF51-based 16K targets.
 
-Checking for Success
-====================
+## Setting up the beacon
 
-Your EddystoneService should be detectable by BLE scanners (e.g. a smartphone) and by the
-Google Physical Web app.
+By default, the beacon directs to the url ``http://mbed.org``. You can change this to your own URL in two ways:
+
+1. Manually edit the code in ``main.cpp`` in your copy of the sample.
+
+1. Build and run the application's default code as explained in the building instructions. When the beacon starts up, the Configuration Service runs for 30 seconds (this is the default value; you can change it in ``main.cpp``). While the Configuration Service runs, you can use a BLE scanner on your phone to edit the values the service presents.
+
+## Checking for success
+
+1. Build the application and install it on your board as explained in the building instructions.
+
+1. Open the BLE scanner on your phone.
+
+1. Find your device.
+
+1. Check that the URL is correct.
+
+You can use the [Eddystone Observer](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneObserver) sample instead of a phone application.

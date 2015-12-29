@@ -34,8 +34,10 @@ class EddystoneService
 public:
     static const uint16_t TOTAL_CHARACTERISTICS = 9;
 
-    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC = 1000;
-    static const uint16_t DEFAULT_BEACON_PERIOD_MSEC = 1000;
+    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = 1000;
+    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = 700;
+    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = 300;
+    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = 2000;
 
     /* Operation modes of the EddystoneService:
      *      NONE: EddystoneService has been initialised but no memory has been
@@ -65,7 +67,9 @@ public:
         uint8_t          flags;
         PowerLevels_t    advPowerLevels;
         uint8_t          txPowerMode;
-        uint16_t         beaconPeriod;
+        uint16_t         urlFramePeriod;
+        uint16_t         uidFramePeriod;
+        uint16_t         tlmFramePeriod;
         uint8_t          tlmVersion;
         uint8_t          urlDataLength;
         UrlData_t        urlData;
@@ -204,7 +208,9 @@ private:
     Lock_t                                                          unlock;
     uint8_t                                                         flags;
     uint8_t                                                         txPowerMode;
-    uint16_t                                                        beaconPeriod;
+    uint16_t                                                        urlFramePeriod;
+    uint16_t                                                        uidFramePeriod;
+    uint16_t                                                        tlmFramePeriod;
 
     ReadOnlyGattCharacteristic<bool>                                *lockStateChar;
     WriteOnlyArrayGattCharacteristic<uint8_t, sizeof(Lock_t)>       *lockChar;

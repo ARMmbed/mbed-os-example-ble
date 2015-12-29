@@ -31,13 +31,15 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     tlmBatteryVoltageCallback(NULL),
     tlmBeaconTemperatureCallback(NULL)
 {
-    lockState         = paramsIn.lockState;
-    flags             = paramsIn.flags;
-    txPowerMode       = paramsIn.txPowerMode;
-    beaconPeriod      = correctAdvertisementPeriod(paramsIn.beaconPeriod);
+    lockState      = paramsIn.lockState;
+    flags          = paramsIn.flags;
+    txPowerMode    = paramsIn.txPowerMode;
+    urlFramePeriod = correctAdvertisementPeriod(paramsIn.urlFramePeriod);
+    uidFramePeriod = correctAdvertisementPeriod(paramsIn.uidFramePeriod);
+    tlmFramePeriod = correctAdvertisementPeriod(paramsIn.tlmFramePeriod);
 
-    memcpy(lock,             paramsIn.lock,      sizeof(Lock_t));
-    memcpy(unlock,           paramsIn.unlock,    sizeof(Lock_t));
+    memcpy(lock,   paramsIn.lock,   sizeof(Lock_t));
+    memcpy(unlock, paramsIn.unlock, sizeof(Lock_t));
 
     eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
 }
@@ -60,7 +62,9 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     unlock(),
     flags(0),
     txPowerMode(0),
-    beaconPeriod(DEFAULT_BEACON_PERIOD_MSEC),
+    urlFramePeriod(DEFAULT_URL_FRAME_PERIOD_MSEC),
+    uidFramePeriod(DEFAULT_UID_FRAME_PERIOD_MSEC),
+    tlmFramePeriod(DEFAULT_TLM_FRAME_PERIOD_MSEC),
     tlmBatteryVoltageCallback(NULL),
     tlmBeaconTemperatureCallback(NULL)
 {
@@ -126,7 +130,7 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t
     } else if (!consecUrlFramesIn && !consecUidFramesIn && !consecTlmFramesIn) {
         /* Nothing to do, the user wants 0 consecutive frames of everything */
         return EDDYSTONE_ERROR_INVALID_CONSEC_FRAMES;
-    } else if (!beaconPeriod) {
+    } else if (!urlFramePeriod) {
         /* Nothing to do, the period is 0 for all frames */
         return EDDYSTONE_ERROR_INVALID_BEACON_PERIOD;
     }
@@ -163,12 +167,12 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t
  */
 void EddystoneService::getEddystoneParams(EddystoneParams_t &params)
 {
-    params.lockState     = lockState;
-    params.flags         = flags;
-    params.txPowerMode   = txPowerMode;
-    params.beaconPeriod  = beaconPeriod;
-    params.tlmVersion    = tlmFrame.getTLMVersion();
-    params.urlDataLength = urlFrame.getEncodedURLDataLength();
+    params.lockState       = lockState;
+    params.flags           = flags;
+    params.txPowerMode     = txPowerMode;
+    params.urlFramePeriod  = urlFramePeriod;
+    params.tlmVersion      = tlmFrame.getTLMVersion();
+    params.urlDataLength   = urlFrame.getEncodedURLDataLength();
 
     memcpy(params.advPowerLevels, advPowerLevels,               sizeof(PowerLevels_t));
     memcpy(params.lock,           lock,                         sizeof(Lock_t));
@@ -291,7 +295,7 @@ void EddystoneService::setupBeaconService(void)
     /* Configure advertisements */
     ble.gap().setTxPower(radioPowerLevels[txPowerMode]);
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(beaconPeriod);
+    ble.gap().setAdvertisingInterval(urlFramePeriod);
     ble.gap().onRadioNotification(this, &EddystoneService::radioNotificationCallback);
     ble.gap().initRadioNotification();
 
@@ -311,7 +315,7 @@ void EddystoneService::setupConfigService(void)
     flagsChar          = new ReadWriteGattCharacteristic<uint8_t>(UUID_FLAGS_CHAR, &flags);
     advPowerLevelsChar = new ReadWriteArrayGattCharacteristic<int8_t, sizeof(PowerLevels_t)>(UUID_ADV_POWER_LEVELS_CHAR, advPowerLevels);
     txPowerModeChar    = new ReadWriteGattCharacteristic<uint8_t>(UUID_TX_POWER_MODE_CHAR, &txPowerMode);
-    beaconPeriodChar   = new ReadWriteGattCharacteristic<uint16_t>(UUID_BEACON_PERIOD_CHAR, &beaconPeriod);
+    beaconPeriodChar   = new ReadWriteGattCharacteristic<uint16_t>(UUID_BEACON_PERIOD_CHAR, &urlFramePeriod);
     resetChar          = new WriteOnlyGattCharacteristic<bool>(UUID_RESET_CHAR, &resetFlag);
 
     lockChar->setWriteAuthorizationCallback(this, &EddystoneService::lockAuthorizationCallback);
@@ -401,7 +405,7 @@ void EddystoneService::updateCharacteristicValues(void)
     ble.gattServer().write(lockStateChar->getValueHandle(), reinterpret_cast<uint8_t *>(&lockState), sizeof(bool));
     ble.gattServer().write(urlDataChar->getValueHandle(), urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
     ble.gattServer().write(flagsChar->getValueHandle(), &flags, sizeof(uint8_t));
-    ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+    ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
     ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
     ble.gattServer().write(advPowerLevelsChar->getValueHandle(), reinterpret_cast<uint8_t *>(advPowerLevels), sizeof(PowerLevels_t));
     ble.gattServer().write(lockChar->getValueHandle(), lock, sizeof(PowerLevels_t));
@@ -535,15 +539,15 @@ void EddystoneService::onDataWrittenCallback(const GattWriteCallbackParams *writ
         ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
     } else if (handle == beaconPeriodChar->getValueHandle()) {
         uint16_t tmpBeaconPeriod = correctAdvertisementPeriod(*((uint16_t *)(writeParams->data)));
-        if (tmpBeaconPeriod != beaconPeriod) {
-            beaconPeriod = tmpBeaconPeriod;
-            ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+        if (tmpBeaconPeriod != urlFramePeriod) {
+            urlFramePeriod = tmpBeaconPeriod;
+            ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
         }
     } else if (handle == resetChar->getValueHandle() && (*((uint8_t *)writeParams->data) != 0)) {
         /* Reset characteristics to default values */
-        flags        = 0;
-        txPowerMode  = TX_POWER_MODE_LOW;
-        beaconPeriod = DEFAULT_BEACON_PERIOD_MSEC;
+        flags          = 0;
+        txPowerMode    = TX_POWER_MODE_LOW;
+        urlFramePeriod = DEFAULT_URL_FRAME_PERIOD_MSEC;
 
         urlFrame.setURLData(DEFAULT_URL);
         memset(lock, 0, sizeof(Lock_t));
@@ -551,7 +555,7 @@ void EddystoneService::onDataWrittenCallback(const GattWriteCallbackParams *writ
         ble.gattServer().write(urlDataChar->getValueHandle(), urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
         ble.gattServer().write(flagsChar->getValueHandle(), &flags, sizeof(uint8_t));
         ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
-        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
         ble.gattServer().write(lockChar->getValueHandle(), lock, sizeof(PowerLevels_t));
     }
 }

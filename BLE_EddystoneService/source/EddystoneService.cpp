@@ -28,6 +28,9 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     uidFrame(paramsIn.uidNamespaceID, paramsIn.uidInstanceID),
     tlmFrame(paramsIn.tlmVersion),
     resetFlag(false),
+    rawUrlFrame(NULL),
+    rawUidFrame(NULL),
+    rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
     tlmBeaconTemperatureCallback(NULL)
 {
@@ -65,6 +68,9 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     urlFramePeriod(DEFAULT_URL_FRAME_PERIOD_MSEC),
     uidFramePeriod(DEFAULT_UID_FRAME_PERIOD_MSEC),
     tlmFramePeriod(DEFAULT_TLM_FRAME_PERIOD_MSEC),
+    rawUrlFrame(NULL),
+    rawUidFrame(NULL),
+    rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
     tlmBeaconTemperatureCallback(NULL)
 {
@@ -360,9 +366,18 @@ void EddystoneService::freeConfigCharacteristics(void)
 
 void EddystoneService::freeBeaconFrames(void)
 {
-    delete[] rawUrlFrame;
-    delete[] rawUidFrame;
-    delete[] rawTlmFrame;
+    if (rawUrlFrame) {
+        delete[] rawUrlFrame;
+        rawUrlFrame = NULL;
+    }
+    if (rawUidFrame) {
+        delete[] rawUidFrame;
+        rawUidFrame = NULL;
+    }
+    if (rawtlmFrame) {
+        delete[] rawTlmFrame;
+        rawTlmFrame = NULL;
+    }
 }
 
 void EddystoneService::radioNotificationCallback(bool radioActive)

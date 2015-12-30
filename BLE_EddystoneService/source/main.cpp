@@ -25,7 +25,7 @@
 EddystoneService *eddyServicePtr;
 
 /* Duration after power-on that config service is available. */
-static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 30;
+static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 5;
 
 /* Default UID frame data */
 static const UIDNamespaceID_t uidNamespaceID = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};
@@ -64,7 +64,7 @@ static void timeout(void)
     Gap::GapState_t state;
     state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
-        eddyServicePtr->startBeaconService(5, 5, 5);
+        eddyServicePtr->startBeaconService();
 #ifdef TARGET_NRF51822
         EddystoneService::EddystoneParams_t params;
         eddyServicePtr->getEddystoneParams(params);

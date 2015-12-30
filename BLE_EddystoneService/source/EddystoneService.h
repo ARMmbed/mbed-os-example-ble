@@ -25,8 +25,10 @@
 #include <string.h>
 #ifdef YOTTA_CFG_MBED_OS
     #include "mbed-drivers/mbed.h"
+    #include "mbed-drivers/CircularBuffer.h"
 #else
     #include "mbed.h"
+    #include "CircularBuffer.h"
 #endif
 
 class EddystoneService
@@ -80,7 +82,6 @@ public:
     enum EddystoneError_t {
         EDDYSTONE_ERROR_NONE,
         EDDYSTONE_ERROR_INVALID_BEACON_PERIOD,
-        EDDYSTONE_ERROR_INVALID_CONSEC_FRAMES,
         EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL
     };
 
@@ -120,7 +121,7 @@ public:
 
     EddystoneError_t startConfigService(void);
 
-    EddystoneError_t startBeaconService(uint16_t consecUrlFramesIn = 2, uint16_t consecUidFramesIn = 2, uint16_t consecTlmFramesIn = 2);
+    EddystoneError_t startBeaconService(void);
 
     /* It is not the responsibility of the Eddystone implementation to store
      * the configured parameters in persistent storage since this is
@@ -143,7 +144,11 @@ private:
      */
     void bleInitComplete(BLE::InitializationCompleteCallbackContext* initContext);
 
-    void swapAdvertisedFrame(void);
+    void swapAdvertisedFrame(FrameType frameType);
+
+    void manageRadio(void);
+
+    void enqueueFrame(FrameType frameType);
 
     void updateAdvertisementPacket(const uint8_t* rawFrame, size_t rawFrameLength);
 
@@ -161,8 +166,6 @@ private:
     void freeConfigCharacteristics(void);
 
     void freeBeaconFrames(void);
-
-    void radioNotificationCallback(bool radioActive);
 
     /*
      * Internal helper function used to update the GATT database following any
@@ -226,17 +229,12 @@ private:
     uint8_t                                                         *rawUidFrame;
     uint8_t                                                         *rawTlmFrame;
 
-    uint16_t                                                        consecFrames[NUM_EDDYSTONE_FRAMES];
-    uint16_t                                                        currentConsecFrames[NUM_EDDYSTONE_FRAMES];
-    uint8_t                                                         currentAdvertisedFrame;
+    CircularBuffer<FrameType, NUM_EDDYSTONE_FRAMES>                 advFrameQueue;
 
     TlmUpdateCallback_t                                             tlmBatteryVoltageCallback;
     TlmUpdateCallback_t                                             tlmBeaconTemperatureCallback;
 
     Timer                                                           timeSinceBootTimer;
-#ifndef YOTTA_CFG_MBED_OS
-    Timeout                                                         swapAdvertisedFrameTimeout;
-#endif
 
     GattCharacteristic                                              *charTable[TOTAL_CHARACTERISTICS];
 };

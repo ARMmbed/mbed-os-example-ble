@@ -1,4 +1,4 @@
-BLE Heart Rate Monitor
+# BLE Heart Rate Monitor
 
 This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx). The heart rate value is provided by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example. 
 

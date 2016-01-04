@@ -1,4 +1,4 @@
-Button count over GAP
+# Button count over GAP
 
 This application shows how to use GAP to transmit a simple value every time that value is updated:
 

@@ -1,57 +1,33 @@
-The heart rate example exports a virtual data-stream of heart-rate values.
-This represents the use-case of a typical sensor driven app. In addition, this
-application is also compatible with the [Bluetooth SIG heart rate profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx).
-That means that if you want to get a heart rate monitor’s input to your phone,
-you don’t have to write your own code.
+BLE Heart Rate Monitor
 
-Technical details are better presented [here](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_HeartRate/),
-which happens to be the mbed-classic equivalent of this example.
+This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx). The heart rate value is provided by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example. 
 
-What You’ll Need
-================
+Technical details are better presented [in the mbed Classic equivalent of this example](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_HeartRate/).
 
-To get this going, you’ll need:
+# Running the application
 
-- To see the heart rate information on your phone, download Panobike for [iOS](https://itunes.apple.com/gb/app/panobike/id567403997?mt=8) or [Android](https://play.google.com/store/apps/details?id=com.topeak.panobike&hl=en).
+## Requirements
 
-- You could also use one of the generic apps to scan BLE peripherals.
+To see the heart rate information on your phone, download Panobike for [iOS](https://itunes.apple.com/gb/app/panobike/id567403997?mt=8) or [Android](https://play.google.com/store/apps/details?id=com.topeak.panobike&hl=en).
 
-  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp).
+You could also use a generic BLE scanners:
 
-  - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
-- One of the BLE platforms listed in the README.md of this repository, for example a
-  Nordic DK board.
+- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
-Build Instructions
-==================
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-After cloning the parent repository, switch to the subfolder BLE_HeartRate, and
-execute the following:
+## Building instructions
 
-```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
-```
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+## Checking for success
 
-The other targets you can use are described in the main README.md for this repository.
+1. Build the application and install it on your board as explained in the building instructions.
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
+1. Open Panobike or the BLE scanner on your phone.
 
-Under that folder, the file called `ble-heartrate-combined.hex` is the one which
-can be flashed to the target using mbed's DAP over USB; the parent README or the
-documentation for your yotta target will explain how to choose between the available
-binaries and hex files.
+1. Find your device.
 
-Checking for Success
-====================
-
-By default the heart rate monitor is called HRM, but you can change this on line 24 of
-`source\main.cpp`.
-
-Using one of the apps suggested above, connect to the device, and observe that the
-heartrate is constantly increasing up to 175 and wrapping back to 100.
+1. You should see the heart rate value change every half second. It begins at 100, goes up to 175 (in steps of 1), resets to 100 and so on.

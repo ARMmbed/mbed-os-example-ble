@@ -35,7 +35,7 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *)
 void updateSensorValue(void) {
     /* Do blocking calls or whatever is necessary for sensor polling.
        In our case, we simply update the Temperature measurement. */
-    currentTemperature += 0.1;
+    currentTemperature = (currentTemperature + 0.1 > 43.0) ? 39.6 : currentTemperature + 0.1;
     thermometerServicePtr->updateTemperature(currentTemperature);
 }
 

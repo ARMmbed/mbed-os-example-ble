@@ -1,40 +1,37 @@
-GAPButton
-============
-Broadcasting a count of button clicks over GAP. This is the simplest way to transmit information over BLE: all listening devices in range will see the broadcast and be able to read the button clicks.
+# Button count over GAP
 
-What You’ll Need
-================
-- You can use one of the generic apps to scan BLE peripherals.
-  - For Android [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp&hl=en).
-  - For iPhone [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
-- One of the BLE platforms listed in the [README.md](https://github.com/ARMmbed/ble-examples/tree/oob-oct15) of this repository, for example a Nordic DK board.
+This application shows how to use GAP to transmit a simple value every time that value is updated:
 
-Build Instructions
-==================
+1. The value is a count of how many times a button on the device was pressed (the code actually monitors the button's releases, not press downs). 
 
-After cloning the parent repository, switch to the subfolder BLE_GAPButton, and
-execute the following:
+1. We transmit the value in the SERVICE_DATA field of the advertising payload.
 
-```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
-```
+# Running the application
 
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+## Requirements
 
-The other targets you can use are described in the main README.md for this repository.
+The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
-The resulting binaries will be under `build/<yotta_target_name>/source/`.
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
-Under that folder, the file called `ble-gapbutton-combined.hex` is the one which can be flashed to the target using mbed's DAP over USB; the parent README or the documentation for your yotta target will explain how to choose between the available binaries and hex files.
+- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
-If you're building for the `nrf51dk-armcc` target, copy `build/nrf51dk-armcc/source/ble-gapbutton-combined.hex` to your target hardware, and reset the device.
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-Checking for Success
-====================
+## Building instructions
 
-By default the BLE device is called GAPButton, but you can change this in `source/main.cpp`.
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-Open the BLE monitoring app on your phone and find the GAPButton device. The button click count should show up in the "Service Data" field. Press Button 1 on your board and the number should change on your phone.
+## Checking for success
+
+1. Build the application and install it on your board as explained in the building instructions.
+
+1. Open the BLE scanner on your phone.
+
+1. Find your device.
+
+1. The Service Data field for your device should show the button press count. The starting value is 0.
+
+1. Press the button on the device.
+
+1. The Service Data field value should change.

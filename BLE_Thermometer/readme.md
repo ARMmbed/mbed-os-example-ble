@@ -4,7 +4,7 @@ This example uses the [Health Thermometer Profile](https://developer.bluetooth.o
 
 1. Sensor location: thermometer placement on the body. The default value in this application is the ear (``LOCATION_EAR``). The [characteristic description](https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.temperature_type.xml) shows the other possible values.
 
-1. Temperature: the initial temperature is 39.6, and it's incremented by 0.1 every half second.
+1. Temperature: the initial temperature is 39.6, and it's incremented by 0.1 every half second. It resets to 39.6 when it reaches 43.0.
 
 For more information see:
 

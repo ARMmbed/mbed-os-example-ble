@@ -25,7 +25,7 @@
 EddystoneService *eddyServicePtr;
 
 /* Duration after power-on that config service is available. */
-static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 5;
+static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 30;
 
 /* Default UID frame data */
 static const UIDNamespaceID_t uidNamespaceID = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99};

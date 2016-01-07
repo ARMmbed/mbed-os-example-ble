@@ -92,6 +92,12 @@ public:
         NUM_EDDYSTONE_FRAMES
     };
 
+    /* WARNING: If the advertising rate for any of the frames is higher than
+     * 100ms then frames will be dropped, this value must be increased
+     */
+    static const uint16_t ADV_FRAME_QUEUE_SIZE = NUM_EDDYSTONE_FRAMES;
+
+
     /* Initialise the EddystoneService using parameters from persistent storage */
     EddystoneService(BLE                 &bleIn,
                      EddystoneParams_t   &paramsIn,
@@ -235,7 +241,7 @@ private:
     uint8_t                                                         *rawUidFrame;
     uint8_t                                                         *rawTlmFrame;
 
-    CircularBuffer<FrameType, NUM_EDDYSTONE_FRAMES>                 advFrameQueue;
+    CircularBuffer<FrameType, ADV_FRAME_QUEUE_SIZE>                 advFrameQueue;
 
     TlmUpdateCallback_t                                             tlmBatteryVoltageCallback;
     TlmUpdateCallback_t                                             tlmBeaconTemperatureCallback;

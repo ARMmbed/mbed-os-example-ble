@@ -332,13 +332,14 @@ void EddystoneService::setupBeaconService(void)
         ).period(minar::milliseconds(urlFramePeriod)).getHandle();
     }
 
-    /* Start advertising the frames added to the queue */
-    /* TODO: It is possible to optimise this so that we only have to wake up when needed and not every 100ms */
+    /* Start advertising */
     manageRadio();
     radioManagerCallbackHandle = minar::Scheduler::postCallback(
         this,
         &EddystoneService::manageRadio
-    ).period(minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval())).tolerance(0).getHandle();
+    ).period(
+        minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval())
+    ).tolerance(0).getHandle();
 }
 
 void EddystoneService::enqueueFrame(FrameType frameType)
@@ -360,6 +361,7 @@ void EddystoneService::manageRadio(void)
         /* Increase the advertised packet count in TLM frame */
         tlmFrame.updatePduCount();
     } else if (ble.gap().getState().advertising) {
+        /* Nothing else to advertise, stop advertising and do not schedule any callbacks */
         ble.gap().stopAdvertising();
     }
 }
@@ -444,6 +446,10 @@ void EddystoneService::stopBeaconService(void)
     if (tlmFrameCallbackHandle) {
         minar::Scheduler::cancelCallback(tlmFrameCallbackHandle);
         tlmFrameCallbackHandle = NULL;
+    }
+    if (radioManagerCallbackHandle) {
+        minar::Scheduler::cancelCallback(radioManagerCallbackHandle);
+        radioManagerCallbackHandle = NULL;
     }
 }
 

@@ -59,4 +59,4 @@ To see the application's output:
 1. Run a terminal program with the correct serial port and baud rate. For example, to use GNU Screen, run: ``screen /dev/tty.usbmodem1412 9600``.
 1. The application should start printing the toggle's value to the terminal. 
 
-**Note:** ``BLE_LEDBlinker`` will not run properly if the ``BLE_LED`` application is not running on a second device. The terminal will show a few print statments, but you will not be able to see the application in full operation. 
+**Note:** ``BLE_LEDBlinker`` will not run properly if the ``BLE_LED`` application is not running on a second device. The terminal will show a few print statements, but you will not be able to see the application in full operation. 

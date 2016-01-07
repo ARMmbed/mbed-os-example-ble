@@ -32,7 +32,11 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     rawUidFrame(NULL),
     rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
-    tlmBeaconTemperatureCallback(NULL)
+    tlmBeaconTemperatureCallback(NULL),
+    uidFrameCallbackHandle(NULL),
+    urlFrameCallbackHandle(NULL),
+    tlmFrameCallbackHandle(NULL),
+    radioManagerCallbackHandle(NULL)
 {
     lockState      = paramsIn.lockState;
     flags          = paramsIn.flags;
@@ -72,7 +76,11 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     rawUidFrame(NULL),
     rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
-    tlmBeaconTemperatureCallback(NULL)
+    tlmBeaconTemperatureCallback(NULL),
+    uidFrameCallbackHandle(NULL),
+    urlFrameCallbackHandle(NULL),
+    tlmFrameCallbackHandle(NULL),
+    radioManagerCallbackHandle(NULL)
 {
     eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
 }
@@ -116,8 +124,7 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
 
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         ble.shutdown();
-        /* Free unused memory */
-        freeBeaconFrames();
+        stopBeaconService();
         operationMode = EDDYSTONE_MODE_CONFIG;
         ble.init(this, &EddystoneService::bleInitComplete);
         return EDDYSTONE_ERROR_NONE;
@@ -185,7 +192,7 @@ void EddystoneService::eddystoneConstructorHelper(const PowerLevels_t &advPowerL
                                                   const PowerLevels_t &radioPowerLevelsIn,
                                                   uint32_t            advConfigIntervalIn)
 {
-    /* We cannot use correctAdvertisingInterval() for this check because the function
+    /* We cannot use correctAdvertisementPeriod() for this check because the function
      * call to get the minimum advertising interval in the BLE API is different for
      * connectable and non-connectable advertising.
      */
@@ -308,27 +315,30 @@ void EddystoneService::setupBeaconService(void)
      * add initial frame so that we have something to advertise on startup */
     if (uidFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_UID);
-        minar::Scheduler::postCallback(
+        uidFrameCallbackHandle = minar::Scheduler::postCallback(
             mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_UID)
-        ).period(minar::milliseconds(uidFramePeriod));
+        ).period(minar::milliseconds(uidFramePeriod)).getHandle();
     }
     if (tlmFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_TLM);
-        minar::Scheduler::postCallback(
+        tlmFrameCallbackHandle = minar::Scheduler::postCallback(
             mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_TLM)
-        ).period(minar::milliseconds(tlmFramePeriod));
+        ).period(minar::milliseconds(tlmFramePeriod)).getHandle();
     }
     if (urlFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_URL);
-        minar::Scheduler::postCallback(
+        urlFrameCallbackHandle = minar::Scheduler::postCallback(
             mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_URL)
-        ).period(minar::milliseconds(urlFramePeriod));
+        ).period(minar::milliseconds(urlFramePeriod)).getHandle();
     }
 
     /* Start advertising the frames added to the queue */
     /* TODO: It is possible to optimise this so that we only have to wake up when needed and not every 100ms */
     manageRadio();
-    minar::Scheduler::postCallback(this, &EddystoneService::manageRadio).period(minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval())).tolerance(minar::milliseconds(1));
+    radioManagerCallbackHandle = minar::Scheduler::postCallback(
+        this,
+        &EddystoneService::manageRadio
+    ).period(minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval())).tolerance(0).getHandle();
 }
 
 void EddystoneService::enqueueFrame(FrameType frameType)
@@ -339,17 +349,16 @@ void EddystoneService::enqueueFrame(FrameType frameType)
 void EddystoneService::manageRadio(void)
 {
     FrameType frameType;
-    /* TODO: Increase advertised packet count in TLM frame.
-     * NOTE: Advertising seems to be quite unpredictable, its difficult to know for sure
-     *       how many packets with what payload are advertised. */
     if (advFrameQueue.pop(frameType)) {
         /* We have something to advertise */
-        printf("Time: %u newFrame: %u\n\r", timeSinceBootTimer.read_ms(), frameType);
         if (ble.gap().getState().advertising) {
             ble.gap().stopAdvertising();
         }
         swapAdvertisedFrame(frameType);
         ble.gap().startAdvertising();
+
+        /* Increase the advertised packet count in TLM frame */
+        tlmFrame.updatePduCount();
     } else if (ble.gap().getState().advertising) {
         ble.gap().stopAdvertising();
     }
@@ -407,8 +416,9 @@ void EddystoneService::freeConfigCharacteristics(void)
     delete resetChar;
 }
 
-void EddystoneService::freeBeaconFrames(void)
+void EddystoneService::stopBeaconService(void)
 {
+    /* Free unused memory */
     if (rawUrlFrame) {
         delete[] rawUrlFrame;
         rawUrlFrame = NULL;
@@ -420,6 +430,20 @@ void EddystoneService::freeBeaconFrames(void)
     if (rawTlmFrame) {
         delete[] rawTlmFrame;
         rawTlmFrame = NULL;
+    }
+
+    /* Unschedule callbacks */
+    if (urlFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(urlFrameCallbackHandle);
+        urlFrameCallbackHandle = NULL;
+    }
+    if (uidFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(uidFrameCallbackHandle);
+        uidFrameCallbackHandle = NULL;
+    }
+    if (tlmFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(tlmFrameCallbackHandle);
+        tlmFrameCallbackHandle = NULL;
     }
 }
 
@@ -598,4 +622,114 @@ uint16_t EddystoneService::correctAdvertisementPeriod(uint16_t beaconPeriodIn) c
         }
     }
     return beaconPeriodIn;
+}
+
+void EddystoneService::setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalIn)
+{
+    if (urlFrameIntervalIn == urlFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    urlFramePeriod = correctAdvertisementPeriod(urlFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (urlFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(urlFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawUidFrame && urlFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawUrlFrame = new uint8_t[urlFrame.getRawFrameSize()];
+                urlFrame.constructURLFrame(rawUrlFrame, advPowerLevels[txPowerMode]);
+            }
+        }
+
+        if (urlFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            urlFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_URL)
+            ).period(minar::milliseconds(urlFramePeriod)).getHandle();
+        } else {
+            urlFrameCallbackHandle = NULL;
+        }
+    } else if (operationMode == EDDYSTONE_MODE_CONFIG) {
+        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
+    }
+}
+
+void EddystoneService::setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalIn)
+{
+    if (uidFrameIntervalIn == uidFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    uidFramePeriod = correctAdvertisementPeriod(uidFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (uidFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(uidFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawUidFrame && uidFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawUidFrame = new uint8_t[uidFrame.getRawFrameSize()];
+                uidFrame.constructUIDFrame(rawUidFrame, advPowerLevels[txPowerMode]);
+            }
+        }
+
+        if (uidFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            uidFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_UID)
+            ).period(minar::milliseconds(uidFramePeriod)).getHandle();
+        } else {
+            uidFrameCallbackHandle = NULL;
+        }
+    }
+}
+
+void EddystoneService::setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalIn)
+{
+    if (tlmFrameIntervalIn == tlmFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    tlmFramePeriod = correctAdvertisementPeriod(tlmFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (tlmFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(tlmFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawTlmFrame && tlmFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawTlmFrame = new uint8_t[tlmFrame.getRawFrameSize()];
+                /* Do not construct the TLM frame because this changes every 0.1 seconds */
+            }
+        }
+
+        if (tlmFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            tlmFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_TLM)
+            ).period(minar::milliseconds(tlmFramePeriod)).getHandle();
+        } else {
+            tlmFrameCallbackHandle = NULL;
+        }
+    }
 }

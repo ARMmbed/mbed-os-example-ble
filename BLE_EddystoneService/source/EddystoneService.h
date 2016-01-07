@@ -119,6 +119,12 @@ public:
 
     void setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn);
 
+    void setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalIn = DEFAULT_URL_FRAME_PERIOD_MSEC);
+
+    void setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalIn = DEFAULT_UID_FRAME_PERIOD_MSEC);
+
+    void setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalIn = DEFAULT_TLM_FRAME_PERIOD_MSEC);
+
     EddystoneError_t startConfigService(void);
 
     EddystoneError_t startBeaconService(void);
@@ -165,7 +171,7 @@ private:
 
     void freeConfigCharacteristics(void);
 
-    void freeBeaconFrames(void);
+    void stopBeaconService(void);
 
     /*
      * Internal helper function used to update the GATT database following any
@@ -235,6 +241,11 @@ private:
     TlmUpdateCallback_t                                             tlmBeaconTemperatureCallback;
 
     Timer                                                           timeSinceBootTimer;
+
+    minar::callback_handle_t                                        uidFrameCallbackHandle;
+    minar::callback_handle_t                                        urlFrameCallbackHandle;
+    minar::callback_handle_t                                        tlmFrameCallbackHandle;
+    minar::callback_handle_t                                        radioManagerCallbackHandle;
 
     GattCharacteristic                                              *charTable[TOTAL_CHARACTERISTICS];
 };

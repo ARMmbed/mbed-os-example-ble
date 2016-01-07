@@ -1,46 +1,62 @@
-The idea of this demo is to show you how to use the GattClient APIs that are
-used to program BLE client devices. Hence, the client LEDBlinker device will
-scan for advertising connections. Then it connects to an LED peripheral and
-attempts to write the LED characteristic to toggle the LED state.
+# BLE LED Blinker
 
-*Before you try this demo, make sure that the `peerAddr` filter is updated based on
-the peripheral's MAC address.*
+This example demonstrates using the ``GattClient`` API to control BLE client devices.
 
-What You’ll Need
-================
+The example uses two applications running on two different devices:
 
-To get this going, you’ll need:
+1. The first device - the central - runs the application ``BLE_LEDBlinker`` from this repository. This application sends an on/off toggle over BLE.
 
-- Two mbed boards e.g. NRF51-DK.
+1. The second device - the peripheral - runs the application [``BLE_LED``](https://github.com/ARMmbed/ble-examples/tree/master/BLE_LED) to respond to the toggle. 
 
-- Flash one of the boards with the LED demo found [here](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_LED/).
-  *Note that this application has not been ported to mbed OS yet!*
+	The toggle simply turns the LED on the peripheral device on and off.
 
-Checking for Success
-====================
+# Running the application
 
-After loading the BLE_LEDBlink in one of the boards and the LED demo in a
-second device, you should be able to see one of the LEDs from the second board
-blinking. This is because the BLE_LEDBlink demo connects to the second device
-through BLE and constantly toggles the value of the LED characteristic.
+## Requirements
+ 
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
 
-You also should be able to trace the execution of the program using a terminal
-program and see if the demo exhibits the correct behaviour. To observe the output
-you will need a terminal program that will listen to the output through a serial
-port. There are many such programs available online depending on your operating
-system. For Windows you can use 'Tera Term', for Mac OS X a good option is
-'CoolTerm' and for Linux you can use 'GNU Screen' through the commanline.
+This example requires *two* devices.
 
-Before trying to listen for output, make sure that your serial terminal is
-listening through the correct serial port. Also, ensure that you set the
-correct baud rate for your target platform. For instance, the NRF51-DK board
-requires a baud rate of 9600; therefore, if I was trying to listen for output
-using 'GNU Screen' the command to start the serial terminal will look like
-this:
+## Building instructions
 
-```Shell
-screen /dev/tty.usbmodem1412 9600
-```
+You will need to build both applications and flash each one to a different board.
 
-Note that in my case `/dev/tty.usbmodem1412` is where the terminal program
-will be listening.
+Please note: The application ``BLE_LEDBlinker`` in this repository checks a device-specific parameter: ``peerAddr``. Before you build the application, you need to give this parameter the MAC address of your *peripheral* device (the device running the ``BLE_LED`` application).
+
+**Tip:** You may notice that the application also checks the LED characteristic's UUID; you don't need to change this parameter's value, because it already matches the UUID provided by the second application, ``BLE_LED``.
+
+Building instructions for all mbed OS samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+
+## Checking for success
+
+1. Build both applications and install one on each device, as explained in the building instructions.
+
+1. The device running ``BLE_LED`` should blink its LED.
+
+1. You can change the blinking speed by changing the callback period in ``BLE_LEDBlinker``:
+
+	```
+	minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
+	```
+
+	Rebuild the application and flash it to the device. The second device's LED should update its blink speed.
+
+## Monitoring the application through a serial port
+
+You can run ``BLE_LEDBlinker`` and see that it works properly by monitoring its serial output. 
+
+You need a terminal program to listen to the output through a serial port. You can download one, for example:
+
+* Tera Term for Windows.
+* CoolTerm for Mac OS X.
+* GNU Screen for Linux.
+
+To see the application's output: 
+
+1. Check which serial port your device is connected to.
+1. Check the baud rate of your device.
+1. Run a terminal program with the correct serial port and baud rate. For example, to use GNU Screen, run: ``screen /dev/tty.usbmodem1412 9600``.
+1. The application should start printing the toggle's value to the terminal. 
+
+**Note:** ``BLE_LEDBlinker`` will not run properly if the ``BLE_LED`` application is not running on a second device. The terminal will show a few print statements, but you will not be able to see the application in full operation. 

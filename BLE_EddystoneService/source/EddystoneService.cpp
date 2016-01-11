@@ -334,22 +334,26 @@ void EddystoneService::setupBeaconService(void)
 
     /* Start advertising */
     manageRadio();
-    radioManagerCallbackHandle = minar::Scheduler::postCallback(
-        this,
-        &EddystoneService::manageRadio
-    ).period(
-        minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval())
-    ).tolerance(0).getHandle();
 }
 
 void EddystoneService::enqueueFrame(FrameType frameType)
 {
     advFrameQueue.push(frameType);
+    if (!radioManagerCallbackHandle) {
+        /* Advertising stopped and there is not callback posted in minar. Just
+         * execute the manager to resume advertising */
+        manageRadio();
+    }
 }
 
 void EddystoneService::manageRadio(void)
 {
     FrameType frameType;
+    uint32_t  startTimeManageRadio = timeSinceBootTimer.read_ms();
+
+    /* Signal that there is currently no callback posted */
+    radioManagerCallbackHandle = NULL;
+
     if (advFrameQueue.pop(frameType)) {
         /* We have something to advertise */
         if (ble.gap().getState().advertising) {
@@ -360,6 +364,16 @@ void EddystoneService::manageRadio(void)
 
         /* Increase the advertised packet count in TLM frame */
         tlmFrame.updatePduCount();
+
+        /* Post a callback to itself to stop the advertisement or pop the next
+         * frame from the queue. However, take into account the time taken to
+         * swap in this frame. */
+        radioManagerCallbackHandle = minar::Scheduler::postCallback(
+            this,
+            &EddystoneService::manageRadio
+        ).delay(
+            minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval() - (timeSinceBootTimer.read_ms() - startTimeManageRadio))
+        ).tolerance(0).getHandle();
     } else if (ble.gap().getState().advertising) {
         /* Nothing else to advertise, stop advertising and do not schedule any callbacks */
         ble.gap().stopAdvertising();

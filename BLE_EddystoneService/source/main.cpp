@@ -117,6 +117,7 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
         initializeEddystoneToDefaults(ble);
     }
 #else
+    #warning "EddystoneService is not configured to store configuration data in non-volatile memory"
     initializeEddystoneToDefaults(ble);
 #endif
 

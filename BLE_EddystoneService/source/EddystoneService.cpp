@@ -28,16 +28,25 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     uidFrame(paramsIn.uidNamespaceID, paramsIn.uidInstanceID),
     tlmFrame(paramsIn.tlmVersion),
     resetFlag(false),
+    rawUrlFrame(NULL),
+    rawUidFrame(NULL),
+    rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
-    tlmBeaconTemperatureCallback(NULL)
+    tlmBeaconTemperatureCallback(NULL),
+    uidFrameCallbackHandle(NULL),
+    urlFrameCallbackHandle(NULL),
+    tlmFrameCallbackHandle(NULL),
+    radioManagerCallbackHandle(NULL)
 {
-    lockState         = paramsIn.lockState;
-    flags             = paramsIn.flags;
-    txPowerMode       = paramsIn.txPowerMode;
-    beaconPeriod      = correctAdvertisementPeriod(paramsIn.beaconPeriod);
+    lockState      = paramsIn.lockState;
+    flags          = paramsIn.flags;
+    txPowerMode    = paramsIn.txPowerMode;
+    urlFramePeriod = correctAdvertisementPeriod(paramsIn.urlFramePeriod);
+    uidFramePeriod = correctAdvertisementPeriod(paramsIn.uidFramePeriod);
+    tlmFramePeriod = correctAdvertisementPeriod(paramsIn.tlmFramePeriod);
 
-    memcpy(lock,             paramsIn.lock,      sizeof(Lock_t));
-    memcpy(unlock,           paramsIn.unlock,    sizeof(Lock_t));
+    memcpy(lock,   paramsIn.lock,   sizeof(Lock_t));
+    memcpy(unlock, paramsIn.unlock, sizeof(Lock_t));
 
     eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
 }
@@ -60,9 +69,18 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     unlock(),
     flags(0),
     txPowerMode(0),
-    beaconPeriod(DEFAULT_BEACON_PERIOD_MSEC),
+    urlFramePeriod(DEFAULT_URL_FRAME_PERIOD_MSEC),
+    uidFramePeriod(DEFAULT_UID_FRAME_PERIOD_MSEC),
+    tlmFramePeriod(DEFAULT_TLM_FRAME_PERIOD_MSEC),
+    rawUrlFrame(NULL),
+    rawUidFrame(NULL),
+    rawTlmFrame(NULL),
     tlmBatteryVoltageCallback(NULL),
-    tlmBeaconTemperatureCallback(NULL)
+    tlmBeaconTemperatureCallback(NULL),
+    uidFrameCallbackHandle(NULL),
+    urlFrameCallbackHandle(NULL),
+    tlmFrameCallbackHandle(NULL),
+    radioManagerCallbackHandle(NULL)
 {
     eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
 }
@@ -106,8 +124,7 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
 
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         ble.shutdown();
-        /* Free unused memory */
-        freeBeaconFrames();
+        stopBeaconService();
         operationMode = EDDYSTONE_MODE_CONFIG;
         ble.init(this, &EddystoneService::bleInitComplete);
         return EDDYSTONE_ERROR_NONE;
@@ -118,28 +135,15 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
     return EDDYSTONE_ERROR_NONE;
 }
 
-EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t consecUrlFramesIn, uint16_t consecUidFramesIn, uint16_t consecTlmFramesIn)
+EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
 {
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         /* Nothing to do, we are already in beacon mode */
         return EDDYSTONE_ERROR_NONE;
-    } else if (!consecUrlFramesIn && !consecUidFramesIn && !consecTlmFramesIn) {
-        /* Nothing to do, the user wants 0 consecutive frames of everything */
-        return EDDYSTONE_ERROR_INVALID_CONSEC_FRAMES;
-    } else if (!beaconPeriod) {
+    } else if (!urlFramePeriod && !uidFramePeriod && !tlmFramePeriod) {
         /* Nothing to do, the period is 0 for all frames */
         return EDDYSTONE_ERROR_INVALID_BEACON_PERIOD;
     }
-
-    /* Setup tracking of the current advertised frame. Note that this will
-     * cause URL or UID frames to be advertised first!
-     */
-    currentAdvertisedFrame            = EDDYSTONE_FRAME_TLM;
-    consecFrames[EDDYSTONE_FRAME_URL] = consecUrlFramesIn;
-    consecFrames[EDDYSTONE_FRAME_UID] = consecUidFramesIn;
-    consecFrames[EDDYSTONE_FRAME_TLM] = consecTlmFramesIn;
-
-    memset(currentConsecFrames, 0, sizeof(uint16_t) * NUM_EDDYSTONE_FRAMES);
 
     if (operationMode == EDDYSTONE_MODE_CONFIG) {
         ble.shutdown();
@@ -152,6 +156,7 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t
 
     operationMode = EDDYSTONE_MODE_BEACON;
     setupBeaconService();
+
     return EDDYSTONE_ERROR_NONE;
 }
 
@@ -163,12 +168,14 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(uint16_t
  */
 void EddystoneService::getEddystoneParams(EddystoneParams_t &params)
 {
-    params.lockState     = lockState;
-    params.flags         = flags;
-    params.txPowerMode   = txPowerMode;
-    params.beaconPeriod  = beaconPeriod;
-    params.tlmVersion    = tlmFrame.getTLMVersion();
-    params.urlDataLength = urlFrame.getEncodedURLDataLength();
+    params.lockState      = lockState;
+    params.flags          = flags;
+    params.txPowerMode    = txPowerMode;
+    params.urlFramePeriod = urlFramePeriod;
+    params.tlmFramePeriod = tlmFramePeriod;
+    params.uidFramePeriod = uidFramePeriod;
+    params.tlmVersion     = tlmFrame.getTLMVersion();
+    params.urlDataLength  = urlFrame.getEncodedURLDataLength();
 
     memcpy(params.advPowerLevels, advPowerLevels,               sizeof(PowerLevels_t));
     memcpy(params.lock,           lock,                         sizeof(Lock_t));
@@ -185,7 +192,19 @@ void EddystoneService::eddystoneConstructorHelper(const PowerLevels_t &advPowerL
                                                   const PowerLevels_t &radioPowerLevelsIn,
                                                   uint32_t            advConfigIntervalIn)
 {
-    advConfigInterval = (advConfigIntervalIn > 0) ? correctAdvertisementPeriod(advConfigIntervalIn) : 0;
+    /* We cannot use correctAdvertisementPeriod() for this check because the function
+     * call to get the minimum advertising interval in the BLE API is different for
+     * connectable and non-connectable advertising.
+     */
+    if (advConfigIntervalIn != 0) {
+        if (advConfigIntervalIn < ble.gap().getMinAdvertisingInterval()) {
+            advConfigInterval = ble.gap().getMinAdvertisingInterval();
+        } else if (advConfigIntervalIn > ble.gap().getMaxAdvertisingInterval()) {
+            advConfigInterval = ble.gap().getMaxAdvertisingInterval();
+        } else {
+            advConfigInterval = advConfigIntervalIn;
+        }
+    }
 
     memcpy(radioPowerLevels, radioPowerLevelsIn, sizeof(PowerLevels_t));
     memcpy(advPowerLevels,   advPowerLevelsIn,   sizeof(PowerLevels_t));
@@ -217,31 +236,28 @@ void EddystoneService::bleInitComplete(BLE::InitializationCompleteCallbackContex
         break;
     default:
         /* Some error occurred */
+        error("Invalid EddystonService mode");
         break;
     }
 }
 
-void EddystoneService::swapAdvertisedFrame(void)
+void EddystoneService::swapAdvertisedFrame(FrameType frameType)
 {
-    /* This essentially works out which is the next frame to be swapped in
-     * and updated the advertised packets. It will eventually terminate
-     * and in the worst case the frame swapped in is the current advertised
-     * frame.
-     */
-    while (true) {
-        currentAdvertisedFrame = (currentAdvertisedFrame + 1) % NUM_EDDYSTONE_FRAMES;
-
-        if (currentAdvertisedFrame == EDDYSTONE_FRAME_URL && consecFrames[EDDYSTONE_FRAME_URL] > 0) {
-            updateAdvertisementPacket(rawUrlFrame, urlFrame.getRawFrameSize());
-            return;
-        } else if (currentAdvertisedFrame == EDDYSTONE_FRAME_UID && consecFrames[EDDYSTONE_FRAME_UID] > 0) {
-            updateAdvertisementPacket(rawUidFrame, uidFrame.getRawFrameSize());
-            return;
-        } else if (currentAdvertisedFrame == EDDYSTONE_FRAME_TLM && consecFrames[EDDYSTONE_FRAME_UID] > 0) {
-            updateRawTLMFrame();
-            updateAdvertisementPacket(rawTlmFrame, tlmFrame.getRawFrameSize());
-            return;
-        }
+    switch(frameType) {
+    case EDDYSTONE_FRAME_URL:
+        updateAdvertisementPacket(rawUrlFrame, urlFrame.getRawFrameSize());
+        break;
+    case EDDYSTONE_FRAME_UID:
+        updateAdvertisementPacket(rawUidFrame, uidFrame.getRawFrameSize());
+        break;
+    case EDDYSTONE_FRAME_TLM:
+        updateRawTLMFrame();
+        updateAdvertisementPacket(rawTlmFrame, tlmFrame.getRawFrameSize());
+        break;
+    default:
+        /* Some error occurred */
+        error("Frame to swap in does not specify a valid type");
+        break;
     }
 }
 
@@ -273,17 +289,17 @@ void EddystoneService::updateAdvertisementPacket(const uint8_t* rawFrame, size_t
 void EddystoneService::setupBeaconService(void)
 {
     /* Initialise arrays to hold constructed raw frames */
-    if (consecFrames[EDDYSTONE_FRAME_URL] > 0) {
+    if (urlFramePeriod) {
         rawUrlFrame = new uint8_t[urlFrame.getRawFrameSize()];
         urlFrame.constructURLFrame(rawUrlFrame, advPowerLevels[txPowerMode]);
     }
 
-    if (consecFrames[EDDYSTONE_FRAME_UID] > 0) {
+    if (uidFramePeriod) {
         rawUidFrame = new uint8_t[uidFrame.getRawFrameSize()];
         uidFrame.constructUIDFrame(rawUidFrame, advPowerLevels[txPowerMode]);
     }
 
-    if (consecFrames[EDDYSTONE_FRAME_TLM] > 0) {
+    if (tlmFramePeriod) {
         rawTlmFrame = new uint8_t[tlmFrame.getRawFrameSize()];
         /* Do not initialise because we have to reconstruct every 0.1 secs */
     }
@@ -291,15 +307,77 @@ void EddystoneService::setupBeaconService(void)
     /* Configure advertisements */
     ble.gap().setTxPower(radioPowerLevels[txPowerMode]);
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(beaconPeriod);
-    ble.gap().onRadioNotification(this, &EddystoneService::radioNotificationCallback);
-    ble.gap().initRadioNotification();
+    ble.gap().setAdvertisingInterval(ble.gap().getMaxAdvertisingInterval());
 
-    /* Set advertisement packet payload */
-    swapAdvertisedFrame();
+    /* Make sure the queue is currently empty */
+    advFrameQueue.reset();
+    /* Setup callbacks to periodically add frames to be advertised to the queue and
+     * add initial frame so that we have something to advertise on startup */
+    if (uidFramePeriod) {
+        advFrameQueue.push(EDDYSTONE_FRAME_UID);
+        uidFrameCallbackHandle = minar::Scheduler::postCallback(
+            mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_UID)
+        ).period(minar::milliseconds(uidFramePeriod)).getHandle();
+    }
+    if (tlmFramePeriod) {
+        advFrameQueue.push(EDDYSTONE_FRAME_TLM);
+        tlmFrameCallbackHandle = minar::Scheduler::postCallback(
+            mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_TLM)
+        ).period(minar::milliseconds(tlmFramePeriod)).getHandle();
+    }
+    if (urlFramePeriod) {
+        advFrameQueue.push(EDDYSTONE_FRAME_URL);
+        urlFrameCallbackHandle = minar::Scheduler::postCallback(
+            mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_URL)
+        ).period(minar::milliseconds(urlFramePeriod)).getHandle();
+    }
 
     /* Start advertising */
-    ble.gap().startAdvertising();
+    manageRadio();
+}
+
+void EddystoneService::enqueueFrame(FrameType frameType)
+{
+    advFrameQueue.push(frameType);
+    if (!radioManagerCallbackHandle) {
+        /* Advertising stopped and there is not callback posted in minar. Just
+         * execute the manager to resume advertising */
+        manageRadio();
+    }
+}
+
+void EddystoneService::manageRadio(void)
+{
+    FrameType frameType;
+    uint32_t  startTimeManageRadio = timeSinceBootTimer.read_ms();
+
+    /* Signal that there is currently no callback posted */
+    radioManagerCallbackHandle = NULL;
+
+    if (advFrameQueue.pop(frameType)) {
+        /* We have something to advertise */
+        if (ble.gap().getState().advertising) {
+            ble.gap().stopAdvertising();
+        }
+        swapAdvertisedFrame(frameType);
+        ble.gap().startAdvertising();
+
+        /* Increase the advertised packet count in TLM frame */
+        tlmFrame.updatePduCount();
+
+        /* Post a callback to itself to stop the advertisement or pop the next
+         * frame from the queue. However, take into account the time taken to
+         * swap in this frame. */
+        radioManagerCallbackHandle = minar::Scheduler::postCallback(
+            this,
+            &EddystoneService::manageRadio
+        ).delay(
+            minar::milliseconds(ble.gap().getMinNonConnectableAdvertisingInterval() - (timeSinceBootTimer.read_ms() - startTimeManageRadio))
+        ).tolerance(0).getHandle();
+    } else if (ble.gap().getState().advertising) {
+        /* Nothing else to advertise, stop advertising and do not schedule any callbacks */
+        ble.gap().stopAdvertising();
+    }
 }
 
 void EddystoneService::setupConfigService(void)
@@ -311,7 +389,7 @@ void EddystoneService::setupConfigService(void)
     flagsChar          = new ReadWriteGattCharacteristic<uint8_t>(UUID_FLAGS_CHAR, &flags);
     advPowerLevelsChar = new ReadWriteArrayGattCharacteristic<int8_t, sizeof(PowerLevels_t)>(UUID_ADV_POWER_LEVELS_CHAR, advPowerLevels);
     txPowerModeChar    = new ReadWriteGattCharacteristic<uint8_t>(UUID_TX_POWER_MODE_CHAR, &txPowerMode);
-    beaconPeriodChar   = new ReadWriteGattCharacteristic<uint16_t>(UUID_BEACON_PERIOD_CHAR, &beaconPeriod);
+    beaconPeriodChar   = new ReadWriteGattCharacteristic<uint16_t>(UUID_BEACON_PERIOD_CHAR, &urlFramePeriod);
     resetChar          = new WriteOnlyGattCharacteristic<bool>(UUID_RESET_CHAR, &resetFlag);
 
     lockChar->setWriteAuthorizationCallback(this, &EddystoneService::lockAuthorizationCallback);
@@ -354,42 +432,39 @@ void EddystoneService::freeConfigCharacteristics(void)
     delete resetChar;
 }
 
-void EddystoneService::freeBeaconFrames(void)
+void EddystoneService::stopBeaconService(void)
 {
-    delete[] rawUrlFrame;
-    delete[] rawUidFrame;
-    delete[] rawTlmFrame;
-}
-
-void EddystoneService::radioNotificationCallback(bool radioActive)
-{
-    if (radioActive) {
-        /* Do nothing */
-        return;
+    /* Free unused memory */
+    if (rawUrlFrame) {
+        delete[] rawUrlFrame;
+        rawUrlFrame = NULL;
+    }
+    if (rawUidFrame) {
+        delete[] rawUidFrame;
+        rawUidFrame = NULL;
+    }
+    if (rawTlmFrame) {
+        delete[] rawTlmFrame;
+        rawTlmFrame = NULL;
     }
 
-    tlmFrame.updatePduCount();
-    currentConsecFrames[currentAdvertisedFrame]++;
-
-    if (consecFrames[currentAdvertisedFrame] > currentConsecFrames[currentAdvertisedFrame]) {
-        if (currentAdvertisedFrame == EDDYSTONE_FRAME_TLM) {
-            /* Update the TLM frame otherwise we will not meet the 0.1 secs resolution of
-             * the Eddystone specification.
-             */
-            updateRawTLMFrame();
-            updateAdvertisementPacket(rawTlmFrame, tlmFrame.getRawFrameSize());
-        }
-        /* Keep advertising the same frame */
-        return;
+    /* Unschedule callbacks */
+    if (urlFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(urlFrameCallbackHandle);
+        urlFrameCallbackHandle = NULL;
     }
-
-    currentConsecFrames[currentAdvertisedFrame] = 0;
-
-#ifdef YOTTA_CFG_MBED_OS
-    minar::Scheduler::postCallback(this, &EddystoneService::swapAdvertisedFrame);
-#else
-    swapAdvertisedFrameTimeout.attach_us(this, &EddystoneService::swapAdvertisedFrame, 1);
-#endif
+    if (uidFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(uidFrameCallbackHandle);
+        uidFrameCallbackHandle = NULL;
+    }
+    if (tlmFrameCallbackHandle) {
+        minar::Scheduler::cancelCallback(tlmFrameCallbackHandle);
+        tlmFrameCallbackHandle = NULL;
+    }
+    if (radioManagerCallbackHandle) {
+        minar::Scheduler::cancelCallback(radioManagerCallbackHandle);
+        radioManagerCallbackHandle = NULL;
+    }
 }
 
 /*
@@ -401,7 +476,7 @@ void EddystoneService::updateCharacteristicValues(void)
     ble.gattServer().write(lockStateChar->getValueHandle(), reinterpret_cast<uint8_t *>(&lockState), sizeof(bool));
     ble.gattServer().write(urlDataChar->getValueHandle(), urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
     ble.gattServer().write(flagsChar->getValueHandle(), &flags, sizeof(uint8_t));
-    ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+    ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
     ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
     ble.gattServer().write(advPowerLevelsChar->getValueHandle(), reinterpret_cast<uint8_t *>(advPowerLevels), sizeof(PowerLevels_t));
     ble.gattServer().write(lockChar->getValueHandle(), lock, sizeof(PowerLevels_t));
@@ -535,15 +610,15 @@ void EddystoneService::onDataWrittenCallback(const GattWriteCallbackParams *writ
         ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
     } else if (handle == beaconPeriodChar->getValueHandle()) {
         uint16_t tmpBeaconPeriod = correctAdvertisementPeriod(*((uint16_t *)(writeParams->data)));
-        if (tmpBeaconPeriod != beaconPeriod) {
-            beaconPeriod = tmpBeaconPeriod;
-            ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+        if (tmpBeaconPeriod != urlFramePeriod) {
+            urlFramePeriod = tmpBeaconPeriod;
+            ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
         }
     } else if (handle == resetChar->getValueHandle() && (*((uint8_t *)writeParams->data) != 0)) {
         /* Reset characteristics to default values */
-        flags        = 0;
-        txPowerMode  = TX_POWER_MODE_LOW;
-        beaconPeriod = DEFAULT_BEACON_PERIOD_MSEC;
+        flags          = 0;
+        txPowerMode    = TX_POWER_MODE_LOW;
+        urlFramePeriod = DEFAULT_URL_FRAME_PERIOD_MSEC;
 
         urlFrame.setURLData(DEFAULT_URL);
         memset(lock, 0, sizeof(Lock_t));
@@ -551,7 +626,7 @@ void EddystoneService::onDataWrittenCallback(const GattWriteCallbackParams *writ
         ble.gattServer().write(urlDataChar->getValueHandle(), urlFrame.getEncodedURLData(), urlFrame.getEncodedURLDataLength());
         ble.gattServer().write(flagsChar->getValueHandle(), &flags, sizeof(uint8_t));
         ble.gattServer().write(txPowerModeChar->getValueHandle(), &txPowerMode, sizeof(uint8_t));
-        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&beaconPeriod), sizeof(uint16_t));
+        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
         ble.gattServer().write(lockChar->getValueHandle(), lock, sizeof(PowerLevels_t));
     }
 }
@@ -560,11 +635,121 @@ uint16_t EddystoneService::correctAdvertisementPeriod(uint16_t beaconPeriodIn) c
 {
     /* Re-map beaconPeriod to within permissible bounds if necessary. */
     if (beaconPeriodIn != 0) {
-        if (beaconPeriodIn < ble.gap().getMinAdvertisingInterval()) {
-            return ble.gap().getMinAdvertisingInterval();
+        if (beaconPeriodIn < ble.gap().getMinNonConnectableAdvertisingInterval()) {
+            return ble.gap().getMinNonConnectableAdvertisingInterval();
         } else if (beaconPeriodIn > ble.gap().getMaxAdvertisingInterval()) {
             return ble.gap().getMaxAdvertisingInterval();
         }
     }
     return beaconPeriodIn;
+}
+
+void EddystoneService::setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalIn)
+{
+    if (urlFrameIntervalIn == urlFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    urlFramePeriod = correctAdvertisementPeriod(urlFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (urlFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(urlFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawUidFrame && urlFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawUrlFrame = new uint8_t[urlFrame.getRawFrameSize()];
+                urlFrame.constructURLFrame(rawUrlFrame, advPowerLevels[txPowerMode]);
+            }
+        }
+
+        if (urlFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            urlFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_URL)
+            ).period(minar::milliseconds(urlFramePeriod)).getHandle();
+        } else {
+            urlFrameCallbackHandle = NULL;
+        }
+    } else if (operationMode == EDDYSTONE_MODE_CONFIG) {
+        ble.gattServer().write(beaconPeriodChar->getValueHandle(), reinterpret_cast<uint8_t *>(&urlFramePeriod), sizeof(uint16_t));
+    }
+}
+
+void EddystoneService::setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalIn)
+{
+    if (uidFrameIntervalIn == uidFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    uidFramePeriod = correctAdvertisementPeriod(uidFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (uidFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(uidFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawUidFrame && uidFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawUidFrame = new uint8_t[uidFrame.getRawFrameSize()];
+                uidFrame.constructUIDFrame(rawUidFrame, advPowerLevels[txPowerMode]);
+            }
+        }
+
+        if (uidFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            uidFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_UID)
+            ).period(minar::milliseconds(uidFramePeriod)).getHandle();
+        } else {
+            uidFrameCallbackHandle = NULL;
+        }
+    }
+}
+
+void EddystoneService::setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalIn)
+{
+    if (tlmFrameIntervalIn == tlmFramePeriod) {
+        /* Do nothing */
+        return;
+    }
+
+    /* Make sure the input period is within bounds */
+    tlmFramePeriod = correctAdvertisementPeriod(tlmFrameIntervalIn);
+
+    if (operationMode == EDDYSTONE_MODE_BEACON) {
+        if (tlmFrameCallbackHandle) {
+            /* The advertisement interval changes, update minar periodic callback */
+            minar::Scheduler::cancelCallback(tlmFrameCallbackHandle);
+        } else {
+            /* This frame was just enabled */
+            if (!rawTlmFrame && tlmFramePeriod) {
+                /* Allocate memory for this frame and construct it */
+                rawTlmFrame = new uint8_t[tlmFrame.getRawFrameSize()];
+                /* Do not construct the TLM frame because this changes every 0.1 seconds */
+            }
+        }
+
+        if (tlmFramePeriod) {
+            /* Currently the only way to change the period of a callback in minar
+             * is to cancell it and reschedule
+             */
+            tlmFrameCallbackHandle = minar::Scheduler::postCallback(
+                mbed::util::FunctionPointer1<void, FrameType>(this, &EddystoneService::enqueueFrame).bind(EDDYSTONE_FRAME_TLM)
+            ).period(minar::milliseconds(tlmFramePeriod)).getHandle();
+        } else {
+            tlmFrameCallbackHandle = NULL;
+        }
+    }
 }

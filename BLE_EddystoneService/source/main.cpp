@@ -64,7 +64,7 @@ static void timeout(void)
     Gap::GapState_t state;
     state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
-        eddyServicePtr->startBeaconService(5, 5, 5);
+        eddyServicePtr->startBeaconService();
 #ifdef TARGET_NRF51822
         EddystoneService::EddystoneParams_t params;
         eddyServicePtr->getEddystoneParams(params);

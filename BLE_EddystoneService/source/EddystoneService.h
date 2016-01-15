@@ -25,8 +25,10 @@
 #include <string.h>
 #ifdef YOTTA_CFG_MBED_OS
     #include "mbed-drivers/mbed.h"
+    #include "mbed-drivers/CircularBuffer.h"
 #else
     #include "mbed.h"
+    #include "CircularBuffer.h"
 #endif
 
 class EddystoneService
@@ -34,8 +36,10 @@ class EddystoneService
 public:
     static const uint16_t TOTAL_CHARACTERISTICS = 9;
 
-    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC = 1000;
-    static const uint16_t DEFAULT_BEACON_PERIOD_MSEC = 1000;
+    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = 1000;
+    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = 700;
+    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = 300;
+    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = 2000;
 
     /* Operation modes of the EddystoneService:
      *      NONE: EddystoneService has been initialised but no memory has been
@@ -65,7 +69,9 @@ public:
         uint8_t          flags;
         PowerLevels_t    advPowerLevels;
         uint8_t          txPowerMode;
-        uint16_t         beaconPeriod;
+        uint16_t         urlFramePeriod;
+        uint16_t         uidFramePeriod;
+        uint16_t         tlmFramePeriod;
         uint8_t          tlmVersion;
         uint8_t          urlDataLength;
         UrlData_t        urlData;
@@ -76,7 +82,6 @@ public:
     enum EddystoneError_t {
         EDDYSTONE_ERROR_NONE,
         EDDYSTONE_ERROR_INVALID_BEACON_PERIOD,
-        EDDYSTONE_ERROR_INVALID_CONSEC_FRAMES,
         EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL
     };
 
@@ -86,6 +91,12 @@ public:
         EDDYSTONE_FRAME_TLM,
         NUM_EDDYSTONE_FRAMES
     };
+
+    /* WARNING: If the advertising rate for any of the frames is higher than
+     * 100ms then frames will be dropped, this value must be increased
+     */
+    static const uint16_t ADV_FRAME_QUEUE_SIZE = NUM_EDDYSTONE_FRAMES;
+
 
     /* Initialise the EddystoneService using parameters from persistent storage */
     EddystoneService(BLE                 &bleIn,
@@ -114,9 +125,15 @@ public:
 
     void setUIDData(const UIDNamespaceID_t &uidNamespaceIDIn, const UIDInstanceID_t &uidInstanceIDIn);
 
+    void setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalIn = DEFAULT_URL_FRAME_PERIOD_MSEC);
+
+    void setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalIn = DEFAULT_UID_FRAME_PERIOD_MSEC);
+
+    void setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalIn = DEFAULT_TLM_FRAME_PERIOD_MSEC);
+
     EddystoneError_t startConfigService(void);
 
-    EddystoneError_t startBeaconService(uint16_t consecUrlFramesIn = 2, uint16_t consecUidFramesIn = 2, uint16_t consecTlmFramesIn = 2);
+    EddystoneError_t startBeaconService(void);
 
     /* It is not the responsibility of the Eddystone implementation to store
      * the configured parameters in persistent storage since this is
@@ -139,7 +156,11 @@ private:
      */
     void bleInitComplete(BLE::InitializationCompleteCallbackContext* initContext);
 
-    void swapAdvertisedFrame(void);
+    void swapAdvertisedFrame(FrameType frameType);
+
+    void manageRadio(void);
+
+    void enqueueFrame(FrameType frameType);
 
     void updateAdvertisementPacket(const uint8_t* rawFrame, size_t rawFrameLength);
 
@@ -156,9 +177,7 @@ private:
 
     void freeConfigCharacteristics(void);
 
-    void freeBeaconFrames(void);
-
-    void radioNotificationCallback(bool radioActive);
+    void stopBeaconService(void);
 
     /*
      * Internal helper function used to update the GATT database following any
@@ -204,7 +223,9 @@ private:
     Lock_t                                                          unlock;
     uint8_t                                                         flags;
     uint8_t                                                         txPowerMode;
-    uint16_t                                                        beaconPeriod;
+    uint16_t                                                        urlFramePeriod;
+    uint16_t                                                        uidFramePeriod;
+    uint16_t                                                        tlmFramePeriod;
 
     ReadOnlyGattCharacteristic<bool>                                *lockStateChar;
     WriteOnlyArrayGattCharacteristic<uint8_t, sizeof(Lock_t)>       *lockChar;
@@ -220,17 +241,17 @@ private:
     uint8_t                                                         *rawUidFrame;
     uint8_t                                                         *rawTlmFrame;
 
-    uint16_t                                                        consecFrames[NUM_EDDYSTONE_FRAMES];
-    uint16_t                                                        currentConsecFrames[NUM_EDDYSTONE_FRAMES];
-    uint8_t                                                         currentAdvertisedFrame;
+    CircularBuffer<FrameType, ADV_FRAME_QUEUE_SIZE>                 advFrameQueue;
 
     TlmUpdateCallback_t                                             tlmBatteryVoltageCallback;
     TlmUpdateCallback_t                                             tlmBeaconTemperatureCallback;
 
     Timer                                                           timeSinceBootTimer;
-#ifndef YOTTA_CFG_MBED_OS
-    Timeout                                                         swapAdvertisedFrameTimeout;
-#endif
+
+    minar::callback_handle_t                                        uidFrameCallbackHandle;
+    minar::callback_handle_t                                        urlFrameCallbackHandle;
+    minar::callback_handle_t                                        tlmFrameCallbackHandle;
+    minar::callback_handle_t                                        radioManagerCallbackHandle;
 
     GattCharacteristic                                              *charTable[TOTAL_CHARACTERISTICS];
 };

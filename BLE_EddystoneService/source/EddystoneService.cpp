@@ -36,7 +36,8 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     uidFrameCallbackHandle(NULL),
     urlFrameCallbackHandle(NULL),
     tlmFrameCallbackHandle(NULL),
-    radioManagerCallbackHandle(NULL)
+    radioManagerCallbackHandle(NULL),
+    deviceName(DEFAULT_DEVICE_NAME)
 {
     lockState      = paramsIn.lockState;
     flags          = paramsIn.flags;
@@ -80,7 +81,8 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     uidFrameCallbackHandle(NULL),
     urlFrameCallbackHandle(NULL),
     tlmFrameCallbackHandle(NULL),
-    radioManagerCallbackHandle(NULL)
+    radioManagerCallbackHandle(NULL),
+    deviceName(DEFAULT_DEVICE_NAME)
 {
     eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
 }
@@ -127,6 +129,8 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
         stopBeaconService();
         operationMode = EDDYSTONE_MODE_CONFIG;
         ble.init(this, &EddystoneService::bleInitComplete);
+        /* Set the device name once more */
+        ble.gap().setDeviceName(reinterpret_cast<const uint8_t *>(deviceName));
         return EDDYSTONE_ERROR_NONE;
     }
 
@@ -151,6 +155,8 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
         freeConfigCharacteristics();
         operationMode = EDDYSTONE_MODE_BEACON;
         ble.init(this, &EddystoneService::bleInitComplete);
+        /* Set the device name once more */
+        ble.gap().setDeviceName(reinterpret_cast<const uint8_t *>(deviceName));
         return EDDYSTONE_ERROR_NONE;
     }
 
@@ -158,6 +164,21 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
     setupBeaconService();
 
     return EDDYSTONE_ERROR_NONE;
+}
+
+ble_error_t EddystoneService::setCompleteDeviceName(const char *deviceNameIn)
+{
+    /* Make sure the device name is safe */
+    ble_error_t error = ble.gap().setDeviceName(reinterpret_cast<const uint8_t *>(deviceNameIn));
+    if (error == BLE_ERROR_NONE) {
+        deviceName = deviceNameIn;
+        if (operationMode == EDDYSTONE_MODE_CONFIG) {
+            /* Need to update the advertising packets to the new name */
+            setupEddystoneConfigScanResponse();
+        }
+    }
+
+    return error;
 }
 
 /* It is not the responsibility of the Eddystone implementation to store
@@ -215,6 +236,9 @@ void EddystoneService::eddystoneConstructorHelper(const PowerLevels_t &advPowerL
      * started!
      */
     timeSinceBootTimer.start();
+
+    /* Set the device name at startup */
+    ble.gap().setDeviceName(reinterpret_cast<const uint8_t *>(deviceName));
 }
 
 /* When changing modes, we shutdown and init the BLE instance, so
@@ -486,26 +510,43 @@ void EddystoneService::updateCharacteristicValues(void)
 void EddystoneService::setupEddystoneConfigAdvertisements(void)
 {
     ble.gap().clearAdvertisingPayload();
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
 
+    /* Accumulate the new payload */
+    ble.gap().accumulateAdvertisingPayload(
+        GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE
+    );
     /* UUID is in different order in the ADV frame (!) */
     uint8_t reversedServiceUUID[sizeof(UUID_URL_BEACON_SERVICE)];
     for (size_t i = 0; i < sizeof(UUID_URL_BEACON_SERVICE); i++) {
         reversedServiceUUID[i] = UUID_URL_BEACON_SERVICE[sizeof(UUID_URL_BEACON_SERVICE) - i - 1];
     }
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_128BIT_SERVICE_IDS, reversedServiceUUID, sizeof(reversedServiceUUID));
+    ble.gap().accumulateAdvertisingPayload(
+        GapAdvertisingData::COMPLETE_LIST_128BIT_SERVICE_IDS,
+        reversedServiceUUID,
+        sizeof(reversedServiceUUID)
+    );
     ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::GENERIC_TAG);
-    ble.gap().accumulateScanResponse(GapAdvertisingData::COMPLETE_LOCAL_NAME, reinterpret_cast<const uint8_t *>(&DEVICE_NAME), sizeof(DEVICE_NAME));
-    ble.gap().accumulateScanResponse(
-        GapAdvertisingData::TX_POWER_LEVEL,
-        reinterpret_cast<uint8_t *>(&advPowerLevels[TX_POWER_MODE_LOW]),
-        sizeof(uint8_t));
+    setupEddystoneConfigScanResponse();
 
     ble.gap().setTxPower(radioPowerLevels[txPowerMode]);
-    ble.gap().setDeviceName(reinterpret_cast<const uint8_t *>(&DEVICE_NAME));
     ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
     ble.gap().setAdvertisingInterval(advConfigInterval);
     ble.gap().startAdvertising();
+}
+
+void EddystoneService::setupEddystoneConfigScanResponse(void)
+{
+    ble.gap().clearScanResponse();
+    ble.gap().accumulateScanResponse(
+        GapAdvertisingData::COMPLETE_LOCAL_NAME,
+        reinterpret_cast<const uint8_t *>(deviceName),
+        strlen(deviceName)
+    );
+    ble.gap().accumulateScanResponse(
+        GapAdvertisingData::TX_POWER_LEVEL,
+        reinterpret_cast<uint8_t *>(&advPowerLevels[TX_POWER_MODE_LOW]),
+        sizeof(uint8_t)
+    );
 }
 
 void EddystoneService::lockAuthorizationCallback(GattWriteAuthCallbackParams *authParams)

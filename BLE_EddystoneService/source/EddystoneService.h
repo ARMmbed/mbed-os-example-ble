@@ -135,6 +135,8 @@ public:
 
     EddystoneError_t startBeaconService(void);
 
+    ble_error_t setCompleteDeviceName(const char *deviceNameIn);
+
     /* It is not the responsibility of the Eddystone implementation to store
      * the configured parameters in persistent storage since this is
      * platform-specific. So we provide this function that returns the
@@ -186,6 +188,8 @@ private:
     void updateCharacteristicValues(void);
 
     void setupEddystoneConfigAdvertisements(void);
+
+    void setupEddystoneConfigScanResponse(void);
 
     void lockAuthorizationCallback(GattWriteAuthCallbackParams *authParams);
 
@@ -254,6 +258,8 @@ private:
     minar::callback_handle_t                                        radioManagerCallbackHandle;
 
     GattCharacteristic                                              *charTable[TOTAL_CHARACTERISTICS];
+
+    const char                                                      *deviceName;
 };
 
 #endif  /* __EDDYSTONESERVICE_H__ */

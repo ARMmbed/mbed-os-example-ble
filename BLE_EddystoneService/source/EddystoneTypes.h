@@ -38,7 +38,7 @@ const uint8_t UUID_TX_POWER_MODE_CHAR[]    = UUID_URL_BEACON(0x20, 0x87);
 const uint8_t UUID_BEACON_PERIOD_CHAR[]    = UUID_URL_BEACON(0x20, 0x88);
 const uint8_t UUID_RESET_CHAR[]            = UUID_URL_BEACON(0x20, 0x89);
 
-const char DEVICE_NAME[] = "EDDYSTONE CONFIG";
+const char DEFAULT_DEVICE_NAME[] = "EDDYSTONE CONFIG";
 
 const char DEFAULT_URL[] = "http://www.mbed.com/";
 

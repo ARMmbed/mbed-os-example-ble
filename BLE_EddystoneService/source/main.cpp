@@ -45,6 +45,9 @@ static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 /* Values for radio power levels, provided by manufacturer. */
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
 
+/* Custom device name for this application */
+static const char deviceName[] = "mbed Eddystone";
+
 DigitalOut led(LED1, 1);
 
 /**
@@ -120,6 +123,12 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
     #warning "EddystoneService is not configured to store configuration data in non-volatile memory"
     initializeEddystoneToDefaults(ble);
 #endif
+
+    /*
+     * Set the custom device name. The device name is not stored in persistent
+     * storage, so we need to set it manually every time the device is reset
+     */
+    eddyServicePtr->setCompleteDeviceName(deviceName);
 
     /* Start Eddystone in config mode */
     eddyServicePtr->startConfigService();

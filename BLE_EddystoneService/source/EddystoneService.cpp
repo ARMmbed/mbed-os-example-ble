@@ -19,7 +19,6 @@
 /* Initialise the EddystoneService using parameters from persistent storage */
 EddystoneService::EddystoneService(BLE                 &bleIn,
                                    EddystoneParams_t   &paramsIn,
-                                   const PowerLevels_t &advPowerLevelsIn,
                                    const PowerLevels_t &radioPowerLevelsIn,
                                    uint32_t            advConfigIntervalIn) :
     ble(bleIn),
@@ -49,7 +48,7 @@ EddystoneService::EddystoneService(BLE                 &bleIn,
     memcpy(lock,   paramsIn.lock,   sizeof(Lock_t));
     memcpy(unlock, paramsIn.unlock, sizeof(Lock_t));
 
-    eddystoneConstructorHelper(advPowerLevelsIn, radioPowerLevelsIn, advConfigIntervalIn);
+    eddystoneConstructorHelper(paramsIn.advPowerLevels, radioPowerLevelsIn, advConfigIntervalIn);
 }
 
 /* When using this constructor we need to call setURLData,
@@ -146,7 +145,7 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
         return EDDYSTONE_ERROR_NONE;
     } else if (!urlFramePeriod && !uidFramePeriod && !tlmFramePeriod) {
         /* Nothing to do, the period is 0 for all frames */
-        return EDDYSTONE_ERROR_INVALID_BEACON_PERIOD;
+        return EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL;
     }
 
     if (operationMode == EDDYSTONE_MODE_CONFIG) {

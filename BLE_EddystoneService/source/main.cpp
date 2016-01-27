@@ -115,7 +115,7 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 #ifdef TARGET_NRF51822
     EddystoneService::EddystoneParams_t params;
     if (loadEddystoneServiceConfigParams(&params)) {
-        eddyServicePtr = new EddystoneService(ble, params, defaultAdvPowerLevels, radioPowerLevels, advConfigInterval);
+        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels, advConfigInterval);
     } else {
         initializeEddystoneToDefaults(ble);
     }

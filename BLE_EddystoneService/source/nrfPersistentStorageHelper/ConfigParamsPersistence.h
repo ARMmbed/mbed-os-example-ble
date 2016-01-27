@@ -29,9 +29,9 @@
  *
  * @param[out] paramsP
  *                 The parameters to be filled in from persistence storage. This
-                   argument can be NULL if the caller is only interested in
-                   discovering the persistence status of params.
-
+ *                 argument can be NULL if the caller is only interested in
+ *                 discovering the persistence status of params.
+ *
  * @return true if params were loaded from persistent storage and have usefully
  *         initialized fields.
  */
@@ -42,13 +42,13 @@ bool loadEddystoneServiceConfigParams(EddystoneService::EddystoneParams_t *param
  * storage. It typically initializes the persistenceSignature member of the
  * params to the MAGIC value to indicate persistence.
  *
- * @note: the save operation may be asynchronous. It may be a short while before
- * the request takes affect. Reading back saved configParams may not yield
- * correct behaviour if attempted soon after a store.
- *
- * @param[in/out] paramsP
+ * @param[in,out] paramsP
  *                    The params to be saved; persistenceSignature member gets
  *                    updated if persistence is successful.
+ *
+ * @note The save operation may be asynchronous. It may be a short while before
+ *       the request takes affect. Reading back saved configParams may not yield
+ *       correct behaviour if attempted soon after a store.
  */
 void saveEddystoneServiceConfigParams(const EddystoneService::EddystoneParams_t *paramsP);
 

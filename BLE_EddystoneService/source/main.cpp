@@ -32,19 +32,10 @@ static const UIDInstanceID_t  uidInstanceID  = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x
 /* Default version in TLM frame */
 static const uint8_t tlmVersion = 0x00;
 
-/* Default configuration advertising interval */
-static const uint32_t advConfigInterval = 500;
-
-/* Default URL */
-static const char defaultUrl[] = "http://mbed.org";
-
 /* Values for ADV packets related to firmware levels, calibrated based on measured values at 1m */
 static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 /* Values for radio power levels, provided by manufacturer. */
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
-
-/* Custom device name for this application */
-static const char deviceName[] = "mbed Eddystone";
 
 DigitalOut led(LED1, 1);
 
@@ -88,10 +79,9 @@ static void onBleInitError(BLE::InitializationCompleteCallbackContext* initConte
 static void initializeEddystoneToDefaults(BLE &ble)
 {
     /* Set everything to defaults */
-    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, advConfigInterval);
+    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels);
 
     /* Set default URL, UID and TLM frame data if not initialized through the config service */
-    eddyServicePtr->setURLData(defaultUrl);
     eddyServicePtr->setUIDData(uidNamespaceID, uidInstanceID);
     eddyServicePtr->setTLMData(tlmVersion);
 }
@@ -110,16 +100,10 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     EddystoneService::EddystoneParams_t params;
     if (loadEddystoneServiceConfigParams(&params)) {
-        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels, advConfigInterval);
+        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels);
     } else {
         initializeEddystoneToDefaults(ble);
     }
-
-    /*
-     * Set the custom device name. The device name is not stored in persistent
-     * storage, so we need to set it manually every time the device is reset
-     */
-    eddyServicePtr->setCompleteDeviceName(deviceName);
 
     /* Start Eddystone in config mode */
     eddyServicePtr->startConfigService();

@@ -4,5 +4,13 @@
   },
   "mbed": {
     "max-filehandles": 4
+  },
+  "eddystone": {
+    "default-device-name": "\"EDDYSTONE CONFIG\"",
+    "default-url": "\"https://www.mbed.com/\"",
+    "default-url-frame-interval": 700,
+    "default-uid-frame-interval": 300,
+    "default-tlm-frame-interval": 2000,
+    "default-eddystone-url-config-adv-interval": 1000
   }
 }

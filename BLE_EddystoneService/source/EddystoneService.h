@@ -31,6 +31,22 @@
     #include "CircularBuffer.h"
 #endif
 
+#ifndef YOTTA_CFG_DEFAULT_URL_FRAME_INTERVAL
+    #define YOTTA_CFG_DEFAULT_URL_FRAME_INTERVAL 700
+#endif
+
+#ifndef YOTTA_CFG_DEFAULT_UID_FRAME_INTERVAL
+    #define YOTTA_CFG_DEFAULT_UID_FRAME_INTERVAL 300
+#endif
+
+#ifndef YOTTA_CFG_DEFAULT_TLM_FRAME_INTERVAL
+    #define YOTTA_CFG_DEFAULT_TLM_FRAME_INTERVAL 2000
+#endif
+
+#ifndef YOTTA_CFG_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL
+    #define YOTTA_CFG_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL 1000
+#endif
+
 /**
  * This class implements the Eddystone-URL Config Service and the Eddystone
  * Protocol Specification as defined in the publicly available specification at
@@ -49,22 +65,22 @@ public:
      * Default interval for advertising packets for the Eddystone-URL
      * Configuration Service.
      */
-    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = 1000;
+    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = YOTTA_CFG_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone URL
      * frames.
      */
-    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = 700;
+    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = YOTTA_CFG_DEFAULT_URL_FRAME_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone UID
      * frames.
      */
-    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = 300;
+    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = YOTTA_CFG_DEFAULT_UID_FRAME_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone TLM
      * frames.
      */
-    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = 2000;
+    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = YOTTA_CFG_DEFAULT_TLM_FRAME_INTERVAL;
 
     /**
      * Enumeration that defines the various operation modes of the

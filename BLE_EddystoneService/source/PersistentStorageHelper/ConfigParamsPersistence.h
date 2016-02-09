@@ -17,7 +17,7 @@
 #ifndef __BLE_CONFIG_PARAMS_PERSISTENCE_H__
 #define __BLE_CONFIG_PARAMS_PERSISTENCE_H__
 
-#include "EddystoneService.h"
+#include "../EddystoneService.h"
 
 /**
  * Generic API to load the Eddystone Service configuration parameters from persistent

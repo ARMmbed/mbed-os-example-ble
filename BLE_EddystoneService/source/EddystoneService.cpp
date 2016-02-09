@@ -165,6 +165,29 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
     return EDDYSTONE_ERROR_NONE;
 }
 
+EddystoneService::EddystoneError_t EddystoneService::stopCurrentService(void)
+{
+    switch (operationMode) {
+    case EDDYSTONE_MODE_NONE:
+        return EDDYSTONE_ERROR_INVALID_STATE;
+    case EDDYSTONE_MODE_CONFIG:
+        ble.shutdown();
+        stopBeaconService();
+        break;
+    case EDDYSTONE_MODE_BEACON:
+        ble.shutdown();
+        freeConfigCharacteristics();
+        break;
+    default:
+        /* Some error occurred */
+        error("Invalid EddystonService mode");
+        break;
+    }
+    operationMode = EDDYSTONE_MODE_NONE;
+
+    return EDDYSTONE_ERROR_NONE;
+}
+
 ble_error_t EddystoneService::setCompleteDeviceName(const char *deviceNameIn)
 {
     /* Make sure the device name is safe */

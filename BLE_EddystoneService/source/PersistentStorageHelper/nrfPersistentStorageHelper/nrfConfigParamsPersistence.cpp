@@ -21,7 +21,7 @@ extern "C" {
 }
 
 #include "nrf_error.h"
-#include "ConfigParamsPersistence.h"
+#include "../../EddystoneService.h"
 
 /**
  * Nordic specific structure used to store params persistently.

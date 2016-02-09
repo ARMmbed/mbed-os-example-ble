@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-#ifdef TARGET_NRF51822 /* Persistent storage supported on nrf51 platforms */
-
 #ifndef __BLE_CONFIG_PARAMS_PERSISTENCE_H__
 #define __BLE_CONFIG_PARAMS_PERSISTENCE_H__
 
-#include "../EddystoneService.h"
+#include "EddystoneService.h"
 
 /**
  * Generic API to load the Eddystone Service configuration parameters from persistent
@@ -53,5 +51,3 @@ bool loadEddystoneServiceConfigParams(EddystoneService::EddystoneParams_t *param
 void saveEddystoneServiceConfigParams(const EddystoneService::EddystoneParams_t *paramsP);
 
 #endif /* #ifndef __BLE_CONFIG_PARAMS_PERSISTENCE_H__*/
-
-#endif /* #ifdef TARGET_NRF51822 */

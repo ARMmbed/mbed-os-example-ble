@@ -18,9 +18,7 @@
 #include "ble/BLE.h"
 #include "EddystoneService.h"
 
-#ifdef TARGET_NRF51822
-    #include "nrfPersistentStorageHelper/ConfigParamsPersistence.h"
-#endif
+#include "PersistentStorageHelper/ConfigParamsPersistence.h"
 
 EddystoneService *eddyServicePtr;
 
@@ -68,11 +66,9 @@ static void timeout(void)
     state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         eddyServicePtr->startBeaconService();
-#ifdef TARGET_NRF51822
         EddystoneService::EddystoneParams_t params;
         eddyServicePtr->getEddystoneParams(params);
         saveEddystoneServiceConfigParams(&params);
-#endif
     } else {
         minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
     }
@@ -112,17 +108,12 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     ble.gap().onDisconnection(disconnectionCallback);
 
-#ifdef TARGET_NRF51822
     EddystoneService::EddystoneParams_t params;
     if (loadEddystoneServiceConfigParams(&params)) {
         eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels, advConfigInterval);
     } else {
         initializeEddystoneToDefaults(ble);
     }
-#else
-    #warning "EddystoneService is not configured to store configuration data in non-volatile memory"
-    initializeEddystoneToDefaults(ble);
-#endif
 
     /*
      * Set the custom device name. The device name is not stored in persistent

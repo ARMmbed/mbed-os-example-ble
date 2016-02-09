@@ -82,6 +82,8 @@ static void initializeEddystoneToDefaults(BLE &ble)
     eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels);
 
     /* Set default URL, UID and TLM frame data if not initialized through the config service */
+    const char* url = YOTTA_CFG_EDDYSTONE_DEFAULT_URL;
+    eddyServicePtr->setURLData(url);
     eddyServicePtr->setUIDData(uidNamespaceID, uidInstanceID);
     eddyServicePtr->setTLMData(tlmVersion);
 }

@@ -170,11 +170,11 @@ EddystoneService::EddystoneError_t EddystoneService::stopCurrentService(void)
     switch (operationMode) {
     case EDDYSTONE_MODE_NONE:
         return EDDYSTONE_ERROR_INVALID_STATE;
-    case EDDYSTONE_MODE_CONFIG:
+    case EDDYSTONE_MODE_BEACON:
         ble.shutdown();
         stopBeaconService();
         break;
-    case EDDYSTONE_MODE_BEACON:
+    case EDDYSTONE_MODE_CONFIG:
         ble.shutdown();
         freeConfigCharacteristics();
         break;

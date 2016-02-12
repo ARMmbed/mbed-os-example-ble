@@ -126,6 +126,9 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         ble.shutdown();
         stopBeaconService();
+    }
+
+    if (!ble.hasInitialized()) {
         operationMode = EDDYSTONE_MODE_CONFIG;
         ble.init(this, &EddystoneService::bleInitComplete);
         /* Set the device name once more */
@@ -152,6 +155,9 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
         ble.shutdown();
         /* Free unused memory */
         freeConfigCharacteristics();
+    }
+
+    if (!ble.hasInitialized()) {
         operationMode = EDDYSTONE_MODE_BEACON;
         ble.init(this, &EddystoneService::bleInitComplete);
         /* Set the device name once more */

@@ -190,6 +190,11 @@ EddystoneService::EddystoneError_t EddystoneService::stopCurrentService(void)
         break;
     }
     operationMode = EDDYSTONE_MODE_NONE;
+    /* Currently on some platforms, the BLE stack handles power management,
+     * so we should bring it up again, but not configure it.
+     * Once the system sleep without BLE initialised is fixed, remove this
+     */
+    ble.init(this, &EddystoneService::bleInitComplete);
 
     return EDDYSTONE_ERROR_NONE;
 }
@@ -285,6 +290,9 @@ void EddystoneService::bleInitComplete(BLE::InitializationCompleteCallbackContex
         break;
     case EDDYSTONE_MODE_BEACON:
         setupBeaconService();
+        break;
+    case EDDYSTONE_MODE_NONE:
+        /* We don't need to do anything here, but it isn't an error */
         break;
     default:
         /* Some error occurred */

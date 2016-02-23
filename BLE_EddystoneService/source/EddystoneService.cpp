@@ -126,6 +126,9 @@ EddystoneService::EddystoneError_t EddystoneService::startConfigService(void)
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         ble.shutdown();
         stopBeaconService();
+    }
+
+    if (!ble.hasInitialized()) {
         operationMode = EDDYSTONE_MODE_CONFIG;
         ble.init(this, &EddystoneService::bleInitComplete);
         /* Set the device name once more */
@@ -152,6 +155,9 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
         ble.shutdown();
         /* Free unused memory */
         freeConfigCharacteristics();
+    }
+
+    if (!ble.hasInitialized()) {
         operationMode = EDDYSTONE_MODE_BEACON;
         ble.init(this, &EddystoneService::bleInitComplete);
         /* Set the device name once more */
@@ -161,6 +167,34 @@ EddystoneService::EddystoneError_t EddystoneService::startBeaconService(void)
 
     operationMode = EDDYSTONE_MODE_BEACON;
     setupBeaconService();
+
+    return EDDYSTONE_ERROR_NONE;
+}
+
+EddystoneService::EddystoneError_t EddystoneService::stopCurrentService(void)
+{
+    switch (operationMode) {
+    case EDDYSTONE_MODE_NONE:
+        return EDDYSTONE_ERROR_INVALID_STATE;
+    case EDDYSTONE_MODE_BEACON:
+        ble.shutdown();
+        stopBeaconService();
+        break;
+    case EDDYSTONE_MODE_CONFIG:
+        ble.shutdown();
+        freeConfigCharacteristics();
+        break;
+    default:
+        /* Some error occurred */
+        error("Invalid EddystonService mode");
+        break;
+    }
+    operationMode = EDDYSTONE_MODE_NONE;
+    /* Currently on some platforms, the BLE stack handles power management,
+     * so we should bring it up again, but not configure it.
+     * Once the system sleep without BLE initialised is fixed, remove this
+     */
+    ble.init(this, &EddystoneService::bleInitComplete);
 
     return EDDYSTONE_ERROR_NONE;
 }
@@ -256,6 +290,9 @@ void EddystoneService::bleInitComplete(BLE::InitializationCompleteCallbackContex
         break;
     case EDDYSTONE_MODE_BEACON:
         setupBeaconService();
+        break;
+    case EDDYSTONE_MODE_NONE:
+        /* We don't need to do anything here, but it isn't an error */
         break;
     default:
         /* Some error occurred */

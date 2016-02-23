@@ -31,6 +31,22 @@
     #include "CircularBuffer.h"
 #endif
 
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_URL_FRAME_INTERVAL
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_URL_FRAME_INTERVAL 700
+#endif
+
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_UID_FRAME_INTERVAL
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_UID_FRAME_INTERVAL 300
+#endif
+
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_TLM_FRAME_INTERVAL
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_TLM_FRAME_INTERVAL 2000
+#endif
+
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL 1000
+#endif
+
 /**
  * This class implements the Eddystone-URL Config Service and the Eddystone
  * Protocol Specification as defined in the publicly available specification at
@@ -49,22 +65,22 @@ public:
      * Default interval for advertising packets for the Eddystone-URL
      * Configuration Service.
      */
-    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = 1000;
+    static const uint32_t DEFAULT_CONFIG_PERIOD_MSEC    = YOTTA_CFG_EDDYSTONE_DEFAULT_EDDYSTONE_URL_CONFIG_ADV_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone URL
      * frames.
      */
-    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = 700;
+    static const uint16_t DEFAULT_URL_FRAME_PERIOD_MSEC = YOTTA_CFG_EDDYSTONE_DEFAULT_URL_FRAME_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone UID
      * frames.
      */
-    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = 300;
+    static const uint16_t DEFAULT_UID_FRAME_PERIOD_MSEC = YOTTA_CFG_EDDYSTONE_DEFAULT_UID_FRAME_INTERVAL;
     /**
      * Recommended interval for advertising packets containing Eddystone TLM
      * frames.
      */
-    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = 2000;
+    static const uint16_t DEFAULT_TLM_FRAME_PERIOD_MSEC = YOTTA_CFG_EDDYSTONE_DEFAULT_TLM_FRAME_INTERVAL;
 
     /**
      * Enumeration that defines the various operation modes of the
@@ -215,7 +231,12 @@ public:
          *       - Gap::getMinAdvertisingInterval()
          *       - Gap::getMaxAdvertisingInterval()
          */
-        EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL
+        EDDYSTONE_ERROR_INVALID_ADVERTISING_INTERVAL,
+        /**
+         * The result of executing a call when the the EddystoneService is in
+         * the incorrect operation mode.
+         */
+        EDDYSTONE_ERROR_INVALID_STATE
     };
 
     /**
@@ -406,6 +427,20 @@ public:
     EddystoneError_t startBeaconService(void);
 
     /**
+     * Change the EddystoneService OperationMode to EDDYSTONE_MODE_NONE.
+     *
+     * @retval EDDYSTONE_ERROR_NONE if the operation succeeded.
+     * @retval EDDYSTONE_ERROR_INVALID_STATE if the state of the
+     *         EddystoneService already is EDDYSTONE_MODE_NONE.
+     *
+     * @note If EddystoneService was previously in EDDYSTONE_MODE_CONFIG or
+     *       EDDYSTONE_MODE_BEACON, then the resources allocated to that mode
+     *       of operation such as memory are freed and the BLE instance
+     *       shutdown before the new operation mode is configured.
+     */
+    EddystoneError_t stopCurrentService(void);
+
+    /**
      * Set the Comple Local Name for the BLE device. This not only updates
      * the value of the Device Name Characteristic, it also updates the scan
      * response payload if the EddystoneService is currently in
@@ -553,6 +588,10 @@ private:
     /**
      * Free the resources acquired by a call to setupBeaconService() and
      * cancel all pending callbacks that operate the radio and frame queue.
+     *
+     * @note This call will not modify the current state of the BLE device.
+     *       EddystoneService::stopBeaconService should only be called after
+     *       a call to BLE::shutdown().
      */
     void stopBeaconService(void);
 

@@ -20,6 +20,14 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_DEVICE_NAME
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_DEVICE_NAME "EDDYSTONE CONFIG"
+#endif
+
+#ifndef YOTTA_CFG_EDDYSTONE_DEFAULT_URL
+    #define YOTTA_CFG_EDDYSTONE_DEFAULT_URL "https://www.mbed.com/"
+#endif
+
 /**
  * Macro to expand a 16-bit Eddystone UUID to 128-bit UUID.
  */
@@ -86,12 +94,12 @@ const uint8_t UUID_RESET_CHAR[]            = UUID_URL_BEACON(0x20, 0x89);
 /**
  * Default name for the BLE Device Name characteristic.
  */
-const char DEFAULT_DEVICE_NAME[] = "EDDYSTONE CONFIG";
+const char DEFAULT_DEVICE_NAME[] = YOTTA_CFG_EDDYSTONE_DEFAULT_DEVICE_NAME;
 
 /**
  * Default URL used  by EddystoneService.
  */
-const char DEFAULT_URL[] = "http://www.mbed.com/";
+const char DEFAULT_URL[] = YOTTA_CFG_EDDYSTONE_DEFAULT_URL;
 
 /**
  * Enumeration that defines the Eddystone power levels for the Eddystone-URL

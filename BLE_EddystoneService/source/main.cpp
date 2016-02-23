@@ -18,9 +18,7 @@
 #include "ble/BLE.h"
 #include "EddystoneService.h"
 
-#ifdef TARGET_NRF51822
-    #include "nrfPersistentStorageHelper/ConfigParamsPersistence.h"
-#endif
+#include "PersistentStorageHelper/ConfigParamsPersistence.h"
 
 EddystoneService *eddyServicePtr;
 
@@ -34,19 +32,10 @@ static const UIDInstanceID_t  uidInstanceID  = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0x
 /* Default version in TLM frame */
 static const uint8_t tlmVersion = 0x00;
 
-/* Default configuration advertising interval */
-static const uint32_t advConfigInterval = 500;
-
-/* Default URL */
-static const char defaultUrl[] = "http://mbed.org";
-
 /* Values for ADV packets related to firmware levels, calibrated based on measured values at 1m */
 static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 /* Values for radio power levels, provided by manufacturer. */
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
-
-/* Custom device name for this application */
-static const char deviceName[] = "mbed Eddystone";
 
 DigitalOut led(LED1, 1);
 
@@ -68,11 +57,9 @@ static void timeout(void)
     state = BLE::Instance().gap().getState();
     if (!state.connected) { /* don't switch if we're in a connected state. */
         eddyServicePtr->startBeaconService();
-#ifdef TARGET_NRF51822
         EddystoneService::EddystoneParams_t params;
         eddyServicePtr->getEddystoneParams(params);
         saveEddystoneServiceConfigParams(&params);
-#endif
     } else {
         minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
     }
@@ -92,10 +79,11 @@ static void onBleInitError(BLE::InitializationCompleteCallbackContext* initConte
 static void initializeEddystoneToDefaults(BLE &ble)
 {
     /* Set everything to defaults */
-    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, advConfigInterval);
+    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels);
 
     /* Set default URL, UID and TLM frame data if not initialized through the config service */
-    eddyServicePtr->setURLData(defaultUrl);
+    const char* url = YOTTA_CFG_EDDYSTONE_DEFAULT_URL;
+    eddyServicePtr->setURLData(url);
     eddyServicePtr->setUIDData(uidNamespaceID, uidInstanceID);
     eddyServicePtr->setTLMData(tlmVersion);
 }
@@ -112,23 +100,12 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     ble.gap().onDisconnection(disconnectionCallback);
 
-#ifdef TARGET_NRF51822
     EddystoneService::EddystoneParams_t params;
     if (loadEddystoneServiceConfigParams(&params)) {
-        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels, advConfigInterval);
+        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels);
     } else {
         initializeEddystoneToDefaults(ble);
     }
-#else
-    #warning "EddystoneService is not configured to store configuration data in non-volatile memory"
-    initializeEddystoneToDefaults(ble);
-#endif
-
-    /*
-     * Set the custom device name. The device name is not stored in persistent
-     * storage, so we need to set it manually every time the device is reset
-     */
-    eddyServicePtr->setCompleteDeviceName(deviceName);
 
     /* Start Eddystone in config mode */
     eddyServicePtr->startConfigService();

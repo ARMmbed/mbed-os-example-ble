@@ -22,20 +22,41 @@
 DigitalOut alivenessLED(LED1, 1);
 static DiscoveredCharacteristic ledCharacteristic;
 static bool triggerLedCharacteristic;
+static const char PEER_NAME[] = "LED";
 
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */
 }
 
 void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params) {
-    if (params->peerAddr[0] != 0x29) { /* !ALERT! Alter this filter to suit your device. */
-        return;
-    }
-    printf("adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
-           params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2], params->peerAddr[1], params->peerAddr[0],
-           params->rssi, params->isScanResponse, params->type);
+    // parse the advertising payload, looking for data type COMPLETE_LOCAL_NAME
+    // The advertising payload is a collection of key/value records where
+    // byte 0: length of the record excluding this byte
+    // byte 1: The key, it is the type of the data
+    // byte [2..N] The value. N is equal to byte0 - 1
+    for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
 
-    BLE::Instance().gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
+        const uint8_t record_length = params->advertisingData[i];
+        if (record_length == 0) {
+            continue;
+        }
+        const uint8_t type = params->advertisingData[i + 1];
+        const uint8_t* value = params->advertisingData + i + 2;
+        const uint8_t value_length = record_length - 1;
+
+        if(type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
+            if ((value_length == sizeof(PEER_NAME)) && (memcmp(value, PEER_NAME, value_length) == 0)) {
+                printf(
+                    "adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
+                    params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
+                    params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type
+                );
+                BLE::Instance().gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
+                break;
+            }
+        }
+        i += record_length;
+    }
 }
 
 void serviceDiscoveryCallback(const DiscoveredService *service) {

@@ -34,7 +34,11 @@ Building instructions for all samples are in the [main readme](https://github.co
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
 1. Find your device.
-1. View the device's characteristics; the exact steps depend on which scanner you're using.
-1. Write the characteristic and see the LED being toggled.
+1. Find the LED service; its UUID is `0xA000`. The exact instructions to do this depend on the scanner you're using.
+1. Find the LED characteristic; its UUID is `0xA001`. The exact instructions to do this depend on the scanner you're using.
+1. The characteristic accept a 1-bytes value:
+    * `0x00`: LED ON
+    * `0x01`: LED OFF
+1. Toggle the LED characteristic value and see the LED turn ON or turn OFF according to the value you set.
 
-If you can see the characteristic, and the LED is turned on/off as you write to it, the application worked properly.
+If you can see the characteristic, and the LED is turned on/off as you toggle its value, the application is working properly.

@@ -1,6 +1,6 @@
 # BLE Heart Rate Monitor
 
-This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx). The heart rate value is provided by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example. 
+This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx). The heart rate value is provided by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example.
 
 Technical details are better presented [in the mbed Classic equivalent of this example](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_HeartRate/).
 
@@ -25,9 +25,10 @@ Building instructions for all samples are in the [main readme](https://github.co
 ## Checking for success
 
 1. Build the application and install it on your board as explained in the building instructions.
-
-1. Open Panobike or the BLE scanner on your phone.
-
-1. Find your device.
-
+1. Open the BLE scanner on your phone.
+1. Find your device; it should be named `HRM`.
+1. Establish a connection with your device.
+1. Discover the services and the characteristics on the device. The *Heart Rate* service has the UUID `0x180D` and includes the *Heart Rate Measurement* characteristic which has the UUID `0x2A37`.
+1. Register for the notifications sent by the *Heart Rate Measurement* characteristic.
 1. You should see the heart rate value change every half second. It begins at 100, goes up to 175 (in steps of 1), resets to 100 and so on.
+

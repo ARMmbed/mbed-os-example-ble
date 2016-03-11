@@ -1,8 +1,8 @@
 # Button count over GAP
 
-This application shows how to use GAP to transmit a simple value every time that value is updated:
+This application shows how to use GAP to transmit a simple value to disconnected peer listening for advertisement every time that value is updated:
 
-1. The value is a count of how many times a button on the device was pressed (the code actually monitors the button's releases, not press downs). 
+1. The value is a count of how many times a button on the device was pressed (the code actually monitors the button's releases, not press downs).
 
 1. We transmit the value in the SERVICE_DATA field of the advertising payload.
 
@@ -28,10 +28,14 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Open the BLE scanner on your phone.
 
-1. Find your device.
+1. Find your device and look at the advertisement broadcasted by your device (there is no need to connect to your device).
 
-1. The Service Data field for your device should show the button press count. The starting value is 0.
+1. The Service Data field of the advertisement packet broadcasted by your device reflects the button press count. The starting value is 0.
 
 1. Press the button on the device.
 
-1. The Service Data field value should change.
+1. The Service Data field value of the advertisement packet should change every time you press the button.
+
+## Note
+
+Since broadcasting is not reliable and your phone may scan intermittently, it is possible that your phone will miss button updates.

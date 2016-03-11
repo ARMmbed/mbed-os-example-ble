@@ -36,6 +36,12 @@ Building instructions for all mbed OS samples are in the [main readme](https://g
 
 1. Open the BLE scanner on your phone.
 
-1. Find your device.
+1. Find your device; it should be named *Therm*.
 
-1. Check that the temperature increments are shown.
+1. Establish a connection with your device.
+
+1. Discover the services and the characteristics on the device. The *Health Thermometer* service has the UUID `0x1809` and includes the *Temperature Measurement* characteristic which has the UUID `0x2A1C`.
+
+1. Register for the notifications sent by the *Temperature Measurement* characteristic.
+
+1. You should see the temperature value change every half second. It begins at 39.6, goes up to  43.0 (in steps of 0.1), resets to 39.6 and so on.

@@ -33,7 +33,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
-1. Find your device.
+1. Find your device; it should be named `LED`.
 1. Find the LED service; its UUID is `0xA000`. The exact instructions to do this depend on the scanner you're using.
 1. Find the LED characteristic; its UUID is `0xA001`. The exact instructions to do this depend on the scanner you're using.
 1. The characteristic accept a 1-bytes value:

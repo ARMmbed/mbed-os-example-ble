@@ -49,7 +49,7 @@ Checking for Success
 ====================
 
 Your URI beacon should be detectable by BLE scanners (e.g. a smartphone) and by the
-Google Physical Web app.
+Google Physical Web app. By default, the application should point to `http://uribeacon.org`.
 
 **Please note that the URIBeacon spec requires the URIBeacon app to remain in
 config mode for the first 60 seconds before switching to being a beacon. So if

@@ -28,7 +28,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Open the BLE scanner on your phone.
 
-1. Find your device and look at the advertisement broadcasted by your device (there is no need to connect to your device).
+1. Find your device; it should be named `GAPButton`; and look at the advertisement broadcasted by your device (there is no need to connect to your device).
 
 1. The Service Data field of the advertisement packet broadcasted by your device reflects the button press count. The starting value is 0.
 

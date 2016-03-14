@@ -1,4 +1,4 @@
-Eddystone beacons broadcast a small amount of information, like URLs, to nearby BLE devices. 
+Eddystone beacons broadcast a small amount of information, like URLs, to nearby BLE devices.
 
 The Eddystone Beacon sample application runs in two stages:
 
@@ -48,8 +48,11 @@ By default, the beacon directs to the url ``http://mbed.org``. You can change th
 
 1. Open the BLE scanner on your phone.
 
-1. Find your device.
+1. Find your device; it should be tagged as `EDDYSTONE CONFIG` while the configuration service is running and it should be tagged as `Eddystone`once the device work as a beacon.
 
-1. Check that the URL is correct.
+1. Once the device operate as a beacon, observe its advertisements packets:
+    * UID frame are used to identify a beacon.
+    * URL frame should report the URL advertised by the beacon.
+    * TLM frames report telemetry informations such as battery level, temperature or the uptime of the beacon.
 
 You can use the [Eddystone Observer](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneObserver) sample instead of a phone application.

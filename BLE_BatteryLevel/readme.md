@@ -25,9 +25,11 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
-1. Find your device.
-1. View the device's characteristics; the exact steps depend on which scanner you're using.
-1. The value of the battery level characteristic should be incrementing as explained above.
+1. Find your device; it should be named `BATTERY`.
+1. Establish a connection with your device.
+1. Discover the services and the characteristics on the device. The *Battery service* has the UUID 0x180F and includes the *Battery level* characteristic which has the UUID 0x2A19.
+1. Register for the notifications sent by the *Battery level* characteristic.
+1. You should see the battery level value change every half second. It begins at 50, goes up to 100 (in steps of 1), resets to 20 and so on.
 
-If you can see the characteristic, and if its value incrementing correctly, the application worked properly.
+If you can see the characteristic, and if its value incrementing correctly, the application is working properly.
 

@@ -32,7 +32,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
-1. Find your device, it should appear with the name `Button` in the scanner.
+1. Find your device; it should appear with the name `Button` in the scanner.
 1. Establish a connection with the device.
 1. Discover the services and the characteristics on the device. The *Button service* has the UUID `0xA000` and includes the *Button state characteristic* which has the UUID `0xA001`.
 1. Register for the notifications sent by the button state characteristic then the scanner will automatically receive a notification containing the new state of the button every time the state of the button changes.

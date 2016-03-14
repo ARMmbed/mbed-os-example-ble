@@ -32,4 +32,4 @@ To see the application's output:
 
 1. Run a terminal program with the correct serial port and the baud rate set to 9600. For example, to use GNU Screen, run: ``screen /dev/tty.usbmodem1412 9600``.
 
-1. The Eddystone Observer should start printing URLs to the terminal.
+1. The Eddystone Observer should start printing URLs of nearby Eddystone beacons to the terminal.

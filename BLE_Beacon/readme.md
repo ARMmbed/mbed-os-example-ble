@@ -24,7 +24,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
-1. Find your device and observe its advertisements (there is no need to connect to the beacon).
+1. Find your device; it should be tagged as an `iBeacon` and observe its advertisements (there is no need to connect to the beacon).
 1. View the beacon's details; the exact steps depend on which scanner you're using.
 
 **Tip:** If you are in an area with many BLE devices, it may be difficult to identify your beacon. The simplest solution is to turn your board off and on, initiate a new scan on your BLE scanner every time, and look for the beacon that appears only when your board is on.

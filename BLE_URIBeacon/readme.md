@@ -11,13 +11,11 @@ What You’ll Need
 
 To get this going, you’ll need:
 
-- To see BLE devices and their advertisement or beacon information, get one of the following installed on your phone:
+- To see URIBeacons get the *Physical Web* app installed on your phone:
 
-  - The `physical web` app. You can get that app for [iOS](https://itunes.apple.com/us/app/physical-web/id927653608?mt=8) and for [Android](https://play.google.com/store/apps/details?id=physical_web.org.physicalweb).
+    - [Android version](https://play.google.com/store/apps/details?id=physical_web.org.physicalweb)
 
-  - For Android, you can get [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp).
-
-  - For iPhone, you can get [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8).
+    - [iOS version](https://itunes.apple.com/us/app/physical-web/id927653608?mt=8)
 
 - One of the BLE platforms listed in the README.md of this repository, for example a
   Nordic DK board.
@@ -48,8 +46,44 @@ binaries and hex files.
 Checking for Success
 ====================
 
-Your URI beacon should be detectable by BLE scanners (e.g. a smartphone) and by the
-Google Physical Web app. By default, the application should point to `http://uribeacon.org`.
+
+1. Build the application and install it on your board as explained in the building instructions.
+
+1. Open the *Physical Web* application on your phone. It will start to search for nearby beacons.
+
+    ![](img/app_start.png)
+
+    **figure 1** Start of the *Physical Web* application version 0.1.856 on Android
+
+1. When the beacon starts up, the Configuration Service runs for 60 seconds.
+During this time it is possible to change the URL advertised by the beacon.
+It is also important to note that during these 60 seconds, your device will not advertise any URL.
+
+    ![](img/open_configuration.png)
+
+    **figure 2** How to open the beacon configuration view using the *Physical Web* application version 0.1.856 on Android
+
+
+1. Edit the URL advertised by your beacon.
+
+    ![](img/edit_url.png)
+
+    **figure 3** How to edit the URL advertised by your beacon using the *Physical Web* application version 0.1.856 on Android
+
+
+1. Save the URL which will be advertised by your beacon.
+
+    ![](img/save_url.png)
+
+    **figure 4** How to save your beacon configuration and start advertising URL using the *Physical Web* application version 0.1.856 on Android.
+
+
+1. Find your device; it should advertise the URL you have set.
+
+    ![](img/result.png)
+
+    **figure 5** Display of URL advertised by your beacon using the *Physical Web* application version 0.1.856 on Android.
+
 
 **Please note that the URIBeacon spec requires the URIBeacon app to remain in
 config mode for the first 60 seconds before switching to being a beacon. So if

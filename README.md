@@ -7,16 +7,28 @@ Please browse to subdirectories for specific documentation.
 Getting Started
 ===============
 
-Hardware
---------
+
+Pre-Requisites
+--------------
+
+
+To build these examples, you need to have a computer with the following software installed:
+
+* [CMake](http://www.cmake.org/download/).
+* [yotta](https://github.com/ARMmbed/yotta). Please note that **yotta has its own set of dependencies**, listed in the [installation instructions](http://armmbed.github.io/yotta/#installing-on-windows).
+* [Python](https://www.python.org/downloads/).
+* [ARM GCC toolchain](https://launchpad.net/gcc-arm-embedded).
+* A serial terminal emulator (e.g. screen, pySerial, cu).
+* If the OS used is Windows, the serial driver of the board has to be correctly installed.
+	* For boards with mbed interface firmware the installation instructions are located (here)[https://developer.mbed.org/handbook/Windows-serial-configuration]
+	* For nrf51-based board with a J-Link interface  please install the J-Link *software and documentation pack* available (here)[https://www.segger.com/jlink-software.html]
+
 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
+* A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
+* A supported target, such as the [NUCLEO-F411RE](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF260320), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
 
-
- * A device with a radio on board, such as a Nordic nRF51-based board.
-
- * A supported target, such as the FRDM K64F, with a shield or external BLE peripheral, such as an ST shield.
 
 The [`ble` yotta module](https://github.com/ARMmbed/ble) provides the BLE APIs on mbed OS. The `ble` module uses yotta targets and yotta
 target dependencies to provide the appropriate implementation of the BLE API
@@ -25,6 +37,7 @@ for your chosen hardware combination.
 A yotta `target` is a supported combination of hardware board and toolchain. This means that, for any of the hardware combinations above, you will need to use or create a
 yotta target that describes your configuration. The existing supported configurations
 are described below.
+
 
 Targets for BLE
 ---------------
@@ -40,7 +53,7 @@ Nordic (using the nrf51822-ble module):
 
 ST (using the st-ble module):
 
-* frdm-k64f-st-ble-gcc (an FRDM-k64f with an ST BLE shield)
+* st-nucleo-f401re-st-ble-gcc (a NUCLEO-F411RE board with an ST BLE shield)
 
 Building and testing the examples
 ---------------------------------

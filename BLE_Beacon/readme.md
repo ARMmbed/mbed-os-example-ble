@@ -22,10 +22,28 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 ## Checking for success
 
+**Note:** Screens captures depicted below show what is expected from this example if the scanner used is *nRF Master Control Panel* version 4.0.5. If you encounter any difficulties consider trying another scanner or another version of nRF Master Control Panel. Alternative scanners may require reference to their manuals.
+
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
+1. Start a scan.
+
+    ![](img/start_scan.png)
+
+    **figure 1** How to start scan using nRF Master Control Panel 4.0.5
+
 1. Find your device; it should be tagged as an `iBeacon` and observe its advertisements (there is no need to connect to the beacon).
+
+    ![](img/discovery.png)
+
+    **figure 2** Scan results using nRF Master Control Panel 4.0.5
+
 1. View the beacon's details; the exact steps depend on which scanner you're using.
+
+    ![](img/beacon_details.png)
+
+    **figure 3** Beacon details using nRF Master Control Panel 4.0.5
+
 
 **Tip:** If you are in an area with many BLE devices, it may be difficult to identify your beacon. The simplest solution is to turn your board off and on, initiate a new scan on your BLE scanner every time, and look for the beacon that appears only when your board is on.
 

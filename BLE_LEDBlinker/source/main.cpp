@@ -104,13 +104,11 @@ void connectionCallback(const Gap::ConnectionCallbackParams_t *params) {
 
 void triggerToggledWrite(const GattReadCallbackParams *response) {
     if (response->handle == ledCharacteristic.getValueHandle()) {
-#if DUMP_READ_DATA
         printf("triggerToggledWrite: handle %u, offset %u, len %u\r\n", response->handle, response->offset, response->len);
         for (unsigned index = 0; index < response->len; index++) {
             printf("%c[%02x]", response->data[index], response->data[index]);
         }
         printf("\r\n");
-#endif
 
         uint8_t toggledValue = response->data[0] ^ 0x1;
         ledCharacteristic.write(1, &toggledValue);

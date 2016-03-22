@@ -154,7 +154,10 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gattClient().onDataRead(triggerToggledWrite);
     ble.gattClient().onDataWrite(triggerRead);
 
-    ble.gap().setScanParams(500, 400);
+    // scan interval: 400ms and scan window: 400ms.
+    // Every 400ms the device will scan for 400ms
+    // This means that the device will scan continuously.
+    ble.gap().setScanParams(400, 400);
     ble.gap().startScan(advertisementCallback);
 }
 

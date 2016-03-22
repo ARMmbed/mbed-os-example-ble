@@ -32,15 +32,8 @@ Building instructions for all mbed OS samples are in the [main readme](https://g
 
 1. Build both applications and install one on each device, as explained in the building instructions.
 
-1. The device running ``BLE_LED`` should blink its LED.
+1. The LED number two of the device running ``BLE_LED`` should blink.
 
-1. You can change the blinking speed by changing the callback period in ``BLE_LEDBlinker``:
-
-	```
-	minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
-	```
-
-	Rebuild the application and flash it to the device. The second device's LED should update its blink speed.
 
 ## Monitoring the application through a serial port
 

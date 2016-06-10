@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
+
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "EddystoneService.h"
@@ -36,6 +38,11 @@ static const uint8_t tlmVersion = 0x00;
 static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 /* Values for radio power levels, provided by manufacturer. */
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
+
+static EventQueue eventQueue(
+    /* event count */ 16,
+    /* event size */ 32
+);
 
 DigitalOut led(LED1, 1);
 
@@ -61,7 +68,7 @@ static void timeout(void)
         eddyServicePtr->getEddystoneParams(params);
         saveEddystoneServiceConfigParams(&params);
     } else {
-        minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
+        eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
     }
 }
 
@@ -79,7 +86,7 @@ static void onBleInitError(BLE::InitializationCompleteCallbackContext* initConte
 static void initializeEddystoneToDefaults(BLE &ble)
 {
     /* Set everything to defaults */
-    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels);
+    eddyServicePtr = new EddystoneService(ble, defaultAdvPowerLevels, radioPowerLevels, eventQueue);
 
     /* Set default URL, UID and TLM frame data if not initialized through the config service */
     const char* url = YOTTA_CFG_EDDYSTONE_DEFAULT_URL;
@@ -102,26 +109,38 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
 
     EddystoneService::EddystoneParams_t params;
     if (loadEddystoneServiceConfigParams(&params)) {
-        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels);
+        eddyServicePtr = new EddystoneService(ble, params, radioPowerLevels, eventQueue);
     } else {
         initializeEddystoneToDefaults(ble);
     }
 
     /* Start Eddystone in config mode */
-    eddyServicePtr->startConfigService();
+   eddyServicePtr->startConfigService();
 
-    minar::Scheduler::postCallback(timeout).delay(minar::milliseconds(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000));
+   eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
 }
 
-void app_start(int, char *[])
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+
+int main()
 {
     /* Tell standard C library to not allocate large buffers for these streams */
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
     setbuf(stdin, NULL);
 
-    minar::Scheduler::postCallback(blinky).period(minar::milliseconds(500));
+    eventQueue.post_every(blinky, 500);
 
     BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+    return 0;
 }

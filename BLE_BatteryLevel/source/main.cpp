@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "ble/Gap.h"
@@ -26,6 +27,11 @@ static const uint16_t uuid16_list[] = {GattService::UUID_BATTERY_SERVICE};
 
 static uint8_t batteryLevel = 50;
 static BatteryService* batteryServicePtr;
+
+static EventQueue eventQueue(
+    /* event count */ 16,
+    /* event size */ 32
+);
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
@@ -47,7 +53,7 @@ void blinkCallback(void)
 
     BLE &ble = BLE::Instance();
     if (ble.gap().getState().connected) {
-        minar::Scheduler::postCallback(updateSensorValue);
+        eventQueue.post(updateSensorValue);
     }
 }
 
@@ -92,10 +98,22 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
-void app_start(int, char**)
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+int main()
 {
-    minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+    eventQueue.post_every(blinkCallback, 500);
 
     BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

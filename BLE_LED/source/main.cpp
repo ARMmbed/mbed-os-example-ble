@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "LEDService.h"
@@ -23,6 +24,11 @@ DigitalOut actuatedLED(LED2, 0);
 
 const static char     DEVICE_NAME[] = "LED";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
+
+static EventQueue eventQueue(
+    /* event count */ 10,
+    /* event size */ 32
+);
 
 LEDService *ledServicePtr;
 
@@ -91,10 +97,22 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
-void app_start(int, char **)
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+int main()
 {
-    minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+    eventQueue.post_every(blinkCallback, 500);
 
     BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

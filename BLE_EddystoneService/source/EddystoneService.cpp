@@ -752,10 +752,10 @@ void EddystoneService::setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalI
         }
 
         if (urlFramePeriod) {
-            /* Currently the only way to change the period of a callback in minar
+            /* Currently the only way to change the period of a callback
              * is to cancel it and reschedule
              */
-            urlFrameCallbackHandle = eventQueue.post_in(
+            urlFrameCallbackHandle = eventQueue.post_every(
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_URL,
                 urlFramePeriod
@@ -780,7 +780,7 @@ void EddystoneService::setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalI
 
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         if (uidFrameCallbackHandle) {
-            /* The advertisement interval changes, update minar periodic callback */
+            /* The advertisement interval changes, update the periodic callback */
             eventQueue.cancel(uidFrameCallbackHandle);
         } else {
             /* This frame was just enabled */
@@ -792,10 +792,10 @@ void EddystoneService::setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalI
         }
 
         if (uidFramePeriod) {
-            /* Currently the only way to change the period of a callback in minar
+            /* Currently the only way to change the period of a callback
              * is to cancel it and reschedule
              */
-            uidFrameCallbackHandle = eventQueue.post_in(
+            uidFrameCallbackHandle = eventQueue.post_every(
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_UID,
                 uidFramePeriod
@@ -818,7 +818,7 @@ void EddystoneService::setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalI
 
     if (operationMode == EDDYSTONE_MODE_BEACON) {
         if (tlmFrameCallbackHandle) {
-            /* The advertisement interval changes, update minar periodic callback */
+            /* The advertisement interval changes, update periodic callback */
             eventQueue.cancel(tlmFrameCallbackHandle);
         } else {
             /* This frame was just enabled */
@@ -830,10 +830,10 @@ void EddystoneService::setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalI
         }
 
         if (tlmFramePeriod) {
-            /* Currently the only way to change the period of a callback in minar
+            /* Currently the only way to change the period of a callback 
              * is to cancel it and reschedule
              */
-            tlmFrameCallbackHandle = eventQueue.post_in(
+            tlmFrameCallbackHandle = eventQueue.post_every(
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_TLM,
                 tlmFramePeriod

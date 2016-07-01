@@ -1,6 +1,6 @@
 # BLE Examples
 This repo contains a collection of BLE example applications based on
-mbed OS and built with [yotta](https://github.com/ARMmbed/yotta). Each example subdirectory contains a separate yotta module meant for building an executable.
+mbed OS and built with [mbed-cli](https://github.com/ARMmbed/mbed-cli). Each example subdirectory contains a separate mbed-cli module meant for building an executable.
 
 Please browse to subdirectories for specific documentation.
 
@@ -61,6 +61,12 @@ __To build an example:__
 	```
 	$ cd ble-examples
 	$ cd BLE_Beacon
+	```
+
+1. Update the source tree:
+
+	```
+	mbed update
 	```
 
 1. Run the build:

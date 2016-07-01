@@ -26,7 +26,7 @@ static bool triggerLedCharacteristic;
 static const char PEER_NAME[] = "LED";
 
 static EventQueue eventQueue(
-    /* event count */ 16
+    /* event count */ 16 * /* event size */ 32    
 );
 
 void periodicCallback(void) {

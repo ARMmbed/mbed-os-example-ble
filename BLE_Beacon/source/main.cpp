@@ -22,7 +22,7 @@
 static iBeacon* ibeaconPtr;
 
 static EventQueue eventQueue(
-    /* event count */ 4
+    /* event count */ 4 * /* event size */ 32    
 );
 
 /**

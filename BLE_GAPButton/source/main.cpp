@@ -32,7 +32,7 @@ const char DEVICE_NAME[] = "GAPButton";
 const uint16_t uuid16_list[] = {GAPButtonUUID};
 
 static EventQueue eventQueue(
-    /* event count */ 16
+    /* event count */ 16 * /* event size */ 32
 );
 
 void print_error(ble_error_t error, const char* msg)

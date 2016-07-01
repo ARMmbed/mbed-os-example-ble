@@ -28,7 +28,7 @@ static float                     currentTemperature   = 39.6;
 static HealthThermometerService *thermometerServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16
+    /* event count */ 16 * /* event size */ 32    
 );
 
 /* Restart Advertising on disconnection*/

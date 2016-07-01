@@ -29,7 +29,7 @@ static uint8_t hrmCounter = 100; // init HRM to 100bps
 static HeartRateService *hrServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16
+    /* event count */ 16 * /* event size */ 32
 );
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)

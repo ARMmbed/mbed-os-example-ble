@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "ble/DiscoveredCharacteristic.h"
@@ -23,6 +24,10 @@ DigitalOut alivenessLED(LED1, 1);
 static DiscoveredCharacteristic ledCharacteristic;
 static bool triggerLedCharacteristic;
 static const char PEER_NAME[] = "LED";
+
+static EventQueue eventQueue(
+    /* event count */ 16 * /* event size */ 32    
+);
 
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */
@@ -90,7 +95,7 @@ void discoveryTerminationCallback(Gap::Handle_t connectionHandle) {
     printf("terminated SD for handle %u\r\n", connectionHandle);
     if (triggerLedCharacteristic) {
         triggerLedCharacteristic = false;
-        minar::Scheduler::postCallback(updateLedCharacteristic);
+        eventQueue.post(updateLedCharacteristic);
     }
 }
 
@@ -161,10 +166,23 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startScan(advertisementCallback);
 }
 
-void app_start(int, char**) {
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+int main()
+{
     triggerLedCharacteristic = false;
+    eventQueue.post_every(periodicCallback, 500);
 
-    minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
+    BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble.init(bleInitComplete);
 
-    BLE::Instance().init(bleInitComplete);
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

@@ -17,6 +17,7 @@
 #ifndef __EDDYSTONESERVICE_H__
 #define __EDDYSTONESERVICE_H__
 
+#include <mbed-events/events.h>
 #include "ble/BLE.h"
 #include "EddystoneTypes.h"
 #include "URLFrame.h"
@@ -294,6 +295,7 @@ public:
     EddystoneService(BLE                 &bleIn,
                      EddystoneParams_t   &paramsIn,
                      const PowerLevels_t &radioPowerLevelsIn,
+                     events::EventQueue& eventQueue,
                      uint32_t            advConfigIntervalIn = DEFAULT_CONFIG_PERIOD_MSEC);
 
     /**
@@ -317,6 +319,7 @@ public:
     EddystoneService(BLE                 &bleIn,
                      const PowerLevels_t &advPowerLevelsIn,
                      const PowerLevels_t &radioPowerLevelsIn,
+                     EventQueue          &eventQueue,
                      uint32_t            advConfigIntervalIn = DEFAULT_CONFIG_PERIOD_MSEC);
 
     /**
@@ -846,27 +849,27 @@ private:
     Timer                                                           timeSinceBootTimer;
 
     /**
-     * Minar callback handle to keep track of periodic
+     * Callback handle to keep track of periodic
      * enqueueFrame(EDDYSTONE_FRAME_UID) callbacks that populate the
      * advFrameQueue.
      */
-    minar::callback_handle_t                                        uidFrameCallbackHandle;
+    int                                                             uidFrameCallbackHandle;
     /**
      * Minar callback handle to keep track of periodic
      * enqueueFrame(EDDYSTONE_FRAME_URL) callbacks that populate the
      * advFrameQueue.
      */
-    minar::callback_handle_t                                        urlFrameCallbackHandle;
+    int                                                             urlFrameCallbackHandle;
     /**
      * Minar callback handle to keep track of periodic
      * enqueueFrame(EDDYSTONE_FRAME_TLM) callbacks that populate the
      * advFrameQueue.
      */
-    minar::callback_handle_t                                        tlmFrameCallbackHandle;
+    int                                                             tlmFrameCallbackHandle;
     /**
      * Minar callback handle to keep track of manageRadio() callbacks.
      */
-    minar::callback_handle_t                                        radioManagerCallbackHandle;
+    int                                                             radioManagerCallbackHandle;
 
     /**
      * GattCharacteristic table used to populate the BLE ATT table in the
@@ -878,6 +881,11 @@ private:
      * Pointer to the device name currently being used.
      */
     const char                                                      *deviceName;
+
+    /**
+     * Event queue used to post callbacks s
+     */
+    EventQueue& eventQueue;
 };
 
 #endif  /* __EDDYSTONESERVICE_H__ */

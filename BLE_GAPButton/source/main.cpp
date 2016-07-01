@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 
@@ -29,6 +30,10 @@ const char DEVICE_NAME[] = "GAPButton";
  * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
 #define GAPButtonUUID 0xAA00
 const uint16_t uuid16_list[] = {GAPButtonUUID};
+
+static EventQueue eventQueue(
+    /* event count */ 16 * /* event size */ 32
+);
 
 void print_error(ble_error_t error, const char* msg)
 {
@@ -70,6 +75,9 @@ void print_error(ble_error_t error, const char* msg)
         case BLE_ERROR_UNSPECIFIED:
             printf("BLE_ERROR_UNSPECIFIED: Unknown error");
             break;
+        case BLE_ERROR_INTERNAL_STACK_FAILURE:
+            printf("BLE_ERROR_INTERNAL_STACK_FAILURE: internal stack faillure");
+            break;
     }
     printf("\r\n");
 }
@@ -92,8 +100,8 @@ void buttonPressedCallback(void)
     ++cnt;
 
     // Calling BLE api in interrupt context may cause race conditions
-    // Using minar to schedule calls to BLE api for safety
-    minar::Scheduler::postCallback(updatePayload);
+    // Using mbed-events to schedule calls to BLE api for safety
+    eventQueue.post(updatePayload);
 }
 
 void blinkCallback(void)
@@ -159,18 +167,32 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
     }
 }
 
-void app_start(int, char**)
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+int main()
 {
     cnt = 0;
-    ble_error_t err = BLE::Instance().init(bleInitComplete);
+
+    BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble_error_t err = ble.init(bleInitComplete);
     if (err != BLE_ERROR_NONE) {
         print_error(err, "BLE initialisation failed");
-        return;
+        return 0;
     }
 
     // Blink LED every 500 ms to indicate system aliveness
-    minar::Scheduler::postCallback(blinkCallback).period(minar::milliseconds(500));
+    eventQueue.post_every(blinkCallback, 500);
 
     // Register function to be called when button is released
     button.rise(buttonPressedCallback);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

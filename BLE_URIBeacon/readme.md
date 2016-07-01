@@ -27,18 +27,16 @@ After cloning the parent repository, switch to the subfolder BLE_URIBeacon, and
 execute the following:
 
 ```Shell
-yotta target <an_appropriate_target_such_as_mkit-gcc>
-yotta install
-yotta build
+mbed compile -t <toolchain> -m <target>
 ```
-Assuming that you're building for the nRF51 DK platform, available targets are
-`nrf51dk-armcc` and `nrf51dk-gcc`. You can pick either.
+Assuming that you're building for the nRF51 DK platform, available targets is
+ `NRF51_DK`.
 
 The other targets you can use are described in the main README.md for this repository.
 
-The resulting binaries would be under `build/<yotta_target_name>/source/`.
+The resulting binaries would be under `.build/<target_name>/<toolchain>/`.
 
-Under that folder, the file called `ble-uribeacon-combined.hex` is the one which
+Under that folder, the file called `ble-uribeacon.hex` is the one which
 can be flashed to the target using mbed's DAP over USB; the parent README or the
 documentation for your yotta target will explain how to choose between the available
 binaries and hex files.
@@ -92,4 +90,3 @@ if you're using one of the generic apps for BLE scanning, you should see a
 configurable beacon being advertised for the first 60 seconds.**
 
 You'll find [links](https://github.com/google/uribeacon/tree/uribeacon-final#contents) on Google's project page to client apps to test URIBeacon. Here's a link that should get you an [Android App](https://github.com/google/uribeacon/releases/tag/v1.2); please browse to `uribeacon-sample-release.apk`. But you should begin with the links to android apps mentioned above.
-

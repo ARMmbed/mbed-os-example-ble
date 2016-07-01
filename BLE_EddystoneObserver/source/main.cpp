@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed.h"
 #include "ble/BLE.h"
 
 static const int URI_MAX_LENGTH = 18;             // Maximum size of service data in ADV packets
+
+static EventQueue eventQueue(
+    /* event count */ 16 * /* event size */ 32
+);
 
 DigitalOut led1(LED1, 1);
 
@@ -138,9 +143,22 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startScan(advertisementCallback);
 }
 
-void app_start(int, char *[])
-{
-    minar::Scheduler::postCallback(periodicCallback).period(minar::milliseconds(500));
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
 
-    BLE::Instance().init(bleInitComplete);
+int main()
+{
+    eventQueue.post_every(periodicCallback, 500);
+
+    BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble.init(bleInitComplete);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+#include <mbed-events/events.h>
 #include "mbed-drivers/mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/iBeacon.h"
 
 static iBeacon* ibeaconPtr;
+
+static EventQueue eventQueue(
+    /* event count */ 4 * /* event size */ 32    
+);
 
 /**
  * This function is called when the ble initialization process has failled
@@ -66,8 +71,20 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gap().startAdvertising();
 }
 
-void app_start(int, char**)
+void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
+    BLE &ble = BLE::Instance();
+    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+}
+
+int main()
 {
     BLE &ble = BLE::Instance();
+    ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
+
+    while (true) {
+        eventQueue.dispatch();
+    }
+
+    return 0;
 }

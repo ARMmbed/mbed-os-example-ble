@@ -6,7 +6,7 @@ The example uses two applications running on two different devices:
 
 1. The first device - the central - runs the application ``BLE_LEDBlinker`` from this repository. This application sends an on/off toggle over BLE.
 
-1. The second device - the peripheral - runs the application [``BLE_LED``](https://github.com/ARMmbed/ble-examples/tree/master/BLE_LED) to respond to the toggle.
+1. The second device - the peripheral - runs the application [``BLE_LED``](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_LED) to respond to the toggle.
 
 	The toggle simply turns the LED on the peripheral device on and off.
 
@@ -14,7 +14,7 @@ The example uses two applications running on two different devices:
 
 ## Requirements
 
-Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
 This example requires *two* devices.
 
@@ -26,7 +26,7 @@ Please note: The application ``BLE_LEDBlinker`` in this repository initiate a co
 
 **Tip:** You may notice that the application also checks the LED characteristic's UUID; you don't need to change this parameter's value, because it already matches the UUID provided by the second application, ``BLE_LED``.
 
-Building instructions for all mbed OS samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+Building instructions for all mbed OS samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
 ## Checking for success
 

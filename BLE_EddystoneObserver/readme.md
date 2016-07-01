@@ -1,12 +1,12 @@
-The Eddystone Observer scans for Eddystone beacons that are running the [Eddystone Service example](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) (see there for general information about Eddystone beacons). It reads the advertising packets broadcast by these beacons, and prints a human-readable version of the advertised URLs to the serial console.
+The Eddystone Observer scans for Eddystone beacons that are running the [Eddystone Service example](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneService) (see there for general information about Eddystone beacons). It reads the advertising packets broadcast by these beacons, and prints a human-readable version of the advertised URLs to the serial console.
 
 # Running the application
 
 ## Requirements
 
-General hardware information is in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+General hardware information is in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
-This sample requires two devices - one to [broadcast the beacon](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) and one to scan for the broadcast. If you have more devices, you can use them as extra beacons.
+This sample requires two devices - one to [broadcast the beacon](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneService) and one to scan for the broadcast. If you have more devices, you can use them as extra beacons.
 
 You need a terminal program to listen to the observer's output through a serial port. You can download one, for example:
 
@@ -18,9 +18,9 @@ You need a terminal program to listen to the observer's output through a serial 
 
 ## Building instructions
 
-Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
-1. Build and run the [Eddystone beacon](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneService) on one or more other devices.
+1. Build and run the [Eddystone beacon](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneService) on one or more other devices.
 
 1. Build the Eddystone Observer application and install it on your board as explained in the building instructions. Leave the board connected to your computer.
 

@@ -50,11 +50,11 @@ __To build an example:__
 1. Clone the repository containing the collection of examples:
 
 	```
-	$ git clone https://github.com/ARMmbed/ble-examples.git
+	$ git clone https://github.com/ARMmbed/mbed-os-example-ble.git
 	```
 
 
-	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/ARMmbed/ble-examples/archive/master.zip) of the repository.
+	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
 
 1. Using a command-line tool, navigate to any of the example directories, like BLE_Beacon:
 

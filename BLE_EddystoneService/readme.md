@@ -23,11 +23,11 @@ You should install the *Physical Web* application on your phone:
 knowledge about BLE and Eddystone beacon specification out of the scope of this document.
 
 
-Hardware requirements are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
 ## Building instructions
 
-Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/ble-examples/blob/master/README.md).
+Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
 ### Working with nRF51-based 16K targets
 
@@ -87,4 +87,4 @@ It is also important to note that during these 30 seconds, your device will not 
     **figure 5** Display of URL advertised by your beacon using the *Physical Web* application version 0.1.856 on Android.
 
 
-**Note:** You can use the [Eddystone Observer](https://github.com/ARMmbed/ble-examples/tree/master/BLE_EddystoneObserver) sample instead of a phone application.
+**Note:** You can use the [Eddystone Observer](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneObserver) sample instead of a phone application.

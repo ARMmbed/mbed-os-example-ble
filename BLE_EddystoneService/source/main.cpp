@@ -40,8 +40,7 @@ static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
 
 static EventQueue eventQueue(
-    /* event count */ 16,
-    /* event size */ 32
+    /* event count */ 16
 );
 
 DigitalOut led(LED1, 1);

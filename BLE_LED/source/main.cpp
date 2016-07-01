@@ -26,8 +26,7 @@ const static char     DEVICE_NAME[] = "LED";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
 
 static EventQueue eventQueue(
-    /* event count */ 10,
-    /* event size */ 32
+    /* event count */ 10
 );
 
 LEDService *ledServicePtr;

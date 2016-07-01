@@ -29,8 +29,7 @@ static uint8_t batteryLevel = 50;
 static BatteryService* batteryServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16,
-    /* event size */ 32
+    /* event count */ 16
 );
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)

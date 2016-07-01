@@ -24,8 +24,7 @@ DigitalOut  led1(LED1, 1);
 InterruptIn button(BUTTON1);
 
 static EventQueue eventQueue(
-    /* event count */ 10,
-    /* event size */ 32
+    /* event count */ 10
 );
 
 const static char     DEVICE_NAME[] = "Button";

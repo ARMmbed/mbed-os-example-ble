@@ -25,7 +25,7 @@
 #include "TLMFrame.h"
 #include <string.h>
 #ifdef YOTTA_CFG_MBED_OS
-    #include "mbed-drivers/mbed.h"
+    #include <mbed.h>
     #include "mbed-drivers/CircularBuffer.h"
 #else
     #include "mbed.h"

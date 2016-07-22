@@ -15,7 +15,7 @@
  */
 
 #include <mbed-events/events.h>
-#include "mbed-drivers/mbed.h"
+#include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/services/iBeacon.h"
 

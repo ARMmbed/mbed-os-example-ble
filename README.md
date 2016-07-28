@@ -37,10 +37,13 @@ Targets for BLE
 
 The following targets have been tested and work with these examples:
 
-Nordic (using the nrf51822-ble module):
+* Nordic:
+	* NRF51_DK
+	* NRF52_DK
 
-* NRF51_DK
-* NRF51822
+* Boards with an ST shield plugged in:
+	* K64F
+	* NUCLEO_F401RE
 
 Building and testing the examples
 ---------------------------------

@@ -185,7 +185,7 @@ int main()
     }
 
     // Blink LED every 500 ms to indicate system aliveness
-    eventQueue.post_every(blinkCallback, 500);
+    eventQueue.post_every(500, blinkCallback);
 
     // Register function to be called when button is released
     button.rise(buttonPressedCallback);

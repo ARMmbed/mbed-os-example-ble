@@ -67,7 +67,7 @@ static void timeout(void)
         eddyServicePtr->getEddystoneParams(params);
         saveEddystoneServiceConfigParams(&params);
     } else {
-        eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
+        eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
     }
 }
 
@@ -116,7 +116,7 @@ static void bleInitComplete(BLE::InitializationCompleteCallbackContext* initCont
     /* Start Eddystone in config mode */
    eddyServicePtr->startConfigService();
 
-   eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
+   eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
 }
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
@@ -132,7 +132,7 @@ int main()
     setbuf(stderr, NULL);
     setbuf(stdin, NULL);
 
-    eventQueue.post_every(blinky, 500);
+    eventQueue.post_every(500, blinky);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);

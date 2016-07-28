@@ -28,7 +28,7 @@ static float                     currentTemperature   = 39.6;
 static HealthThermometerService *thermometerServicePtr;
 
 static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32    
+    /* event count */ 16 * /* event size */ 32
 );
 
 /* Restart Advertising on disconnection*/
@@ -94,7 +94,7 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 int main()
 {
-    eventQueue.post_every(periodicCallback, 500);
+    eventQueue.post_every(500, periodicCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);

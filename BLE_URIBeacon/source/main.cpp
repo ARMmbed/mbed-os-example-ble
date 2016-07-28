@@ -34,7 +34,7 @@
 static const int CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS = 60;  // Duration after power-on that config service is available.
 
 static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32    
+    /* event count */ 16 * /* event size */ 32
 );
 
 /* global static objects */
@@ -53,7 +53,7 @@ void timeout(void)
         uriBeaconConfig->setupURIBeaconAdvertisements();
         ble.startAdvertising();
     } else {
-        eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
+        eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
     }
 }
 
@@ -99,7 +99,7 @@ int main()
     ble.startAdvertising(); /* Set the whole thing in motion. After this call a GAP central can scan the URIBeaconConfig
                              * service. This can then be switched to the normal URIBeacon functionality after a timeout. */
 
-    eventQueue.post_in(timeout, CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000);
+    eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
 
     while (true) {
         eventQueue.dispatch();

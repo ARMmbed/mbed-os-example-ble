@@ -59,7 +59,6 @@ __To build an example:__
 1. Using a command-line tool, navigate to any of the example directories, like BLE_Beacon:
 
 	```
-	$ cd ble-examples
 	$ cd BLE_Beacon
 	```
 

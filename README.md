@@ -45,7 +45,38 @@ The following targets have been tested and work with these examples:
 	* K64F
 	* NUCLEO_F401RE
 
-	<span> **Important:** if an ST shield is used with the K64F board, an hardware patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+
+### Using ST Nucleo shield on other targets
+
+It is possible to use the ST Nucleo shield on boards not directly supported by these examples as long as the board has an Arduino UNO R3 connector.
+
+To makes the board compatible with the ST shield three things are required: 
+* Add the BLE feature to your target.
+* Add the BLE implementation for the ST shield to the list of modules which have to be compiled.
+* Indicate to the BLE implementation that your board use an Arduino connector.
+
+All these operations can be done in the file `mbed_app.json` present in every example.
+
+In the section `target_overrides` add a new object named after your target. 
+In this object three fields are required:
+* `"target.features_add": ["BLE"]` Add the BLE feature to the target.
+* `"target.extra_labels_add": ["ST_BLUENRG"]`: Add the BLE implementation of the ST shield to the list of the application modules.
+* `"target.macros_add": ["IDB0XA1_D13_PATCH"]`: Indicate the BLE implementation that the target use an arduino connector.
+
+As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
+
+```json
+        "NUCLEO_F411RE": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG"],
+            "target.macros_add": ["IDB0XA1_D13_PATCH"]
+        },
+```
+
+<span> **Note:** You can get more informations about the configuration system in the [documentation](https://github.com/ARMmbed/mbed-os/blob/master/docs/config_system.md)</span>
+
+<span> **Important:** It is required to apply an hardware patch to the ST shield if it is used on a board with an Arduino connector. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 
 
 Building and testing the examples

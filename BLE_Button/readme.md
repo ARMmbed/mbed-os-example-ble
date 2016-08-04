@@ -24,6 +24,27 @@ The sample application can be seen on any BLE scanner on a smartphone. If you do
 
 Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
+### Porting this example on new boards
+
+This example requires a board with at least a button to work. While the pin name of the button is defined for the `NRF51_DK`, `NRF52_DK`, `K64F` and `NUCLEO_F401RE`, it is not specified for other boards.
+
+It is easy to add the button configuration for your board:
+* Open the file named `mbed_app.json` at the root of this example.
+* In the section `target_overides` add a new object named after your target if it doesn't exist. This object contain overridden parameters for your target.
+* Override the property `ble_button_pin_name` in your target object. The value of the property should be equal to the pin name to use as a button.
+
+As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
+
+```json
+        "NUCLEO_F411RE": {
+            "ble_button_pin_name": "USER_BUTTON"
+        }
+```
+
+<span> **Note:** You can get more informations about the configuration system in the [documentation](https://github.com/ARMmbed/mbed-os/blob/master/docs/config_system.md)</span>
+
+<span> **Important:** If your target use an ST BLE shield, other parameters have to be overridden for your target. More information are available in the global [README](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md#targets-for-ble)</span>
+
 ## Building instructions
 
 Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
@@ -76,4 +97,3 @@ Building instructions for all samples are in the [main readme](https://github.co
     ![](img/button_depressed.png)
 
     **figure 7** Notification of button depressed using Master Control Panel 4.0.5
-

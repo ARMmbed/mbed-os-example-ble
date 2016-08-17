@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <mbed-events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
@@ -28,9 +28,7 @@ static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE};
 static uint8_t hrmCounter = 100; // init HRM to 100bps
 static HeartRateService *hrServicePtr;
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
-);
+static EventQueue eventQueue; // Defaults to EVENTS_QUEUE_SIZE.
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {
@@ -55,7 +53,7 @@ void periodicCallback(void)
     led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
     if (BLE::Instance().getGapState().connected) {
-        eventQueue.post(updateSensorValue);
+        eventQueue.call(updateSensorValue);
     }
 }
 
@@ -97,12 +95,12 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.post_every(500, periodicCallback);
+    eventQueue.call_every(500, periodicCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);

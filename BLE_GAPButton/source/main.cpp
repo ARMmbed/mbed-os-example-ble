@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <mbed-events/mbed-events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 
@@ -101,7 +101,7 @@ void buttonPressedCallback(void)
 
     // Calling BLE api in interrupt context may cause race conditions
     // Using mbed-events to schedule calls to BLE api for safety
-    eventQueue.post(updatePayload);
+    eventQueue.call(updatePayload);
 }
 
 void blinkCallback(void)
@@ -169,7 +169,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
@@ -185,7 +185,7 @@ int main()
     }
 
     // Blink LED every 500 ms to indicate system aliveness
-    eventQueue.post_every(500, blinkCallback);
+    eventQueue.call_every(500, blinkCallback);
 
     // Register function to be called when button is released
     button.rise(buttonPressedCallback);

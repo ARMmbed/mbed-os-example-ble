@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <mbed-events/mbed-events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/services/iBeacon.h"
@@ -73,7 +73,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()

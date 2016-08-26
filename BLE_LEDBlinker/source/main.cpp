@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <mbed-events/mbed-events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/DiscoveredCharacteristic.h"
@@ -95,7 +95,7 @@ void discoveryTerminationCallback(Gap::Handle_t connectionHandle) {
     printf("terminated SD for handle %u\r\n", connectionHandle);
     if (triggerLedCharacteristic) {
         triggerLedCharacteristic = false;
-        eventQueue.post(updateLedCharacteristic);
+        eventQueue.call(updateLedCharacteristic);
     }
 }
 
@@ -168,13 +168,13 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
 {
     triggerLedCharacteristic = false;
-    eventQueue.post_every(500, periodicCallback);
+    eventQueue.call_every(500, periodicCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);

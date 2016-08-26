@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/mbed-events.h>
+#include <mbed-events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"

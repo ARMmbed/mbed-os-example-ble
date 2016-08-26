@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <mbed-events/mbed-events.h>
+#include <mbed-events/mbed_events.h>
 
 #include <mbed.h>
 #include "ble/BLE.h"

@@ -123,9 +123,3 @@ chosen. For Nordic Semiconductor targets, the following .hex files will be prese
  * `<module_name>.hex` is the one which can be flashed to the target.
  * `<module_name>.elf` is an ELF binary containing symbols (useful for debugging).
 
-
-
-Creating or porting your own BLE applications in mbed OS
-======================================================
-
-If you're interested in creating BLE applications for mbed OS, or porting existing applications from mbed Classic to mbed OS, please see our [Introduction to mbed BLE](https://docs.mbed.com/docs/ble-intros/en/latest/mbed_OS/mbed_OS_BLE_Apps/).

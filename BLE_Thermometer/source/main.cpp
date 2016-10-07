@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <events/mbed_events.h>
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/HealthThermometerService.h"
@@ -49,7 +49,7 @@ void periodicCallback(void)
     led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
 
     if (BLE::Instance().gap().getState().connected) {
-        eventQueue.post(updateSensorValue);
+        eventQueue.call(updateSensorValue);
     }
 }
 
@@ -89,20 +89,18 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.post_every(500, periodicCallback);
+    eventQueue.call_every(500, periodicCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
 
-    while (true) {
-        eventQueue.dispatch();
-    }
+    eventQueue.dispatch_forever();
 
     return 0;
 }

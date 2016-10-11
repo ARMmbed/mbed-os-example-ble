@@ -91,7 +91,7 @@ void advertisementCallback(const Gap::AdvertisementCallbackParams_t *params)
     struct AdvertisingData_t {
         uint8_t                        length; /* doesn't include itself */
         GapAdvertisingData::DataType_t dataType;
-        uint8_t                        data[0];
+        uint8_t                        data[1];
     } AdvDataPacket;
 
     struct ApplicationData_t {

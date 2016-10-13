@@ -17,7 +17,7 @@ To build these examples, you need to have a computer with the following software
 * [CMake](http://www.cmake.org/download/).
 * [mbed-cli](https://github.com/ARMmbed/mbed-cli). Please note that **mbed-cli has its own set of dependencies**, listed in the installation instructions.
 * [Python](https://www.python.org/downloads/).
-* [ARM GCC toolchain](https://launchpad.net/gcc-arm-embedded).
+* [ARM GCC toolchain 4.9.x](https://launchpad.net/gcc-arm-embedded/+milestone/4.9-2015-q3-update).
 * A serial terminal emulator (e.g. screen, pySerial, cu).
 * If the OS used is Windows, the serial driver of the board has to be correctly installed.
 	* For boards with mbed interface firmware the installation instructions are located (here)[https://developer.mbed.org/handbook/Windows-serial-configuration]

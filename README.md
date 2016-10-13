@@ -114,7 +114,7 @@ __To run the application on your board:__
 
 1. Connect your mbed board to your computer over USB. It appears as removable storage.
 
-1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```.build/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
+1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```BUILD/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
 
 
 Exactly which executables are generated depends on the target that you have

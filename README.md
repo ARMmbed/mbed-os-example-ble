@@ -123,7 +123,9 @@ chosen. For Nordic Semiconductor targets, the following .hex files will be prese
  * `<module_name>.hex` is the one which can be flashed to the target.
  * `<module_name>.elf` is an ELF binary containing symbols (useful for debugging).
 
+**Note:** Depending on the build process, the file which has to be flashed on a Nordic target can also be named `<module_name>-combined.hex`. If `<module_name>-combined.hex` and `<module_name>.hex` are present in the build directory, flash `<module_name>-combined.hex.
 
+**Note:** On non Nordic targets, the file to flash can also be named `<module_name>.bin`. Refer to mbed-cli, mbed-os and your board vendor documentation for more informations.
 
 Creating or porting your own BLE applications in mbed OS
 ======================================================

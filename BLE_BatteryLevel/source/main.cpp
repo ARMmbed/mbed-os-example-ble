@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <mbed-events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
@@ -52,7 +52,7 @@ void blinkCallback(void)
 
     BLE &ble = BLE::Instance();
     if (ble.gap().getState().connected) {
-        eventQueue.post(updateSensorValue);
+        eventQueue.call(updateSensorValue);
     }
 }
 
@@ -99,12 +99,12 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.post_every(500, blinkCallback);
+    eventQueue.call_every(500, blinkCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);

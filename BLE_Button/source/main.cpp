@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <mbed-events/events.h>
+#include <events/mbed_events.h>
 
 #include <mbed.h>
 #include "ble/BLE.h"
@@ -34,12 +34,12 @@ ButtonService *buttonServicePtr;
 
 void buttonPressedCallback(void)
 {
-    eventQueue.post(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), true);
+    eventQueue.call(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), true);
 }
 
 void buttonReleasedCallback(void)
 {
-    eventQueue.post(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), false);
+    eventQueue.call(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), false);
 }
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
@@ -92,20 +92,18 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.post_every(500, blinkCallback);
+    eventQueue.call_every(500, blinkCallback);
 
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
     ble.init(bleInitComplete);
 
-    while (true) {
-        eventQueue.dispatch();
-    }
+    eventQueue.dispatch_forever();
 
     return 0;
 }

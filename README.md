@@ -17,7 +17,7 @@ To build these examples, you need to have a computer with the following software
 * [CMake](http://www.cmake.org/download/).
 * [mbed-cli](https://github.com/ARMmbed/mbed-cli). Please note that **mbed-cli has its own set of dependencies**, listed in the installation instructions.
 * [Python](https://www.python.org/downloads/).
-* [ARM GCC toolchain](https://launchpad.net/gcc-arm-embedded).
+* [ARM GCC toolchain 4.9.x](https://launchpad.net/gcc-arm-embedded/+milestone/4.9-2015-q3-update).
 * A serial terminal emulator (e.g. screen, pySerial, cu).
 * If the OS used is Windows, the serial driver of the board has to be correctly installed.
 	* For boards with mbed interface firmware the installation instructions are located (here)[https://developer.mbed.org/handbook/Windows-serial-configuration]
@@ -114,7 +114,7 @@ __To run the application on your board:__
 
 1. Connect your mbed board to your computer over USB. It appears as removable storage.
 
-1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```.build/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
+1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```BUILD/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
 
 
 Exactly which executables are generated depends on the target that you have
@@ -123,3 +123,6 @@ chosen. For Nordic Semiconductor targets, the following .hex files will be prese
  * `<module_name>.hex` is the one which can be flashed to the target.
  * `<module_name>.elf` is an ELF binary containing symbols (useful for debugging).
 
+**Note:** Depending on the build process, the file which has to be flashed on a Nordic target can also be named `<module_name>-combined.hex`. If `<module_name>-combined.hex` and `<module_name>.hex` are present in the build directory, flash `<module_name>-combined.hex.
+
+**Note:** On non Nordic targets, the file to flash can also be named `<module_name>.bin`. Refer to mbed-cli, mbed-os and your board vendor documentation for more informations.

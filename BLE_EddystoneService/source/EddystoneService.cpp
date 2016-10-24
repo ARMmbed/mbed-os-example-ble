@@ -379,7 +379,7 @@ void EddystoneService::setupBeaconService(void)
      * add initial frame so that we have something to advertise on startup */
     if (uidFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_UID);
-        uidFrameCallbackHandle = eventQueue.post_every(
+        uidFrameCallbackHandle = eventQueue.call_every(
             uidFramePeriod,
             Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
             EDDYSTONE_FRAME_UID
@@ -387,7 +387,7 @@ void EddystoneService::setupBeaconService(void)
     }
     if (tlmFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_TLM);
-        tlmFrameCallbackHandle = eventQueue.post_every(
+        tlmFrameCallbackHandle = eventQueue.call_every(
             tlmFramePeriod,
             Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
             EDDYSTONE_FRAME_TLM
@@ -395,7 +395,7 @@ void EddystoneService::setupBeaconService(void)
     }
     if (urlFramePeriod) {
         advFrameQueue.push(EDDYSTONE_FRAME_URL);
-        tlmFrameCallbackHandle = eventQueue.post_every(
+        tlmFrameCallbackHandle = eventQueue.call_every(
             urlFramePeriod,
             Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
             EDDYSTONE_FRAME_URL
@@ -438,7 +438,7 @@ void EddystoneService::manageRadio(void)
         /* Post a callback to itself to stop the advertisement or pop the next
          * frame from the queue. However, take into account the time taken to
          * swap in this frame. */
-        radioManagerCallbackHandle = eventQueue.post_in(
+        radioManagerCallbackHandle = eventQueue.call_in(
             ble.gap().getMinNonConnectableAdvertisingInterval() - (timeSinceBootTimer.read_ms() - startTimeManageRadio),
             Callback<void()>(this, &EddystoneService::manageRadio)
         );
@@ -755,7 +755,7 @@ void EddystoneService::setURLFrameAdvertisingInterval(uint16_t urlFrameIntervalI
             /* Currently the only way to change the period of a callback
              * is to cancel it and reschedule
              */
-            urlFrameCallbackHandle = eventQueue.post_every(
+            urlFrameCallbackHandle = eventQueue.call_every(
                 urlFramePeriod,
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_URL
@@ -795,7 +795,7 @@ void EddystoneService::setUIDFrameAdvertisingInterval(uint16_t uidFrameIntervalI
             /* Currently the only way to change the period of a callback
              * is to cancel it and reschedule
              */
-            uidFrameCallbackHandle = eventQueue.post_every(
+            uidFrameCallbackHandle = eventQueue.call_every(
                 uidFramePeriod,
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_UID
@@ -833,7 +833,7 @@ void EddystoneService::setTLMFrameAdvertisingInterval(uint16_t tlmFrameIntervalI
             /* Currently the only way to change the period of a callback
              * is to cancel it and reschedule
              */
-            tlmFrameCallbackHandle = eventQueue.post_every(
+            tlmFrameCallbackHandle = eventQueue.call_every(
                 tlmFramePeriod,
                 Callback<void(FrameType)>(this, &EddystoneService::enqueueFrame),
                 EDDYSTONE_FRAME_TLM

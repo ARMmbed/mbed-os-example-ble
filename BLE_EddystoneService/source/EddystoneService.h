@@ -17,7 +17,7 @@
 #ifndef __EDDYSTONESERVICE_H__
 #define __EDDYSTONESERVICE_H__
 
-#include <mbed-events/events.h>
+#include <events/mbed_events.h>
 #include "ble/BLE.h"
 #include "EddystoneTypes.h"
 #include "URLFrame.h"

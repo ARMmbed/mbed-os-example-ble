@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <mbed-events/events.h>
+#include <events/mbed_events.h>
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/URIBeaconConfigService.h"
@@ -53,7 +53,7 @@ void timeout(void)
         uriBeaconConfig->setupURIBeaconAdvertisements();
         ble.startAdvertising();
     } else {
-        eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
+        eventQueue.call_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
     }
 }
 
@@ -67,7 +67,7 @@ void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *)
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
-    eventQueue.post(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
 }
 
 int main()
@@ -99,11 +99,9 @@ int main()
     ble.startAdvertising(); /* Set the whole thing in motion. After this call a GAP central can scan the URIBeaconConfig
                              * service. This can then be switched to the normal URIBeacon functionality after a timeout. */
 
-    eventQueue.post_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
+    eventQueue.call_in(CONFIG_ADVERTISEMENT_TIMEOUT_SECONDS * 1000, timeout);
 
-    while (true) {
-        eventQueue.dispatch();
-    }
+    eventQueue.dispatch_forever();
 
     return 0;
 }

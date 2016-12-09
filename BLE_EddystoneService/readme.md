@@ -12,16 +12,11 @@ The Eddystone Beacon sample application runs in two stages:
 
 ## Requirements
 
-You should install the *Physical Web* application on your phone:
+The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
-- [Android version](https://play.google.com/store/apps/details?id=physical_web.org.physicalweb)
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
-- [iOS version](https://itunes.apple.com/us/app/physical-web/id927653608?mt=8)
-
-
-**Note:** It is also possible to use a regular scanner to interract with your Eddystone beacon but it requires
-knowledge about BLE and Eddystone beacon specification out of the scope of this document.
-
+- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
 Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
@@ -29,15 +24,6 @@ Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-o
 
 Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
-### Working with nRF51-based 16K targets
-
-Because of memory constraints, you can't use the SoftDevice 130 (S130) to build for nRF51-based 16K targets. If you are using these targets, then before building:
-
-1. Open the ``config.json`` file in this sample.
-1. Change ``soft device`` to ``S110``.
-1. Save.
-
-You can now build for nRF51-based 16K targets.
 
 ## Setting up the beacon
 
@@ -51,40 +37,66 @@ By default, the beacon directs to the url ``http://mbed.org``. You can change th
 
 1. Build the application and install it on your board as explained in the building instructions.
 
-1. Open the *Physical Web* application on your phone. It will start to search for nearby beacons.
+1. Open the BLE scanner on your phone.
 
-    ![](img/app_start.png)
+1. Start a scan.
 
-    **figure 1** Start of the *Physical Web* application version 0.1.856 on Android
+    ![](img/1.png)
 
-1. When the beacon starts up, the Configuration Service runs for 30 seconds.
+    **figure 1** Start of the *nRF Connect* application version 4.8.1 on Android
+
+1. Find your device; it should be named `EDDYSTONE CONFIG`. When the beacon starts up, the Configuration Service runs for 30 seconds.
 During this time it is possible to change the URL advertised by the beacon.
 It is also important to note that during these 30 seconds, your device will not advertise any URL.
 
-    ![](img/open_configuration.png)
+    ![](img/2.png)
 
-    **figure 2** How to open the beacon configuration view using the *Physical Web* application version 0.1.856 on Android
-
-
-1. Edit the URL advertised by your beacon.
-
-    ![](img/edit_url.png)
-
-    **figure 3** How to edit the URL advertised by your beacon using the *Physical Web* application version 0.1.856 on Android
+    **figure 2** Scan results using nRF Master Control Panel 4.8.1
 
 
-1. Save the URL which will be advertised by your beacon.
+1. Establish a connection with your device while it is configurable.
 
-    ![](img/save_url.png)
+    ![](img/3.png)
 
-    **figure 4** How to save your beacon configuration and start advertising URL using the *Physical Web* application version 0.1.856 on Android.
+    **figure 3** How to establish a connection using Master Control Panel 4.8.1
+
+1. Discover the services and the characteristics on the device. The *Eddystone-URL Configuration Service* has the UUID `ee0c2080-8786-40ba-ab96-99b91ac981d8` and includes the *URI Data* characteristic which has the UUID `ee0c2085-8786-40ba-ab96-99b91ac981d8`.
+
+    ![](img/4.png)
+
+    **figure 4** Minimized view of services using Master Control Panel 4.8.1
+
+    ![](img/5.png)
+
+    **figure 5** Extended view of the *Eddystone-URL Configuration Service* using Master Control Panel 4.8.1
 
 
-1. Find your device; it should advertise the URL you have set.
+1. Edit the URL advertised by your beacon. You can learn more about the encoding rule [here](https://github.com/google/eddystone/blob/a52406ee6053720f78fb0c63bfc38b38e6800824/eddystone-url/README.md#eddystone-url-http-url-encoding). For this example, we can set the URL to https://www.arm.com by setting the value to `0x0161726D00`.
 
-    ![](img/result.png)
+    ![](img/6.png)
 
-    **figure 5** Display of URL advertised by your beacon using the *Physical Web* application version 0.1.856 on Android.
+    **figure 6** How to edit characteristic value using Master Control Panel 4.8.1
+
+    ![](img/7.png)
+
+    **figure 7** Edition of the URL using Master Control Panel 4.8.1
+
+
+1. The URL is now set https://www.arm.com . It is mandatory to disconnect your phone from the beacon to let the beacon advertise the new URI.
+
+    ![](img/8.png)
+
+    **figure 8** URL updated using Master Control Panel 4.8.1.
+
+1. Enter the scanner mode and start a scan to see the URL advertised by the beacon.
+
+    ![](img/9.png)
+
+    **figure 9** How to enter reenter in the scanner command panel using Master Control Panel 4.8.1.
+
+    ![](img/10.png)
+
+    **figure 10** Eddystone beacon advertising.    
 
 
 **Note:** You can use the [Eddystone Observer](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneObserver) sample instead of a phone application.

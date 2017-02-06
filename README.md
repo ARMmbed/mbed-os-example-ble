@@ -27,7 +27,7 @@ To build these examples, you need to have a computer with the following software
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
 * A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
-* A supported target, such as the [NUCLEO-F411RE](http://www.st.com/web/catalog/tools/FM116/SC959/SS1532/LN1847/PF260320), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
+* A supported target, such as the [NUCLEO-F401RE](http://www.st.com/content/st_com/en/products/evaluation-tools/product-evaluation-tools/mcu-eval-tools/stm32-mcu-eval-tools/stm32-mcu-nucleo/nucleo-f401re.html), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
 
 
 The [`ble`module](https://github.com/ARMmbed/mbed-os/tree/master/bluetooth/ble) provides the BLE APIs on mbed OS.

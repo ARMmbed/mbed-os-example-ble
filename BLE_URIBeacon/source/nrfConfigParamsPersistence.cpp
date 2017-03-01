@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-extern "C" {
-#include "pstorage.h"
-}
-
-#include "nrf_error.h"
 #include "ConfigParamsPersistence.h"
 
 /**
@@ -42,6 +37,14 @@ struct PersistentParams_t {
  * pass it on to the 'pstorage' APIs.
  */
 static PersistentParams_t persistentParams;
+
+#if defined(TARGET_NORDIC)
+
+extern "C" {
+#include "pstorage.h"
+}
+
+#include "nrf_error.h"
 
 static pstorage_handle_t pstorageHandle;
 
@@ -104,3 +107,28 @@ void saveURIBeaconConfigParams(const URIBeaconConfigService::Params_t *paramsP)
                         0 /* offset */);
     }
 }
+
+#else 
+
+/* In memory implementation */
+bool loadURIBeaconConfigParams(URIBeaconConfigService::Params_t *paramsP)
+{
+    static bool pstorageInitied = false;
+    if (!pstorageInitied) {
+        memset(&persistentParams.params, 0, sizeof(URIBeaconConfigService::Params_t));
+        memset(paramsP, 0, sizeof(URIBeaconConfigService::Params_t));
+        pstorageInitied = true;
+        return false;
+    }
+
+    memcpy(paramsP, &persistentParams.params, sizeof(URIBeaconConfigService::Params_t));
+    return true;
+}
+
+/* In memory implementation */
+void saveURIBeaconConfigParams(const URIBeaconConfigService::Params_t *paramsP)
+{
+	memcpy(&persistentParams.params, paramsP, sizeof(URIBeaconConfigService::Params_t));
+}
+
+#endif 

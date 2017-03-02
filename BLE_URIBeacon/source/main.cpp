@@ -18,7 +18,6 @@
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/URIBeaconConfigService.h"
-#include "ble/services/DFUService.h"
 #include "ble/services/DeviceInformationService.h"
 #include "ConfigParamsPersistence.h"
 
@@ -92,8 +91,6 @@ int main()
         error("failed to accommodate URI");
     }
 
-    // Setup auxiliary services to allow over-the-air firmware updates, etc
-    DFUService *dfu = new DFUService(ble);
     DeviceInformationService *deviceInfo = new DeviceInformationService(ble, "ARM", "UriBeacon", "SN1", "hw-rev1", "fw-rev1", "soft-rev1");
 
     ble.startAdvertising(); /* Set the whole thing in motion. After this call a GAP central can scan the URIBeaconConfig

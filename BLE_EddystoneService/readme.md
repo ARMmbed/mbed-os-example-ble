@@ -104,5 +104,5 @@ It is also important to note that during these 30 seconds, your device will not 
 Known issues 
 ============
 
-* [NRF51_DK]: Link fail if the project is exported with the exporter `make_gcc_arm `. The workaround is to define the compilation profile when the project is exported: `mbed export -i make_gcc_arm -m nRF51_DK --profile develop`.
+* [NRF51_DK]: Link fail if the project is exported with the exporter `make_gcc_arm `. The workaround is to define the `develop` compilation profile when the project is exported: `mbed export -i make_gcc_arm -m nRF51_DK --profile develop`.
 

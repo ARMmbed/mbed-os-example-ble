@@ -100,3 +100,9 @@ It is also important to note that during these 30 seconds, your device will not 
 
 
 **Note:** You can use the [Eddystone Observer](https://github.com/ARMmbed/mbed-os-example-ble/tree/master/BLE_EddystoneObserver) sample instead of a phone application.
+
+Known issues 
+============
+
+* [NRF51_DK]: Link fail if the project is exported with the exporter `make_gcc_arm `. The workaround is to define the compilation profile when the project is exported: `mbed export -i make_gcc_arm -m nRF51_DK --profile develop`.
+

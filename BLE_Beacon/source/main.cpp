@@ -54,16 +54,16 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
 
     /**
      * The Beacon payload has the following composition:
-     * 128-Bit / 16byte UUID = E2 0A 39 F4 73 F5 4B C4 A1 2F 17 D1 AD 07 A9 61
-     * Major/Minor  = 0x1122 / 0x3344
+     * 128-Bit / 16byte UUID = FDA50693-A4E2-4FB1-AFCF-C6EB07647825
+     * Major/Minor  = 10100 / 56482
      * Tx Power     = 0xC8 = 200, 2's compliment is 256-200 = (-56dB)
      *
      * Note: please remember to calibrate your beacons TX Power for more accurate results.
      */
-    static const uint8_t uuid[] = {0xE2, 0x0A, 0x39, 0xF4, 0x73, 0xF5, 0x4B, 0xC4,
-                                   0xA1, 0x2F, 0x17, 0xD1, 0xAD, 0x07, 0xA9, 0x61};
-    uint16_t majorNumber = 1122;
-    uint16_t minorNumber = 3344;
+    static const uint8_t uuid[] = {0xFD, 0xA5, 0x06, 0x93, 0xA4, 0xE2, 0x4F, 0xB1,
+                                   0xAF, 0xCF, 0xC6, 0xEB, 0x07, 0x64, 0x78, 0x25};
+    uint16_t majorNumber = 10100;
+    uint16_t minorNumber = 56482;
     uint16_t txPower     = 0xC8;
     ibeaconPtr = new iBeacon(ble, uuid, majorNumber, minorNumber, txPower);
 

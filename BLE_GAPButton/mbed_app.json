@@ -13,6 +13,9 @@
         "NRF52_DK": {
             "ble_button_pin_name": "BUTTON1"
         },
+        "NRF52832_MDK": {
+            "ble_button_pin_name": "p25"
+        },
         "K64F": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"],

@@ -39,9 +39,7 @@ static const PowerLevels_t defaultAdvPowerLevels = {-47, -33, -21, -13};
 /* Values for radio power levels, provided by manufacturer. */
 static const PowerLevels_t radioPowerLevels      = {-30, -16, -4, 4};
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
-);
+static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
 
 DigitalOut led(LED1, 1);
 

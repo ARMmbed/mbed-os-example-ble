@@ -27,9 +27,7 @@ static const uint16_t uuid16_list[]        = {GattService::UUID_HEALTH_THERMOMET
 static float                     currentTemperature   = 39.6;
 static HealthThermometerService *thermometerServicePtr;
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
-);
+static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
 
 /* Restart Advertising on disconnection*/
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *)

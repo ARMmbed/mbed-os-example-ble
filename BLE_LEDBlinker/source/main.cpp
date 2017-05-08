@@ -25,9 +25,7 @@ static DiscoveredCharacteristic ledCharacteristic;
 static bool triggerLedCharacteristic;
 static const char PEER_NAME[] = "LED";
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32    
-);
+static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
 
 void periodicCallback(void) {
     alivenessLED = !alivenessLED; /* Do blinky on LED1 while we're waiting for BLE events */

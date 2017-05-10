@@ -25,7 +25,7 @@ DigitalOut actuatedLED(LED2, 0);
 const static char     DEVICE_NAME[] = "LED";
 static const uint16_t uuid16_list[] = {LEDService::LED_SERVICE_UUID};
 
-static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
+static EventQueue eventQueue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
 LEDService *ledServicePtr;
 

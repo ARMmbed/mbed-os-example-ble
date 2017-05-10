@@ -23,7 +23,7 @@
 DigitalOut  led1(LED1, 1);
 InterruptIn button(BLE_BUTTON_PIN_NAME);
 
-static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
+static EventQueue eventQueue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
 const static char     DEVICE_NAME[] = "Button";
 static const uint16_t uuid16_list[] = {ButtonService::BUTTON_SERVICE_UUID};

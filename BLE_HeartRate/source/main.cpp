@@ -28,7 +28,7 @@ static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE};
 static uint8_t hrmCounter = 100; // init HRM to 100bps
 static HeartRateService *hrServicePtr;
 
-static EventQueue eventQueue(EVENTS_QUEUE_SIZE);
+static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {

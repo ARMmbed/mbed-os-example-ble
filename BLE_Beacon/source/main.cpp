@@ -21,9 +21,7 @@
 
 static iBeacon* ibeaconPtr;
 
-static EventQueue eventQueue(
-    /* event count */ 4 * /* event size */ 32    
-);
+static EventQueue eventQueue(/* event count */ 4 * EVENTS_EVENT_SIZE);
 
 /**
  * This function is called when the ble initialization process has failled

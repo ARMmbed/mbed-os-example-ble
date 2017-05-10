@@ -28,9 +28,7 @@ static const uint16_t uuid16_list[] = {GattService::UUID_BATTERY_SERVICE};
 static uint8_t batteryLevel = 50;
 static BatteryService* batteryServicePtr;
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
-);
+static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
 {

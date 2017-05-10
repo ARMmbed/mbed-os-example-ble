@@ -20,9 +20,7 @@
 
 static const int URI_MAX_LENGTH = 18;             // Maximum size of service data in ADV packets
 
-static EventQueue eventQueue(
-    /* event count */ 16 * /* event size */ 32
-);
+static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 DigitalOut led1(LED1, 1);
 

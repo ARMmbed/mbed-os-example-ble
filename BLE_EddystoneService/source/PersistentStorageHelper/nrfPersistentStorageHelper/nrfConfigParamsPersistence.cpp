@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifdef TARGET_NRF51822 /* Persistent storage supported on nrf51 platforms */
+#if defined(TARGET_NRF51822) || defined(TARGET_NRF52832) /* Persistent storage supported on nrf51 and nrf52 platforms */
 
 extern "C" {
-    #include "pstorage.h"
+    #include "fstorage.h"
 }
 
 #include "nrf_error.h"
 #include "../../EddystoneService.h"
+#include <cstddef>
 
 /**
  * Nordic specific structure used to store params persistently.
@@ -37,55 +38,52 @@ struct PersistentParams_t {
 
 /**
  * The following is a module-local variable to hold configuration parameters for
- * short periods during flash access. This is necessary because the pstorage
+ * short periods during flash access. This is necessary because the fstorage
  * APIs don't copy in the memory provided as data source. The memory cannot be
  * freed or reused by the application until this flash access is complete. The
  * load and store operations in this module initialize persistentParams and then
- * pass it on to the 'pstorage' APIs.
+ * pass it on to the 'fstorage' APIs.
  */
 static PersistentParams_t persistentParams;
 
-static pstorage_handle_t pstorageHandle;
-
 /**
- * Dummy callback handler needed by Nordic's pstorage module. This is called
+ * Dummy callback handler needed by Nordic's fstorage module. This is called
  * after every flash access.
  */
-static void pstorageNotificationCallback(pstorage_handle_t *p_handle,
-                                         uint8_t            op_code,
-                                         uint32_t           result,
-                                         uint8_t           *p_data,
-                                         uint32_t           data_len)
+static void fs_evt_handler(fs_evt_t const * const evt, fs_ret_t result)
 {
     /* Supress compiler warnings */
-    (void) p_handle;
-    (void) op_code;
+    (void) evt;
     (void) result;
-    (void) p_data;
-    (void) data_len;
+}
 
-    /* APP_ERROR_CHECK(result); */
+FS_REGISTER_CFG(fs_config_t fs_config) = {
+    NULL,              // Begin pointer (set by fs_init)
+    NULL,              // End pointer (set by fs_init)
+    &fs_evt_handler,   // Function for event callbacks.
+    1,                 // Number of physical flash pages required.
+    0xFE               // Priority for flash usage.
+};
+
+
+void loadPersistentParams(void) {
+    // copy from flash into persistent params struct
+    memcpy(&persistentParams, fs_config.p_start_addr, sizeof(PersistentParams_t));
 }
 
 /* Platform-specific implementation for persistence on the nRF5x. Based on the
- * pstorage module provided by the Nordic SDK. */
+ * fstorage module provided by the Nordic SDK. */
 bool loadEddystoneServiceConfigParams(EddystoneService::EddystoneParams_t *paramsP)
 {
-    static bool pstorageInitied = false;
-    if (!pstorageInitied) {
-        pstorage_init();
-
-        static pstorage_module_param_t pstorageParams = {
-            .cb          = pstorageNotificationCallback,
-            .block_size  = sizeof(PersistentParams_t),
-            .block_count = 1
-        };
-        pstorage_register(&pstorageParams, &pstorageHandle);
-        pstorageInitied = true;
+    static bool fstorageInited = false;
+    if (!fstorageInited) {
+        fs_init();
+        fstorageInited = true;
     }
 
-    if ((pstorage_load(reinterpret_cast<uint8_t *>(&persistentParams), &pstorageHandle, sizeof(PersistentParams_t), 0) != NRF_SUCCESS) ||
-        (persistentParams.persistenceSignature != PersistentParams_t::MAGIC)) {
+    loadPersistentParams();
+
+    if ((persistentParams.persistenceSignature != PersistentParams_t::MAGIC)) {
         // On failure zero out and let the service reset to defaults
         memset(paramsP, 0, sizeof(EddystoneService::EddystoneParams_t));
         return false;
@@ -96,22 +94,20 @@ bool loadEddystoneServiceConfigParams(EddystoneService::EddystoneParams_t *param
 }
 
 /* Platform-specific implementation for persistence on the nRF5x. Based on the
- * pstorage module provided by the Nordic SDK. */
+ * fstorage module provided by the Nordic SDK. */
 void saveEddystoneServiceConfigParams(const EddystoneService::EddystoneParams_t *paramsP)
 {
     memcpy(&persistentParams.params, paramsP, sizeof(EddystoneService::EddystoneParams_t));
     if (persistentParams.persistenceSignature != PersistentParams_t::MAGIC) {
         persistentParams.persistenceSignature = PersistentParams_t::MAGIC;
-        pstorage_store(&pstorageHandle,
-                       reinterpret_cast<uint8_t *>(&persistentParams),
-                       sizeof(PersistentParams_t),
-                       0 /* offset */);
     } else {
-        pstorage_update(&pstorageHandle,
-                        reinterpret_cast<uint8_t *>(&persistentParams),
-                        sizeof(PersistentParams_t),
-                        0 /* offset */);
+        fs_erase(&fs_config, fs_config.p_start_addr, sizeof(PersistentParams_t) / 4);
     }
+
+    fs_store(&fs_config,
+             fs_config.p_start_addr,
+             reinterpret_cast<uint32_t *>(&persistentParams),
+             sizeof(PersistentParams_t) / 4);
 }
 
 #endif /* #ifdef TARGET_NRF51822 */

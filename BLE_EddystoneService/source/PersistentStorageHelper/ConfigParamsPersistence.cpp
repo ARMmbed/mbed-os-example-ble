@@ -16,7 +16,7 @@
 
 #include "ConfigParamsPersistence.h"
 
-#ifndef TARGET_NRF51822 /* Persistent storage supported on nrf51 platforms */
+#if !defined(TARGET_NRF51822) && !defined(TARGET_NRF52832) /* Persistent storage supported on nrf51/nrf52 platforms */
     /**
      * When not using an nRF51-based target then persistent storage is not available.
      */

@@ -59,18 +59,16 @@ To makes the board compatible with the ST shield three things are required:
 All these operations can be done in the file `mbed_app.json` present in every example.
 
 In the section `target_overrides` add a new object named after your target. 
-In this object three fields are required:
+In this object two fields are required:
 * `"target.features_add": ["BLE"]` Add the BLE feature to the target.
 * `"target.extra_labels_add": ["ST_BLUENRG"]`: Add the BLE implementation of the ST shield to the list of the application modules.
-* `"target.macros_add": ["IDB0XA1_D13_PATCH"]`: Indicate the BLE implementation that the target use an arduino connector.
 
 As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
 
 ```json
         "NUCLEO_F411RE": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["ST_BLUENRG"],
-            "target.macros_add": ["IDB0XA1_D13_PATCH"]
+            "target.extra_labels_add": ["ST_BLUENRG"]
         },
 ```
 

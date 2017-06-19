@@ -16,7 +16,6 @@
         "K64F": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"],
-            "target.macros_add": ["IDB0XA1_D13_PATCH"],
             "ble_button_pin_name": "SW2"
         },
         "NUCLEO_F401RE": {

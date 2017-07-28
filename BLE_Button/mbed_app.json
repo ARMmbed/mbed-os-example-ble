@@ -22,6 +22,11 @@
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"],
             "ble_button_pin_name": "USER_BUTTON"
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG"],
+            "ble_button_pin_name": "USER_BUTTON"
         }
     }
 }

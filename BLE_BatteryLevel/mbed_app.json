@@ -7,6 +7,10 @@
         "NUCLEO_F401RE": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"]
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG"]
         }
     }
 }

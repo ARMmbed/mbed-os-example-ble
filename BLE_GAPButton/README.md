@@ -1,6 +1,6 @@
 # Button count over GAP
 
-This application shows how to use GAP to transmit a simple value to disconnected peer listening for advertisement every time that a value is updated:
+This application shows how to use GAP to transmit a simple value to a disconnected peer listening for advertisement every time that a value is updated:
 
 1. The value is a count of how many times a button on the device was pressed (the code actually monitors the button's releases, not press downs).
 
@@ -20,7 +20,7 @@ Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-o
 
 ### Porting this example on new boards
 
-This example requires a board with at least a button to work. While the pin name of the button is defined for the `NRF51_DK`, `NRF52_DK`, `K64F` and `NUCLEO_F401RE`, it is not specified for other boards.
+This example requires a board with at least 1 button to work. While the pin name of the button is defined for the `NRF51_DK`, `NRF52_DK`, `K64F` and `NUCLEO_F401RE`, it is not specified for other boards.
 
 It is easy to add the button configuration for your board:
 * Open the file named `mbed_app.json` at the root of this example.

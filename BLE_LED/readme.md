@@ -13,7 +13,7 @@ The template covers:
 
 ## Requirements
 
-The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
+The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install:
 
 - [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
@@ -72,20 +72,20 @@ Building instructions for all samples are in the [main readme](https://github.co
 
     ![](img/write_pannel.png)
 
-    **figure 6** Write characteristic pannel using Master Control Panel 4.0.5
+    **figure 6** Write characteristic panel using Master Control Panel 4.0.5
 
-    * `0x00`: LED ON
+    * `0x00`: LED ON/OFF (board dependant)
 
         ![](img/LED_ON.png)
 
-        **figure 6** Write characteristic pannel to set the LED on using Master Control Panel 4.0.5
+        **figure 6** Write characteristic panel to set the LED on using Master Control Panel 4.0.5
 
 
-    * `0x01`: LED OFF
+    * `0x01`: LED OFF/ON (board dependant)
 
         ![](img/LED_OFF.png)
 
-        **figure 6** Write characteristic pannel to set the LED off using Master Control Panel 4.0.5
+        **figure 6** Write characteristic panel to set the LED off using Master Control Panel 4.0.5
 
 
 1. Toggle the LED characteristic value and see the LED turn ON or turn OFF according to the value you set.

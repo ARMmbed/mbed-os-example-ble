@@ -107,6 +107,19 @@ void blinkCallback(void)
     led1 = !led1;
 }
 
+void printMacAddress()
+{
+    /* Print out device MAC address to the console*/
+    Gap::AddressType_t addr_type;
+    Gap::Address_t address;
+    BLE::Instance().gap().getAddress(&addr_type, address);
+    printf("DEVICE MAC ADDRESS: ");
+    for (int i = 5; i >= 1; i--){
+        printf("%02x:", address[i]);
+    }
+    printf("%02x\r\n", address[0]);
+}
+
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 {
     BLE&        ble = context->ble;
@@ -160,9 +173,11 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
 
     err = ble.gap().startAdvertising();
     if (err != BLE_ERROR_NONE) {
-        print_error(err, "Sart advertising failed");
+        print_error(err, "Start advertising failed");
         return;
     }
+
+    printMacAddress();
 }
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {

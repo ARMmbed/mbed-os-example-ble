@@ -1,23 +1,24 @@
 # BLE Gatt Client example
 
-This application demonstrate detailed uses of the GattClient APIs. 
+This application demonstrates detailed uses of the GattClient APIs. 
 
-When the application is started it advertise itself to its environment with the 
-device name `GattClient`. Once you connected the device with your mobile phone, 
-the application starts a discovery of the GATT server exposed by your mobile phone. 
+When the application is started it advertises itself to its environment with the 
+device name `GattClient`. Once you have connected to the device with your mobile 
+phone, the application starts a discovery of the GATT server exposed by your 
+mobile phone. 
 
 After the discovery, this application reads the value of the characteristics 
 discovered and subscribes to the characteristics emitting notifications or 
 indications. 
 
-The device print the value of any indication or notification received from the 
+The device prints the value of any indication or notification received from the 
 mobile phone.
 
 # Running the application
 
 ## Requirements
 
-You may us a generic BLE scanners:
+You may use a generic BLE scanners:
 
 - [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 

@@ -127,7 +127,7 @@ private:
      */
     void when_service_discovered(const DiscoveredService *discovered_service)
     {
-        // print informations of the service discovered
+        // print information of the service discovered
         printf("Service discovered: value = ");
         print_uuid(discovered_service->getUUID());
         printf(", start = %u, end = %u.\r\n",
@@ -139,7 +139,7 @@ private:
     /**
      * Handle characteristics discovered.
      *
-     * The GattClient invoke this function when a characteristic has been
+     * The GattClient invokes this function when a characteristic has been
      * discovered.
      *
      * @see GattClient::launchServiceDiscovery
@@ -171,7 +171,7 @@ private:
     /**
      * Handle termination of the service and characteristic discovery process.
      *
-     * The GattClient invoke this function when a the service and characteristic
+     * The GattClient invokes this function when the service and characteristic
      * discovery process ends.
      *
      * @see GattClient::onServiceDiscoveryTermination
@@ -513,7 +513,7 @@ private:
 };
 
 /**
- * Handle initialization adn shutdown of the BLE Instance.
+ * Handle initialization and shutdown of the BLE Instance.
  *
  * Setup advertising payload and manage advertising state.
  * Delegate to GattClientProcess once the connection is established.
@@ -636,8 +636,8 @@ private:
     }
 
     /**
-     * Stop the gatt client process when a the device is disconnected then
-     * restart advertising.
+     * Stop the gatt client process when the device is disconnected then restart
+     * advertising.
      */
     void when_disconnection(const Gap::DisconnectionCallbackParams_t *event)
     {

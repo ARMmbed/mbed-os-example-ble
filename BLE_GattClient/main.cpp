@@ -203,7 +203,7 @@ private:
      */
     void process_next_characteristic(void)
     {
-        if (_it == 0) {
+        if (_it == NULL) {
             _it = _characteristics;
         } else {
             _it = _it->next;

@@ -111,7 +111,7 @@ public:
     void start();
 
 private:
-    /** This is called when BLE interface is initialised and starts the main loop */
+    /** This is called when BLE interface is initialised and starts the first mode */
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event);
 
     /** Set up and start advertising */
@@ -119,7 +119,8 @@ private:
     /** Set up and start scanning */
     void scan();
 
-    /** After a set duration this cycles to the next demo mode unless a connection happened first */
+    /** After a set duration this cycles to the next demo mode
+     *  unless a connection happened first */
     void on_demo_timeout();
     /** Look at scan payload to find our peer device and connect to it */
     void on_scan(const Gap::AdvertisementCallbackParams_t *params);
@@ -146,7 +147,8 @@ private:
     /* Keep track of our progress through demo modes */
     size_t              _set_index;
     bool                _is_scanning;
-    /* call id of the function on _event_queue that handles timeouts so we can cancel it */
+    /* Remember the call id of the function on _event_queue
+     * that handles timeouts so we can cancel it */
     int                 _on_demo_timeout_id;
 
     /* Measure performance of our advertising/scanning */
@@ -241,18 +243,28 @@ void GAPDevice::scan()
 {
     ble_error_t error;
 
+    /* scanning happens repeatedly, interval is the number of milliseconds
+     * between each cycle of scanning */
+    uint16_t interval = scanning_params[_set_index].getInterval();
+    /* number of milliseconds we scan for each time we enter the scanning cycle
+     * after the interval set above */
+    uint16_t window = scanning_params[_set_index].getWindow();
+    /* how long to repeat the cycles of scanning in seconds */
+    uint16_t timeout = scanning_params[_set_index].getTimeout();
+    /* active scanning will send a scan request to any scanable devices that
+     * we see advertising */
+    bool active = scanning_params[_set_index].getActiveScanning();
+
     /* set the scanning parameters according to currently selected set */
-    error = _ble.gap().setScanParams(scanning_params[_set_index].getInterval(),
-                                     scanning_params[_set_index].getWindow(),
-                                     scanning_params[_set_index].getTimeout(),
-                                     scanning_params[_set_index].getActiveScanning());
+    error = _ble.gap().setScanParams(interval, window, timeout, active);
 
     if (error) {
         print_error(error, "Error during gap.setScanParams\r\n");
         return;
     }
 
-    /* start scanning and attach a callback that will handle advertisments and scan requests responses */
+    /* start scanning and attach a callback that will handle advertisements
+     * and scan requests responses */
     error = _ble.gap().startScan(this, &GAPDevice::on_scan);
 
     if (error) {
@@ -265,29 +277,24 @@ void GAPDevice::scan()
 
 void GAPDevice::on_scan(const Gap::AdvertisementCallbackParams_t *params)
 {
-    /* we want to find our peer device based on the advertising data and connect to it*/
-
+    /* parse the advertising payload, looking for a discoverable device */
     for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
-        /* parse the advertising payload, looking for data type COMPLETE_LOCAL_NAME
-           The advertising payload is a collection of key/value records where
-           byte 0: length of the record excluding this byte
-           byte 1: The key, it is the type of the data
-           byte [2..N] The value. N is equal to byte0 - 1 */
+        /* The advertising payload is a collection of key/value records where
+         * byte 0: length of the record excluding this byte
+         * byte 1: The key, it is the type of the data
+         * byte [2..N] The value. N is equal to byte0 - 1 */
         const uint8_t record_length = params->advertisingData[i];
         if (record_length == 0) {
             continue;
         }
         const uint8_t type = params->advertisingData[i + 1];
         const uint8_t* value = params->advertisingData + i + 2;
-        const uint8_t value_length = record_length - 1;
 
-        /* if the data matches the set PEER_NAME connect to that device */
+        /* if the value contains flags connect to the device if it's discoverable */
         if ((type == GapAdvertisingData::FLAGS) &&
             (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-            printf("adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
-                   params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
-                   params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type);
             /*TODO: connection may complete after we call on_demo_timeout */
+            _ble.gap().stopScan();
             _ble.gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
             break;
         }
@@ -298,21 +305,22 @@ void GAPDevice::on_scan(const Gap::AdvertisementCallbackParams_t *params)
 
 void GAPDevice::on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
 {
-    /* abort the timeout since we connected and the demo will end by disconnection */
+    /* abort timeout as we connected and the demo will end on disconnection */
     _event_queue.cancel(_on_demo_timeout_id);
 
     /* measure time from scan start (deduct the time between runs) */
     size_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
     printf("Connected in %d milliseconds.\r\n", duration);
 
-    _event_queue.call_in(2000, &_ble.gap(), &Gap::disconnect, Gap::LOCAL_HOST_TERMINATED_CONNECTION);
+    _event_queue.call_in(2000, &_ble.gap(), &Gap::disconnect,
+                         Gap::LOCAL_HOST_TERMINATED_CONNECTION);
 }
 
 void GAPDevice::on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
 {
     printf("Disconnected.\r\n");
 
-    /* we have successfully disconnected thus ending the demo, move to next demo */
+    /* we have successfully disconnected ending the demo, move to next mode */
     _event_queue.call(this, &GAPDevice::next_mode);
 }
 
@@ -351,7 +359,8 @@ void GAPDevice::next_mode()
 
     /* queue up next demo mode */
     _demo_duration.start();
-    _on_demo_timeout_id = _event_queue.call_in(CYCLE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
+    _on_demo_timeout_id = _event_queue.call_in(
+            CYCLE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
 }
 
 void GAPDevice::on_radio(bool active)
@@ -372,9 +381,10 @@ void GAPDevice::schedule_ble_events(BLE::OnEventsToProcessCallbackContext *conte
 }
 
 GAPDevice::GAPDevice(BLE &ble) :
-    _ble(ble), _led1(LED1, 0), _set_index(0), _is_scanning(0), _on_demo_timeout_id(0), _radio_count(0), _scan_count(0)
+    _ble(ble), _led1(LED1, 0), _set_index(0), _is_scanning(0),
+    _on_demo_timeout_id(0), _radio_count(0), _scan_count(0)
 {
-    /* because we want to start from the first test and next_mode increments _set_index */
+    /* because we want to start from the first test and next_mode increments it */
     _set_index = (size_t)-1;
 }
 

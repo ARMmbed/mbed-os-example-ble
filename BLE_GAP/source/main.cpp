@@ -20,7 +20,6 @@
 
 
 static const uint8_t DEVICE_NAME[] = "GAP_device";
-static const uint8_t PEER_NAME[]   = "MotoE2(4G-LTE)";
 
 /* Duration of each mode in milliseconds */
 static const size_t DEMO_DURATION_MS      = 5000;
@@ -283,9 +282,8 @@ void GAPDevice::on_scan(const Gap::AdvertisementCallbackParams_t *params)
         const uint8_t value_length = record_length - 1;
 
         /* if the data matches the set PEER_NAME connect to that device */
-        if ((type == GapAdvertisingData::COMPLETE_LOCAL_NAME) &&
-            (value_length == sizeof(PEER_NAME)) &&
-            (memcmp(value, PEER_NAME, value_length) == 0)) {
+        if ((type == GapAdvertisingData::FLAGS) &&
+            (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
             printf("adv peerAddr[%02x %02x %02x %02x %02x %02x] rssi %d, isScanResponse %u, AdvertisementType %u\r\n",
                    params->peerAddr[5], params->peerAddr[4], params->peerAddr[3], params->peerAddr[2],
                    params->peerAddr[1], params->peerAddr[0], params->rssi, params->isScanResponse, params->type);
@@ -307,7 +305,7 @@ void GAPDevice::on_connect(const Gap::ConnectionCallbackParams_t *connection_eve
     size_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
     printf("Connected in %d milliseconds.\r\n", duration);
 
-    _ble.gap().disconnect(Gap::LOCAL_HOST_TERMINATED_CONNECTION);
+    _event_queue.call_in(2000, &_ble.gap(), &Gap::disconnect, Gap::LOCAL_HOST_TERMINATED_CONNECTION);
 }
 
 void GAPDevice::on_disconnect(const Gap::DisconnectionCallbackParams_t *event)

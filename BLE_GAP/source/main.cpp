@@ -19,8 +19,8 @@
 #include "ble/BLE.h"
 
 
-static const uint8_t DEVICE_NAME[]    = "GAP_device";
-static const uint8_t PEER_NAME[]      = "MotoE2(4G-LTE)";
+static const uint8_t DEVICE_NAME[] = "GAP_device";
+static const uint8_t PEER_NAME[]   = "MotoE2(4G-LTE)";
 
 /* Duration of each mode in milliseconds */
 static const size_t DEMO_DURATION_MS      = 5000;
@@ -29,21 +29,15 @@ static const size_t TIME_BETWEEN_MODES_MS = 1000;
 
 
 static const GapScanningParams scanning_params[] = {
-    GapScanningParams(GapScanningParams::SCAN_INTERVAL_MIN,
-                      GapScanningParams::SCAN_WINDOW_MIN, 0),
-    GapScanningParams(GapScanningParams::SCAN_INTERVAL_MIN,
-                      GapScanningParams::SCAN_WINDOW_MIN, 0),
-    GapScanningParams(GapScanningParams::SCAN_INTERVAL_MIN,
-                      GapScanningParams::SCAN_WINDOW_MIN, 0),
+    GapScanningParams(4, 4, 0),
+    GapScanningParams(80, 40, 0),
+    GapScanningParams(160, 40, 0, true),
     GapScanningParams(GapScanningParams::SCAN_INTERVAL_MIN,
                       GapScanningParams::SCAN_WINDOW_MIN, 0)
 };
 
 static const GapAdvertisingParams advertising_params[] = {
     GapAdvertisingParams(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,
-                         GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-                         0),
-    GapAdvertisingParams(GapAdvertisingParams::ADV_CONNECTABLE_DIRECTED,
                          GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
                          0),
     GapAdvertisingParams(GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,
@@ -57,7 +51,7 @@ static const GapAdvertisingParams advertising_params[] = {
 static const size_t SCAN_PARAM_SET_MAX = sizeof(scanning_params) / sizeof(GapScanningParams);
 static const size_t ADV_PARAM_SET_MAX  = sizeof(advertising_params) / sizeof(GapAdvertisingParams);
 /* This includes the spacing between the modes */
-static const us_timestamp_t CYCLE_DURATION_US = (TIME_BETWEEN_MODES_MS + DEMO_DURATION_MS) * 1000;
+static const size_t CYCLE_DURATION_MS = TIME_BETWEEN_MODES_MS + DEMO_DURATION_MS;
 
 static void print_error(ble_error_t error, const char* msg)
 {
@@ -111,8 +105,7 @@ static void print_error(ble_error_t error, const char* msg)
 class GAPDevice : private mbed::NonCopyable<GAPDevice>
 {
 public:
-	GAPDevice(BLE &ble) : _ble(ble), _led1(LED1, 0), _set_index(size_t(-1)),
-	    _is_scanning(0), _radio_count(0) { };
+	GAPDevice(BLE &ble);
     ~GAPDevice();
 
     /** Starts BLE interface initialisation */
@@ -154,11 +147,13 @@ private:
     /* Keep track of our progress through demo modes */
     size_t              _set_index;
     bool                _is_scanning;
+    /* call id of the function on _event_queue that handles timeouts so we can cancel it */
+    int                 _on_demo_timeout_id;
 
     /* Measure performance of our advertising/scanning */
     Timer               _demo_duration;
-    Ticker              _timeout_ticker;
     size_t              _radio_count;
+    size_t              _scan_count;
 };
 
 void GAPDevice::start()
@@ -298,14 +293,15 @@ void GAPDevice::on_scan(const Gap::AdvertisementCallbackParams_t *params)
             _ble.gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
             break;
         }
-        i += record_length;
     }
+
+    _scan_count++;
 }
 
 void GAPDevice::on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
 {
     /* abort the timeout since we connected and the demo will end by disconnection */
-    _timeout_ticker.detach();
+    _event_queue.cancel(_on_demo_timeout_id);
 
     /* measure time from scan start (deduct the time between runs) */
     size_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
@@ -325,9 +321,13 @@ void GAPDevice::on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
 void GAPDevice::next_mode()
 {
     printf("Radio count: %d\r\n", _radio_count);
+    if (_is_scanning) {
+        printf("Scan count: %d\r\n", _scan_count);
+    }
 
     /* reset the demo ready for the next mode */
     _radio_count = 0;
+    _scan_count = 0;
     _demo_duration.stop();
     _demo_duration.reset();
     _ble.gap().stopAdvertising();
@@ -353,7 +353,7 @@ void GAPDevice::next_mode()
 
     /* queue up next demo mode */
     _demo_duration.start();
-    _timeout_ticker.attach_us(mbed::callback(this, &GAPDevice::on_demo_timeout), CYCLE_DURATION_US);
+    _on_demo_timeout_id = _event_queue.call_in(CYCLE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
 }
 
 void GAPDevice::on_radio(bool active)
@@ -371,6 +371,13 @@ void GAPDevice::blink(void)
 void GAPDevice::schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 {
     _event_queue.call(mbed::callback(&context->ble, &BLE::processEvents));
+}
+
+GAPDevice::GAPDevice(BLE &ble) :
+    _ble(ble), _led1(LED1, 0), _set_index(0), _is_scanning(0), _on_demo_timeout_id(0), _radio_count(0), _scan_count(0)
+{
+    /* because we want to start from the first test and next_mode increments _set_index */
+    _set_index = (size_t)-1;
 }
 
 GAPDevice::~GAPDevice()

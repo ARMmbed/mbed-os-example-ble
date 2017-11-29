@@ -32,7 +32,7 @@
 static const uint8_t DEVICE_NAME[] = "GAP_device";
 
 /* Duration of each mode in milliseconds */
-static const size_t DEMO_DURATION_MS      = 5000;
+static const size_t MODE_DURATION_MS      = 5000;
 
 /* Time between each mode in milliseconds */
 static const size_t TIME_BETWEEN_MODES_MS = 1000;
@@ -78,7 +78,7 @@ static const size_t ADV_PARAM_SET_MAX  =
         sizeof(advertising_params) / sizeof(GapAdvertisingParams);
 
 /* time from one mode start to next, this includes the spacing between the modes */
-static const size_t CYCLE_DURATION_MS = TIME_BETWEEN_MODES_MS + DEMO_DURATION_MS;
+static const size_t CYCLE_DURATION_MS = TIME_BETWEEN_MODES_MS + MODE_DURATION_MS;
 
 
 /** Demonstrate advertising, scanning and connecting
@@ -89,9 +89,7 @@ public:
 	GAPDevice() :
 	    _ble(BLE::Instance()),
 	    _led1(LED1, 0),
-        /* because we want to start from the first test and
-         * next_mode increments it, we set it to be 0 after increment */
-        _set_index((size_t)-1),
+        _set_index(0),
         _is_scanning(0),
 	    _on_demo_timeout_id(0),
 	    _scan_count(0) { };
@@ -103,17 +101,18 @@ public:
         }
     };
 
-    /** Starts BLE interface initialisation */
+    /** Start BLE interface initialisation */
     void start()
     {
         ble_error_t error;
 
         if (_ble.hasInitialized()) {
-            print_error(error, "Error: the ble instance has already been initialised.\r\n");
+            print_error(error, "Ble instance already initialised.\r\n");
             return;
         }
 
-        _ble.onEventsToProcess(makeFunctionPointer(this, &GAPDevice::schedule_ble_events));
+        _ble.onEventsToProcess(
+            makeFunctionPointer(this, &GAPDevice::schedule_ble_events));
 
         error = _ble.init(this, &GAPDevice::on_init_complete);
 
@@ -138,13 +137,9 @@ private:
             return;
         }
 
-        /* attach callbacks */
-        _ble.gap().onConnection(this, &GAPDevice::on_connect);
-        _ble.gap().onDisconnection(this, &GAPDevice::on_disconnect);
-
         /* start our first demo mode,
          * all calls are serialised on the user thread through the event queue */
-        _event_queue.call(this, &GAPDevice::next_mode);
+        _event_queue.call(this, &GAPDevice::demo_mode_start);
     };
 
     /** Set up and start advertising */
@@ -165,7 +160,7 @@ private:
         error = _ble.gap().setAdvertisingPayload(advertising_data);
 
         if (error) {
-            print_error(error, "Error during gap.setAdvertisingPayload\r\n");
+            print_error(error, "Error during Gap::setAdvertisingPayload\r\n");
             return;
         }
 
@@ -190,7 +185,7 @@ private:
         error = _ble.gap().startAdvertising();
 
         if (error) {
-            print_error(error, "Error during gap.startAdvertising.\r\n");
+            print_error(error, "Error during Gap::startAdvertising.\r\n");
             return;
         }
 
@@ -206,8 +201,8 @@ private:
          * between each cycle of scanning */
         uint16_t interval = scanning_params[_set_index].interval;
 
-        /* number of milliseconds we scan for each time we enter the scanning cycle
-         * after the interval set above */
+        /* number of milliseconds we scan for each time we enter
+         * the scanning cycle after the interval set above */
         uint16_t window = scanning_params[_set_index].window;
 
         /* how long to repeat the cycles of scanning in seconds */
@@ -221,7 +216,7 @@ private:
         error = _ble.gap().setScanParams(interval, window, timeout, active);
 
         if (error) {
-            print_error(error, "Error during gap.setScanParams\r\n");
+            print_error(error, "Error during Gap::setScanParams\r\n");
             return;
         }
 
@@ -230,7 +225,7 @@ private:
         error = _ble.gap().startScan(this, &GAPDevice::on_scan);
 
         if (error) {
-            print_error(error, "Error during gap.startScan\r\n");
+            print_error(error, "Error during Gap::startScan\r\n");
             return;
         }
 
@@ -241,13 +236,21 @@ private:
      *  unless a connection happened first */
     void on_demo_timeout()
     {
+        if (_is_scanning) {
+            printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
+        }
+
+        print_performance();
+
         /* alloted time has elapsed, move to next demo mode */
-        _event_queue.call(this, &GAPDevice::next_mode);
+        _event_queue.call(this, &GAPDevice::demo_mode_end);
     };
 
     /** Look at scan payload to find a peer device and connect to it */
     void on_scan(const Gap::AdvertisementCallbackParams_t *params)
     {
+        _scan_count++;
+
         /* parse the advertising payload, looking for a discoverable device */
         for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
             /* The advertising payload is a collection of key/value records where
@@ -261,55 +264,61 @@ private:
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t* value = params->advertisingData + i + 2;
 
-            /* if the value contains flags connect to the device if it's discoverable */
+            /* connect to a discoverable device */
             if ((type == GapAdvertisingData::FLAGS) &&
                 (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-                /*TODO: connection may complete after we call on_demo_timeout */
-                _ble.gap().stopScan();
-                _ble.gap().connect(params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
-                break;
+
+                ble_error_t error = _ble.gap().connect(
+                    params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
+
+                if (error) {
+                    print_error(error, "Error during Gap::connect\r\n");
+                    return;
+                }
+
+                /* abort timeout as the mode will end on disconnection */
+                _event_queue.cancel(_on_demo_timeout_id);
+
+                print_performance();
+
+                return;
             }
         }
-
-        _scan_count++;
     };
 
-    /** Immediately disconnects */
+    /** This is called by Gap to notify the application we connected,
+     *  in our case it immediately disconnects */
     void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
-        /* abort timeout as we connected and the demo will end on disconnection */
-        _event_queue.cancel(_on_demo_timeout_id);
-
         /* measure time from scan start (deduct the time between runs) */
         size_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
-        printf("Connected in %d milliseconds.\r\n", duration);
+
+        printf("Connected in %dms\r\n", duration);
+        _ble.gap().stopScan();
 
         _event_queue.call_in(2000, &_ble.gap(), &Gap::disconnect,
                              Gap::LOCAL_HOST_TERMINATED_CONNECTION);
     };
 
-    /** Finishes current demo mode and calls next_mode() to progress the demo */
+    /** This is called by Gap to notify the application we disconnected,
+     *  in our case it calls demo_mode_end() to progress the demo */
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
-        printf("Disconnected.\r\n");
+        printf("Disconnected\r\n");
 
         /* we have successfully disconnected ending the demo, move to next mode */
-        _event_queue.call(this, &GAPDevice::next_mode);
+        _event_queue.call(this, &GAPDevice::demo_mode_end);
     };
 
-    /** Cycles through all demo modes, switches between scanning and advertising */
-    void next_mode()
+    /** clean up after last run, cycle to the next mode and launch it */
+    void demo_mode_end()
     {
-        if (_is_scanning) {
-            printf("Scan count: %d\r\n", _scan_count);
-        }
-
         /* reset the demo ready for the next mode */
         _scan_count = 0;
         _demo_duration.stop();
         _demo_duration.reset();
-        _ble.gap().stopAdvertising();
-        _ble.gap().stopScan();
+        /* this stops scanning, advertising and drops connections */
+        _ble.gap().reset();
 
         /* cycle through all demo modes */
         _set_index++;
@@ -323,17 +332,88 @@ private:
 
         printf(" -- Next GAP demo mode -- \r\n");
 
+        demo_mode_start();
+    };
+
+    /** queue up start of the demo mode */
+    void demo_mode_start()
+    {
         /* space demo runs by delaying the calls */
         if (_is_scanning) {
+            /* when scanning we want to connect to a peer device so we need to
+             * attach callbacks that are used by Gap to notify us of events */
+            _ble.gap().onConnection(this, &GAPDevice::on_connect);
+            _ble.gap().onDisconnection(this, &GAPDevice::on_disconnect);
+
             _event_queue.call_in(TIME_BETWEEN_MODES_MS, this, &GAPDevice::scan);
         } else {
             _event_queue.call_in(TIME_BETWEEN_MODES_MS, this, &GAPDevice::advertise);
         }
 
-        /* queue up next demo mode */
+        /* for performance measurement keep track of duration of the demo mode */
         _demo_duration.start();
+        /* queue up next demo mode */
         _on_demo_timeout_id = _event_queue.call_in(
                 CYCLE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
+    }
+
+    /** print some information about our radio activity */
+    void print_performance()
+    {
+        /* measure time from scan start (deduct the time between runs) */
+        uint16_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
+
+        if (_is_scanning) {
+            /* timeout stop us early */
+            if (scanning_params[_set_index].timeout &&
+                duration > scanning_params[_set_index].timeout) {
+                duration = scanning_params[_set_index].timeout;
+            }
+
+            /* convert ms into timeslots for accurate calculation as internally
+             * all durations are in timeslots (0.625ms) */
+            uint16_t interval_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
+                scanning_params[_set_index].interval);
+            uint16_t window_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
+                scanning_params[_set_index].window);
+            uint16_t duration_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
+                duration);
+            /* this is how many time we advertised */
+            uint16_t rx_ts = (duration / interval_ts) * window_ts;
+            uint16_t rx_ms = (rx_ts * GapScanningParams::UNIT_0_625_MS) / 1000;
+
+            printf("We have scanned for %dms\r\n", duration);
+            printf("with an interval of %d timeslots \r\n", interval_ts);
+            printf("and a window of %d timeslots \r\n", window_ts);
+
+            printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
+        } else /* advertising */ {
+            /* timeout stop us early */
+            if (scanning_params[_set_index].timeout &&
+                duration > advertising_params[_set_index].timeout) {
+                duration = advertising_params[_set_index].timeout;
+            }
+
+            /* convert ms into timeslots for accurate calculation as internally
+             * all durations are in timeslots (0.625ms) */
+            uint16_t interval_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
+                advertising_params[_set_index].interval);
+            uint16_t duration_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
+                duration);
+            /* this is how many time we advertised */
+            uint16_t events = duration / interval_ts;
+
+            printf("We have advertised for %dms\r\n", duration);
+            printf("with an interval of %d timeslots \r\n", interval_ts);
+
+            /* non-scannable and non-connectable advertising skips rx events saving us power*/
+            if (advertising_params[_set_index].adv_type
+                    == GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED) {
+                printf("We created at least %d tx events\r\n", events);
+            } else {
+                printf("We created at least %d tx and rx events\r\n", events);
+            }
+        }
     };
 
     /** Schedule processing of events from the BLE middleware in the event queue. */

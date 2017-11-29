@@ -29,7 +29,7 @@
  *  in the two arrays containing the parameters for scanning and advertising.
  */
 
-static const uint8_t DEVICE_NAME[] = "GAP_device";
+static const uint8_t DEVICE_NAME[]        = "GAP_device";
 
 /* Duration of each mode in milliseconds */
 static const size_t MODE_DURATION_MS      = 5000;
@@ -54,9 +54,9 @@ typedef struct {
  *  parameters for each of the modes we use in our demo */
 static const AdvModeParam_t advertising_params[] = {
     /*            advertising type                      interval timeout */
-    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      10,    0 },
-    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       500,    0 },
-    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 500,    0 }
+    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      10,    3000 },
+    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,        50,    0    },
+    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED,  50,    0    }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -64,7 +64,7 @@ static const AdvModeParam_t advertising_params[] = {
 /** the entries in this array are used to configure our scanning
  *  parameters for each of the modes we use in our demo */
 static const ScanModeParam_t scanning_params[] = {
-/* interval window timeout active */
+    /* interval window timeout active */
     {   4,     4,     0,    false },
     {  80,    40,     0,    false },
     { 160,    40,     0,    true  },
@@ -77,22 +77,19 @@ static const size_t SCAN_PARAM_SET_MAX =
 static const size_t ADV_PARAM_SET_MAX  =
         sizeof(advertising_params) / sizeof(GapAdvertisingParams);
 
-/* time from one mode start to next, this includes the spacing between the modes */
-static const size_t CYCLE_DURATION_MS = TIME_BETWEEN_MODES_MS + MODE_DURATION_MS;
-
 
 /** Demonstrate advertising, scanning and connecting
  */
 class GAPDevice : private mbed::NonCopyable<GAPDevice>
 {
 public:
-	GAPDevice() :
-	    _ble(BLE::Instance()),
-	    _led1(LED1, 0),
+    GAPDevice() :
+        _ble(BLE::Instance()),
+        _led1(LED1, 0),
         _set_index(0),
         _is_scanning(0),
-	    _on_demo_timeout_id(0),
-	    _scan_count(0) { };
+        _on_demo_timeout_id(0),
+        _scan_count(0) { };
 
     ~GAPDevice()
     {
@@ -112,7 +109,7 @@ public:
         }
 
         _ble.onEventsToProcess(
-            makeFunctionPointer(this, &GAPDevice::schedule_ble_events));
+                makeFunctionPointer(this, &GAPDevice::schedule_ble_events));
 
         error = _ble.init(this, &GAPDevice::on_init_complete);
 
@@ -167,7 +164,7 @@ private:
         /* set the advertising parameters according to currently selected set,
          * see @AdvertisingType_t for explanation of modes */
         GapAdvertisingParams::AdvertisingType_t adv_type =
-            advertising_params[_set_index].adv_type;
+                advertising_params[_set_index].adv_type;
 
         /* how many milliseconds between advertisements, lower interval
          * increases the chances of being seen at the cost of more power */
@@ -176,8 +173,6 @@ private:
         /* advertising will continue for this many seconds or until connected */
         uint16_t timeout = advertising_params[_set_index].timeout;
 
-        /* these methods cannot fail and will clamp the parameters
-         * if they are out of range or illegal */
         _ble.gap().setAdvertisingType(adv_type);
         _ble.gap().setAdvertisingInterval(interval);
         _ble.gap().setAdvertisingTimeout(timeout);
@@ -265,11 +260,11 @@ private:
             const uint8_t* value = params->advertisingData + i + 2;
 
             /* connect to a discoverable device */
-            if ((type == GapAdvertisingData::FLAGS) &&
-                (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+            if ((type == GapAdvertisingData::FLAGS)
+                && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
 
                 ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
+                        params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC, NULL, NULL);
 
                 if (error) {
                     print_error(error, "Error during Gap::connect\r\n");
@@ -278,8 +273,9 @@ private:
 
                 /* abort timeout as the mode will end on disconnection */
                 _event_queue.cancel(_on_demo_timeout_id);
-
-                print_performance();
+                /* start a new timeout in case we fail to connect */
+                _on_demo_timeout_id = _event_queue.call_in(
+                        MODE_DURATION_MS, this, &GAPDevice::demo_mode_end);
 
                 return;
             }
@@ -290,11 +286,12 @@ private:
      *  in our case it immediately disconnects */
     void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
-        /* measure time from scan start (deduct the time between runs) */
-        size_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
+        print_performance();
 
-        printf("Connected in %dms\r\n", duration);
-        _ble.gap().stopScan();
+        printf("Connected in %dms\r\n", _demo_duration.read_ms());
+
+        /* cancel the connect timeout since we connected */
+        _event_queue.cancel(_on_demo_timeout_id);
 
         _event_queue.call_in(2000, &_ble.gap(), &Gap::disconnect,
                              Gap::LOCAL_HOST_TERMINATED_CONNECTION);
@@ -330,9 +327,9 @@ private:
             _is_scanning = !_is_scanning;
         }
 
-        printf(" -- Next GAP demo mode -- \r\n");
+        printf("\r\n -- Next GAP demo mode -- \r\n");
 
-        demo_mode_start();
+        _event_queue.call_in(TIME_BETWEEN_MODES_MS, this, &GAPDevice::demo_mode_start);
     };
 
     /** queue up start of the demo mode */
@@ -345,41 +342,44 @@ private:
             _ble.gap().onConnection(this, &GAPDevice::on_connect);
             _ble.gap().onDisconnection(this, &GAPDevice::on_disconnect);
 
-            _event_queue.call_in(TIME_BETWEEN_MODES_MS, this, &GAPDevice::scan);
+            _event_queue.call(this, &GAPDevice::scan);
         } else {
-            _event_queue.call_in(TIME_BETWEEN_MODES_MS, this, &GAPDevice::advertise);
+            _event_queue.call(this, &GAPDevice::advertise);
         }
 
         /* for performance measurement keep track of duration of the demo mode */
         _demo_duration.start();
         /* queue up next demo mode */
         _on_demo_timeout_id = _event_queue.call_in(
-                CYCLE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
+                MODE_DURATION_MS, this, &GAPDevice::on_demo_timeout);
+
+        printf("\r\n");
     }
 
     /** print some information about our radio activity */
     void print_performance()
     {
-        /* measure time from scan start (deduct the time between runs) */
-        uint16_t duration = _demo_duration.read_ms() - TIME_BETWEEN_MODES_MS;
+        /* measure time from mode start, we may have to cap it by timeout */
+        uint16_t duration = _demo_duration.read_ms();
 
         if (_is_scanning) {
             /* timeout stop us early */
-            if (scanning_params[_set_index].timeout &&
-                duration > scanning_params[_set_index].timeout) {
+            if (scanning_params[_set_index].timeout
+                && duration > scanning_params[_set_index].timeout) {
                 duration = scanning_params[_set_index].timeout;
             }
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
             uint16_t interval_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                scanning_params[_set_index].interval);
+                    scanning_params[_set_index].interval);
             uint16_t window_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                scanning_params[_set_index].window);
+                    scanning_params[_set_index].window);
             uint16_t duration_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                duration);
-            /* this is how many time we advertised */
+                    duration);
+            /* this is how long we scanned for in timeslots */
             uint16_t rx_ts = (duration / interval_ts) * window_ts;
+            /* convert to milliseconds */
             uint16_t rx_ms = (rx_ts * GapScanningParams::UNIT_0_625_MS) / 1000;
 
             printf("We have scanned for %dms\r\n", duration);
@@ -389,18 +389,18 @@ private:
             printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
         } else /* advertising */ {
             /* timeout stop us early */
-            if (scanning_params[_set_index].timeout &&
-                duration > advertising_params[_set_index].timeout) {
+            if (scanning_params[_set_index].timeout
+                && duration > advertising_params[_set_index].timeout) {
                 duration = advertising_params[_set_index].timeout;
             }
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
             uint16_t interval_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
-                advertising_params[_set_index].interval);
+                    advertising_params[_set_index].interval);
             uint16_t duration_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
-                duration);
-            /* this is how many time we advertised */
+                    duration);
+            /* this is how many times we advertised */
             uint16_t events = duration / interval_ts;
 
             printf("We have advertised for %dms\r\n", duration);

@@ -37,36 +37,38 @@ static const size_t DEMO_DURATION_MS      = 5000;
 /* Time between each mode in milliseconds */
 static const size_t TIME_BETWEEN_MODES_MS = 1000;
 
+typedef struct {
+    GapAdvertisingParams::AdvertisingType_t adv_type;
+    uint16_t interval;
+    uint16_t timeout;
+} AdvModeParam_t;
+
+typedef struct {
+    uint16_t interval;
+    uint16_t window;
+    uint16_t timeout;
+    bool active;
+} ScanModeParam_t;
+
 /** the entries in this array are used to configure our advertising
  *  parameters for each of the modes we use in our demo */
-static const GapAdvertisingParams advertising_params[] = {
-    GapAdvertisingParams(
-        GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,
-        GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-        0
-    ),
-    GapAdvertisingParams(
-        GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,
-        GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-        0
-    ),
-    GapAdvertisingParams(
-        GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED,
-        GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-        0
-    )
+static const AdvModeParam_t advertising_params[] = {
+    /*            advertising type                      interval timeout */
+    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      10,    0 },
+    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       500,    0 },
+    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 500,    0 }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
 
 /** the entries in this array are used to configure our scanning
  *  parameters for each of the modes we use in our demo */
-static const GapScanningParams scanning_params[] = {
-    /*             interval window timeout active */
-    GapScanningParams(  4,     4,     0,    false),
-    GapScanningParams( 80,    40,     0,    false),
-    GapScanningParams(160,    40,     0,    true ),
-    GapScanningParams(500,    10,     0,    false)
+static const ScanModeParam_t scanning_params[] = {
+/* interval window timeout active */
+    {   4,     4,     0,    false },
+    {  80,    40,     0,    false },
+    { 160,    40,     0,    true  },
+    { 500,    10,     0,    false }
 };
 
 /* get number of items in our arrays */
@@ -98,7 +100,6 @@ public:
     {
         if (_ble.hasInitialized()) {
             _ble.shutdown();
-            printf("BLE shutdown.");
         }
     };
 
@@ -114,7 +115,6 @@ public:
 
         _ble.onEventsToProcess(makeFunctionPointer(this, &GAPDevice::schedule_ble_events));
 
-        printf("Initialising BLE.\r\n");
         error = _ble.init(this, &GAPDevice::on_init_complete);
 
         if (error) {
@@ -122,9 +122,10 @@ public:
             return;
         }
 
-        /* just to show we're running */
+        /* to show we're running we'll blink every 500ms */
         _event_queue.call_every(500, this, &GAPDevice::blink);
 
+        /* this will not return until shutdown */
         _event_queue.dispatch_forever();
     };
 
@@ -136,13 +137,13 @@ private:
             print_error(event->error, "Error during the initialisation\r\n");
             return;
         }
-        printf("Ble instance initialised\r\n");
 
         /* attach callbacks */
         _ble.gap().onConnection(this, &GAPDevice::on_connect);
         _ble.gap().onDisconnection(this, &GAPDevice::on_disconnect);
 
-        /* start our first demo mode */
+        /* start our first demo mode,
+         * all calls are serialised on the user thread through the event queue */
         _event_queue.call(this, &GAPDevice::next_mode);
     };
 
@@ -168,8 +169,23 @@ private:
             return;
         }
 
-        /* set the advertising parameters according to currently selected set */
-        _ble.gap().setAdvertisingParams(advertising_params[_set_index]);
+        /* set the advertising parameters according to currently selected set,
+         * see @AdvertisingType_t for explanation of modes */
+        GapAdvertisingParams::AdvertisingType_t adv_type =
+            advertising_params[_set_index].adv_type;
+
+        /* how many milliseconds between advertisements, lower interval
+         * increases the chances of being seen at the cost of more power */
+        uint16_t interval = advertising_params[_set_index].interval;
+
+        /* advertising will continue for this many seconds or until connected */
+        uint16_t timeout = advertising_params[_set_index].timeout;
+
+        /* these methods cannot fail and will clamp the parameters
+         * if they are out of range or illegal */
+        _ble.gap().setAdvertisingType(adv_type);
+        _ble.gap().setAdvertisingInterval(interval);
+        _ble.gap().setAdvertisingTimeout(timeout);
 
         error = _ble.gap().startAdvertising();
 
@@ -188,18 +204,18 @@ private:
 
         /* scanning happens repeatedly, interval is the number of milliseconds
          * between each cycle of scanning */
-        uint16_t interval = scanning_params[_set_index].getInterval();
+        uint16_t interval = scanning_params[_set_index].interval;
 
         /* number of milliseconds we scan for each time we enter the scanning cycle
          * after the interval set above */
-        uint16_t window = scanning_params[_set_index].getWindow();
+        uint16_t window = scanning_params[_set_index].window;
 
         /* how long to repeat the cycles of scanning in seconds */
-        uint16_t timeout = scanning_params[_set_index].getTimeout();
+        uint16_t timeout = scanning_params[_set_index].timeout;
 
         /* active scanning will send a scan request to any scanable devices that
          * we see advertising */
-        bool active = scanning_params[_set_index].getActiveScanning();
+        bool active = scanning_params[_set_index].active;
 
         /* set the scanning parameters according to currently selected set */
         error = _ble.gap().setScanParams(interval, window, timeout, active);
@@ -229,7 +245,7 @@ private:
         _event_queue.call(this, &GAPDevice::next_mode);
     };
 
-    /** Look at scan payload to find our peer device and connect to it */
+    /** Look at scan payload to find a peer device and connect to it */
     void on_scan(const Gap::AdvertisementCallbackParams_t *params)
     {
         /* parse the advertising payload, looking for a discoverable device */
@@ -298,7 +314,8 @@ private:
         /* cycle through all demo modes */
         _set_index++;
 
-        /* switch to other mode when we go through all the params in one mode */
+        /* switch between advertising and scanning when we go
+         * through all the params in the array */
         if (_set_index >= (_is_scanning? SCAN_PARAM_SET_MAX : ADV_PARAM_SET_MAX)) {
             _set_index = 0;
             _is_scanning = !_is_scanning;

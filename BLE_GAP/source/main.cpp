@@ -35,7 +35,7 @@ static const uint8_t DEVICE_NAME[]        = "GAP_device";
 static const size_t MODE_DURATION_MS      = 5000;
 
 /* Time between each mode in milliseconds */
-static const size_t TIME_BETWEEN_MODES_MS = 1000;
+static const size_t TIME_BETWEEN_MODES_MS = 2000;
 
 typedef struct {
     GapAdvertisingParams::AdvertisingType_t adv_type;
@@ -53,10 +53,10 @@ typedef struct {
 /** the entries in this array are used to configure our advertising
  *  parameters for each of the modes we use in our demo */
 static const AdvModeParam_t advertising_params[] = {
-    /*            advertising type                      interval timeout */
-    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,       40, 3000 },
-    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,        100,    0 },
-    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED,  100,    0 }
+    /*            advertising type                        interval  timeout */
+    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      40,/*ms*/ 3 /*s*/},
+    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       0      },
+    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 100,       0      }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -64,17 +64,18 @@ static const AdvModeParam_t advertising_params[] = {
 /** the entries in this array are used to configure our scanning
  *  parameters for each of the modes we use in our demo */
 static const ScanModeParam_t scanning_params[] = {
-/* interval window timeout active */
-    {   4,     4,     0,    false },
-    {  80,    40,     0,    false },
-    { 160,    40,     0,    true  },
-    { 500,    10,     0,    false }
+/* interval      window    timeout       active */
+    {   4,/*ms*/   4,/*ms*/   0,/*s*/    false },
+    {  80,        40,         2,         false },
+    { 160,        40,         0,         true  },
+    { 500,        10,         0,         false }
 };
 
+/* parameters to use when attempting to connect to maximise speed of connection */
 static const GapScanningParams connection_scan_params(
         GapScanningParams::SCAN_INTERVAL_MAX,
         GapScanningParams::SCAN_WINDOW_MAX,
-        3000,
+        3,
         false);
 
 /* get number of items in our arrays */
@@ -349,6 +350,7 @@ private:
         _event_queue.call(this, &GAPDevice::demo_mode_end);
     };
 
+    /** called if timeout is reached during advertising or scanning */
     void on_timeout(const Gap::TimeoutSource_t source)
     {
         switch (source) {
@@ -401,8 +403,8 @@ private:
         if (_is_scanning) {
             /* timeout stop us early */
             if (scanning_params[_set_index].timeout
-                && duration > scanning_params[_set_index].timeout) {
-                duration = scanning_params[_set_index].timeout;
+                && duration > scanning_params[_set_index].timeout * 1000) {
+                duration = scanning_params[_set_index].timeout * 1000;
             }
 
             /* convert ms into timeslots for accurate calculation as internally
@@ -419,15 +421,15 @@ private:
             uint16_t rx_ms = (rx_ts * GapScanningParams::UNIT_0_625_MS) / 1000;
 
             printf("We have scanned for %dms with an interval of %d"
-                    " timeslot and a window of %d timeslots",
+                    " timeslot and a window of %d timeslots\r\n",
                     duration, interval_ts, window_ts);
 
-            printf(" - we have been listening on the radio for at least %dms\r\n", rx_ms);
+            printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
         } else /* advertising */ {
             /* timeout stop us early */
             if (scanning_params[_set_index].timeout
-                && duration > advertising_params[_set_index].timeout) {
-                duration = advertising_params[_set_index].timeout;
+                && duration > advertising_params[_set_index].timeout * 1000) {
+                duration = advertising_params[_set_index].timeout * 1000;
             }
 
             /* convert ms into timeslots for accurate calculation as internally
@@ -439,15 +441,17 @@ private:
             /* this is how many times we advertised */
             uint16_t events = duration_ts / interval_ts;
 
-            printf("We have advertised for %dms with an interval of %d timeslots",
+            printf("We have advertised for %dms"
+                   " with an interval of %d timeslots\r\n",
                    duration, interval_ts);
 
-            /* non-scannable and non-connectable advertising skips rx events saving us power*/
+            /* non-scannable and non-connectable advertising
+             * skips rx events saving on power consumption */
             if (advertising_params[_set_index].adv_type
                     == GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED) {
-                printf(" and we created at least %d tx events\r\n", events);
+                printf("We created at least %d tx events\r\n", events);
             } else {
-                printf(" and we created at least %d tx and rx events\r\n", events);
+                printf("We created at least %d tx and rx events\r\n", events);
             }
         }
     };

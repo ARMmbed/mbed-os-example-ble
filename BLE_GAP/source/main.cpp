@@ -32,7 +32,7 @@
 static const uint8_t DEVICE_NAME[]        = "GAP_device";
 
 /* Duration of each mode in milliseconds */
-static const size_t MODE_DURATION_MS      = 5000;
+static const size_t MODE_DURATION_MS      = 6000;
 
 /* Time between each mode in milliseconds */
 static const size_t TIME_BETWEEN_MODES_MS = 2000;
@@ -55,7 +55,7 @@ typedef struct {
 static const AdvModeParam_t advertising_params[] = {
     /*            advertising type                        interval  timeout */
     { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      40,/*ms*/ 3 /*s*/},
-    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       0      },
+    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       4      },
     { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 100,       0      }
 };
 
@@ -66,7 +66,7 @@ static const AdvModeParam_t advertising_params[] = {
 static const ScanModeParam_t scanning_params[] = {
 /* interval      window    timeout       active */
     {   4,/*ms*/   4,/*ms*/   0,/*s*/    false },
-    {  80,        40,         2,         false },
+    { 160,       100,         3,         false },
     { 160,        40,         0,         true  },
     { 500,        10,         0,         false }
 };
@@ -168,6 +168,9 @@ private:
 
         /* for performance measurement keep track of duration of the demo mode */
         _demo_duration.start();
+        /* keep track of our state */
+        _is_connecting = false;
+
         /* queue up next demo mode */
         _on_duration_end_id = _event_queue.call_in(
                 MODE_DURATION_MS, this, &GAPDevice::on_duration_end);
@@ -353,17 +356,18 @@ private:
     /** called if timeout is reached during advertising or scanning */
     void on_timeout(const Gap::TimeoutSource_t source)
     {
+        _demo_duration.stop();
+
         switch (source) {
             case Gap::TIMEOUT_SRC_ADVERTISING:
                 printf("Stopped advertising early due to timeout parameter\r\n");
-                _demo_duration.stop();
                 break;
             case Gap::TIMEOUT_SRC_SCAN:
                 printf("Stopped scanning early due to timeout parameter\r\n");
-                _demo_duration.stop();
                 break;
             case Gap::TIMEOUT_SRC_CONN:
                 printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
+                _event_queue.call(this, &GAPDevice::print_performance);
                 _event_queue.call(this, &GAPDevice::demo_mode_end);
                 break;
             default:
@@ -390,8 +394,6 @@ private:
             _is_scanning = !_is_scanning;
         }
 
-        printf("\r\n -- Next GAP demo mode -- \r\n");
-
         _ble.shutdown();
         _event_queue.break_dispatch();
     };
@@ -399,16 +401,10 @@ private:
     /** print some information about our radio activity */
     void print_performance()
     {
-        /* measure time from mode start, we may have to cap it by timeout */
+        /* measure time from mode start, may have been stopped by timeout */
         uint16_t duration = _demo_duration.read_ms();
 
         if (_is_scanning) {
-            /* timeout stop us early */
-            if (scanning_params[_set_index].timeout
-                && duration > scanning_params[_set_index].timeout * 1000) {
-                duration = scanning_params[_set_index].timeout * 1000;
-            }
-
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
             uint16_t interval_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
@@ -427,12 +423,8 @@ private:
                     duration, interval_ts, window_ts);
 
             printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
+
         } else /* advertising */ {
-            /* timeout stop us early */
-            if (scanning_params[_set_index].timeout
-                && duration > advertising_params[_set_index].timeout * 1000) {
-                duration = advertising_params[_set_index].timeout * 1000;
-            }
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
@@ -496,6 +488,7 @@ int main()
     while (1) {
         gap_device.run();
         wait_ms(TIME_BETWEEN_MODES_MS);
+        printf("\r\n -- Next GAP demo mode -- \r\n");
     };
 
     return 0;

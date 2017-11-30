@@ -356,9 +356,11 @@ private:
         switch (source) {
             case Gap::TIMEOUT_SRC_ADVERTISING:
                 printf("Stopped advertising early due to timeout parameter\r\n");
+                _demo_duration.stop();
                 break;
             case Gap::TIMEOUT_SRC_SCAN:
                 printf("Stopped scanning early due to timeout parameter\r\n");
+                _demo_duration.stop();
                 break;
             case Gap::TIMEOUT_SRC_CONN:
                 printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);

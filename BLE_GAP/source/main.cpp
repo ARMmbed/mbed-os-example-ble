@@ -17,7 +17,6 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "print_error.h"
 
 /** This example demonstrates all the basic setup required
  *  to advertise, scan and connect to other devices.
@@ -54,9 +53,9 @@ typedef struct {
  *  parameters for each of the modes we use in our demo */
 static const AdvModeParam_t advertising_params[] = {
     /*            advertising type                        interval  timeout */
-    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      40,/*ms*/ 3 /*s*/},
-    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       4      },
-    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 100,       0      }
+    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      40,/*ms*/ 3/*s*/},
+    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       4     },
+    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 100,       0     }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -112,7 +111,7 @@ public:
         ble_error_t error;
 
         if (_ble.hasInitialized()) {
-            print_error(error, "Ble instance already initialised.\r\n");
+            printf("Ble instance already initialised.\r\n");
             return;
         }
 
@@ -128,7 +127,7 @@ public:
         error = _ble.init(this, &GAPDevice::on_init_complete);
 
         if (error) {
-            print_error(error, "Error returned by BLE::init.\r\n");
+            printf("Error returned by BLE::init.\r\n");
             return;
         }
 
@@ -144,7 +143,7 @@ private:
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
         if (event->error) {
-            print_error(event->error, "Error during the initialisation\r\n");
+            printf("Error during the initialisation\r\n");
             return;
         }
 
@@ -196,7 +195,7 @@ private:
         error = _ble.gap().setAdvertisingPayload(advertising_data);
 
         if (error) {
-            print_error(error, "Error during Gap::setAdvertisingPayload\r\n");
+            printf("Error during Gap::setAdvertisingPayload\r\n");
             return;
         }
 
@@ -219,7 +218,7 @@ private:
         error = _ble.gap().startAdvertising();
 
         if (error) {
-            print_error(error, "Error during Gap::startAdvertising.\r\n");
+            printf("Error during Gap::startAdvertising.\r\n");
             return;
         }
 
@@ -250,7 +249,7 @@ private:
         error = _ble.gap().setScanParams(interval, window, timeout, active);
 
         if (error) {
-            print_error(error, "Error during Gap::setScanParams\r\n");
+            printf("Error during Gap::setScanParams\r\n");
             return;
         }
 
@@ -259,7 +258,7 @@ private:
         error = _ble.gap().startScan(this, &GAPDevice::on_scan);
 
         if (error) {
-            print_error(error, "Error during Gap::startScan\r\n");
+            printf("Error during Gap::startScan\r\n");
             return;
         }
 
@@ -315,7 +314,7 @@ private:
                         &connection_scan_params);
 
                 if (error) {
-                    print_error(error, "Error during Gap::connect\r\n");
+                    printf("Error during Gap::connect\r\n");
                 }
 
                 /* we may have already scan events waiting

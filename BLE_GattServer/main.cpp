@@ -127,9 +127,9 @@ public:
         _clock_characteristics[2] = &_second_char;
 
         // setup authorization handlers
-        _hour_char.setWriteAuthorizationCallback(this, &Self::authorize_hour_write);
-        _minute_char.setWriteAuthorizationCallback(this, &Self::authorize_minute_write);
-        _second_char.setWriteAuthorizationCallback(this, &Self::authorize_second_write);
+        _hour_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
+        _minute_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
+        _second_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
     }
 
     void start(GattServer &server, events::EventQueue &event_queue)
@@ -245,9 +245,9 @@ private:
 //
 // Write Authorization handlers for the second, minute and hour characteristics
 //
-    void authorize_hour_write(GattWriteAuthCallbackParams *e)
+    void authorize_client_write(GattWriteAuthCallbackParams *e)
     {
-        printf("hour characteristic write authorization\r\n");
+        printf("characteristic %u write authorization\r\n", e->handle);
 
         if (e->offset != 0) {
             printf("Error invalid offset\r\n");
@@ -261,56 +261,8 @@ private:
             return;
         }
 
-        if (e->data[0] >= 24) {
-            printf("Error invalid data\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_WRITE_NOT_PERMITTED;
-            return;
-        }
-        e->authorizationReply = AUTH_CALLBACK_REPLY_SUCCESS;
-    }
-
-    void authorize_minute_write(GattWriteAuthCallbackParams *e)
-    {
-        printf("minute characteristic write authorization\r\n");
-
-        if (e->offset != 0) {
-            printf("Error invalid offset\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_INVALID_OFFSET;
-            return;
-        }
-
-        if (e->len != 1) {
-            printf("Error invalid len\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_INVALID_ATT_VAL_LENGTH;
-            return;
-        }
-
-        if (e->data[0] >= 60) {
-            printf("Error invalid data\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_WRITE_NOT_PERMITTED;
-            return;
-        }
-
-        e->authorizationReply = AUTH_CALLBACK_REPLY_SUCCESS;
-    }
-
-    void authorize_second_write(GattWriteAuthCallbackParams *e)
-    {
-        printf("second characteristic write authorization\r\n");
-
-        if (e->offset != 0) {
-            printf("Error invalid offset\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_INVALID_OFFSET;
-            return;
-        }
-
-        if (e->len != 1) {
-            printf("Error invalid len\r\n");
-            e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_INVALID_ATT_VAL_LENGTH;
-            return;
-        }
-
-        if (e->data[0] >= 60) {
+        if ((e->data[0] >= 60) ||
+            ((e->data[0] >= 24) && (e->handle == _hour_char.getValueHandle()))) {
             printf("Error invalid data\r\n");
             e->authorizationReply = AUTH_CALLBACK_REPLY_ATTERR_WRITE_NOT_PERMITTED;
             return;

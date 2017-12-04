@@ -37,69 +37,9 @@ class ClockService {
 
 public:
     ClockService() :
-        _hour_char_description(
-            /* UUID */ BLE_UUID_DESCRIPTOR_CHAR_USER_DESC,
-            /* valuePtr */ reinterpret_cast<uint8_t*>(_hour_desc_value),
-            /* len */ sizeof(_hour_desc_value),
-            /* maxLen */ sizeof(_hour_desc_value),
-            /* hasVariableLen */ false
-        ),
-        _hour_char_value(0),
-        _hour_char(
-            /* UUID */ "485f4145-52b9-4644-af1f-7a6b9322490f",
-            /* Initial value */ &_hour_char_value,
-            /* Value size */ sizeof(_hour_char_value),
-            /* Value capacity */ sizeof(_hour_char_value),
-            /* Properties */ GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY,
-            /* Descriptors */ _hour_char_descriptors,
-            /* Num descriptors */ sizeof(_hour_char_descriptors) /
-                                  sizeof(_hour_char_descriptors[0]),
-            /* variable len */ false
-        ),
-        _minute_char_description(
-            /* UUID */ BLE_UUID_DESCRIPTOR_CHAR_USER_DESC,
-            /* valuePtr */ reinterpret_cast<uint8_t*>(_minute_desc_value),
-            /* len */ sizeof(_minute_desc_value),
-            /* maxLen */ sizeof(_minute_desc_value),
-            /* hasVariableLen */ false
-        ),
-        _minute_char_value(0),
-        _minute_char(
-            /* UUID */ "0a924ca7-87cd-4699-a3bd-abdcd9cf126a",
-            /* Initial value */ &_minute_char_value,
-            /* Value size */ sizeof(_minute_char_value),
-            /* Value capacity */ sizeof(_minute_char_value),
-            /* Properties */ GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY,
-            /* Descriptors */ _minute_char_descriptors,
-            /* Num descriptors */ sizeof(_minute_char_descriptors) /
-                                  sizeof(_minute_char_descriptors[0]),
-            /* variable len */ false
-        ),
-        _second_char_description(
-            /* UUID */ BLE_UUID_DESCRIPTOR_CHAR_USER_DESC,
-            /* valuePtr */ reinterpret_cast<uint8_t*>(_second_desc_value),
-            /* len */ sizeof(_second_desc_value),
-            /* maxLen */ sizeof(_second_desc_value),
-            /* hasVariableLen */ false
-        ),
-        _second_char_value(0),
-        _second_char(
-            /* UUID */ "8dd6a1b7-bc75-4741-8a26-264af75807de",
-            /* Initial value */ &_second_char_value,
-            /* Value size */ sizeof(_second_char_value),
-            /* Value capacity */ sizeof(_second_char_value),
-            /* Properties */ GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
-                             GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY,
-            /* Descriptors */ _second_char_descriptors,
-            /* Num descriptors */ sizeof(_second_char_descriptors) /
-                                  sizeof(_second_char_descriptors[0]),
-            /* variable len */ false
-        ),
+        _hour_char("485f4145-52b9-4644-af1f-7a6b9322490f", 0),
+        _minute_char("0a924ca7-87cd-4699-a3bd-abdcd9cf126a", 0),
+        _second_char("8dd6a1b7-bc75-4741-8a26-264af75807de", 0),
         _clock_service(
             /* uuid */ "51311102-030e-485f-b122-f8f381aa84ed",
             /* characteristics */ _clock_characteristics,
@@ -110,18 +50,6 @@ public:
         _event_queue(NULL)
     {
         // update internal pointers (value, descriptors and characteristics array)
-        strcpy(_hour_desc_value, "hour");
-        _hour_char_descriptors[0] = &_hour_char_description;
-        _hour_char_value = 0;
-
-        strcpy(_minute_desc_value, "minute");
-        _minute_char_descriptors[0] = &_minute_char_description;
-        _minute_char_value = 0;
-
-        strcpy(_second_desc_value, "second");
-        _second_char_descriptors[0] = &_second_char_description;
-        _second_char_value = 0;
-
         _clock_characteristics[0] = &_hour_char;
         _clock_characteristics[1] = &_minute_char;
         _clock_characteristics[2] = &_second_char;
@@ -163,11 +91,8 @@ public:
         printf("clock service registered\r\n");
         printf("service handle: %u\r\n", _clock_service.getHandle());
         printf("\thour characteristic value handle %u\r\n", _hour_char.getValueHandle());
-        printf("\t\ttextual description handle %u\r\n", _hour_char_description.getHandle());
         printf("\tminute characteristic value handle %u\r\n", _minute_char.getValueHandle());
-        printf("\t\ttextual description handle %u\r\n", _minute_char_description.getHandle());
         printf("\tsecond characteristic value handle %u\r\n", _second_char.getValueHandle());
-        printf("\t\ttextual description handle %u\r\n", _second_char_description.getHandle());
 
         _event_queue->call_every(1000 /* ms */, callback(this, &Self::increment_second));
     }
@@ -277,7 +202,7 @@ private:
     void increment_second(void)
     {
         uint8_t second = 0;
-        ble_error_t err = get_second(second);
+        ble_error_t err = _second_char.get(*_server, second);
         if (err) {
             printf("read of the second value returned error %u\r\n", err);
             return;
@@ -285,7 +210,7 @@ private:
 
         second = (second + 1) % 60;
 
-        err = set_second(second);
+        err = _second_char.set(*_server, second);
         if (err) {
             printf("write of the second value returned error %u\r\n", err);
             return;
@@ -299,7 +224,7 @@ private:
     void increment_minute(void)
     {
         uint8_t minute = 0;
-        ble_error_t err = get_minute(minute);
+        ble_error_t err = _minute_char.get(*_server, minute);
         if (err) {
             printf("read of the minute value returned error %u\r\n", err);
             return;
@@ -307,7 +232,7 @@ private:
 
         minute = (minute + 1) % 60;
 
-        err = set_minute(minute);
+        err = _minute_char.set(*_server, minute);
         if (err) {
             printf("write of the minute value returned error %u\r\n", err);
             return;
@@ -321,7 +246,7 @@ private:
     void increment_hour(void)
     {
         uint8_t hour = 0;
-        ble_error_t err = get_hour(hour);
+        ble_error_t err = _hour_char.get(*_server, hour);
         if (err) {
             printf("read of the hour value returned error %u\r\n", err);
             return;
@@ -329,7 +254,7 @@ private:
 
         hour = (hour + 1) % 24;
 
-        err = set_hour(hour);
+        err = _hour_char.set(*_server, hour);
         if (err) {
             printf("write of the hour value returned error %u\r\n", err);
             return;
@@ -337,60 +262,6 @@ private:
     }
 
 private:
-//
-// setter and getters of the characteristics value
-//
-    ble_error_t get_hour(uint8_t& hour)
-    {
-        return get_u8_att_value(_hour_char.getValueHandle(), hour);
-    }
-
-    ble_error_t set_hour(const uint8_t& hour)
-    {
-        return set_u8_att_value(_hour_char.getValueHandle(), hour);
-    }
-
-    ble_error_t get_minute(uint8_t& minute)
-    {
-        return get_u8_att_value(_minute_char.getValueHandle(), minute);
-    }
-
-    ble_error_t set_minute(const uint8_t& minute)
-    {
-        return set_u8_att_value(_minute_char.getValueHandle(), minute);
-    }
-
-    ble_error_t get_second(uint8_t& second)
-    {
-        return get_u8_att_value(_second_char.getValueHandle(), second);
-    }
-
-    ble_error_t set_second(const uint8_t& second)
-    {
-        return set_u8_att_value(_second_char.getValueHandle(), second);
-    }
-
-    ble_error_t get_u8_att_value(GattAttribute::Handle_t handle, uint8_t& dst)
-    {
-        uint16_t value_lenght = 0;
-        ble_error_t err = _server->read(handle, NULL, &value_lenght);
-        if (err) {
-            return err;
-        }
-
-        if (value_lenght != sizeof(dst)) {
-            return BLE_ERROR_INVALID_PARAM;
-        }
-
-        return  _server->read(handle, &dst, &value_lenght);
-    }
-
-    ble_error_t set_u8_att_value(
-        GattAttribute::Handle_t handle, const uint8_t& value, bool local_only = false
-    ) {
-        return _server->write(handle, &value, sizeof(value), local_only);
-    }
-
     /**
      * Helper that construct an event handler from a member function of this
      * instance.
@@ -401,32 +272,74 @@ private:
         return makeFunctionPointer(this, member);
     }
 
-//
-// clock service characteristics
-//
-    // hour characteristic descriptors
-    char _hour_desc_value[sizeof("hour")];
-    GattAttribute _hour_char_description;
-    GattAttribute* _hour_char_descriptors[1];
-    // hour characteristic
-    uint8_t _hour_char_value;
-    GattCharacteristic _hour_char;
+    /**
+     * Read, Write, Notify, Indicate  Characteristic declaration helper.
+     *
+     * @tparam T type of data held by the characteristic.
+     */
+    template<typename T>
+    class ReadWriteNotifyIndicateCharacteristic : public GattCharacteristic {
+    public:
+        /**
+         * Construct a characteristic that can be read or written and emit
+         * notification or indication.
+         *
+         * @param[in] uuid The UUID of the characteristic.
+         * @param[in] initial_value Initial value contained by the characteristic.
+         */
+        ReadWriteNotifyIndicateCharacteristic(const UUID & uuid, const T& initial_value) :
+            GattCharacteristic(
+                /* UUID */ uuid,
+                /* Initial value */ &_value,
+                /* Value size */ sizeof(_value),
+                /* Value capacity */ sizeof(_value),
+                /* Properties */ GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
+                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
+                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY |
+                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE,
+                /* Descriptors */ NULL,
+                /* Num descriptors */ 0,
+                /* variable len */ false
+            ),
+            _value(initial_value) {
+        }
 
-    // minute characteristic descriptors
-    char _minute_desc_value[sizeof("minute")];
-    GattAttribute _minute_char_description;
-    GattAttribute* _minute_char_descriptors[1];
-    // minute characteristic
-    uint8_t _minute_char_value;
-    GattCharacteristic _minute_char;
+        /**
+         * Get the value of this characteristic.
+         *
+         * @param[in] server GattServer instance that contain the characteristic
+         * value.
+         * @param[in] dst Variable that will receive the characteristic value.
+         *
+         * @return BLE_ERROR_NONE in case of success or an appropriate error code.
+         */
+        ble_error_t get(GattServer &server, T& dst) const
+        {
+            uint16_t value_length = sizeof(dst);
+            return server.read(getValueHandle(), &dst, &value_length);
+        }
 
-    // second characteristic descriptors
-    char _second_desc_value[sizeof("second")];
-    GattAttribute _second_char_description;
-    GattAttribute* _second_char_descriptors[1];
-    // second characteristic
-    uint8_t _second_char_value;
-    GattCharacteristic _second_char;
+        /**
+         * Assign a new value to this characteristic.
+         *
+         * @param[in] server GattServer instance that will receive the new value.
+         * @param[in] value The new value to set.
+         * @param[in] local_only Flag that determine if the change should be kept
+         * locally or forwarded to subscribed clients.
+         */
+        ble_error_t set(
+            GattServer &server, const uint8_t &value, bool local_only = false
+        ) const {
+            return server.write(getValueHandle(), &value, sizeof(value), local_only);
+        }
+
+    private:
+        uint8_t _value;
+    };
+
+    ReadWriteNotifyIndicateCharacteristic<uint8_t> _hour_char;
+    ReadWriteNotifyIndicateCharacteristic<uint8_t> _minute_char;
+    ReadWriteNotifyIndicateCharacteristic<uint8_t> _second_char;
 
     // list of the characteristics of the clock service
     GattCharacteristic* _clock_characteristics[3];
@@ -600,7 +513,6 @@ private:
     ClockService &_demonstration_service;
 };
 
-#include "CircularBuffer.h"
 
 int main() {
 

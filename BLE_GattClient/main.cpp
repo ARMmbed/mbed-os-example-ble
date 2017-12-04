@@ -1,3 +1,22 @@
+
+/* mbed Microcontroller Library
+ * Copyright (c) 2006-2017 ARM Limited
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <memory>
+#include <new>
 #include <stdio.h>
 
 #include "events/Eventqueue.h"
@@ -13,8 +32,7 @@
 #include "ble/DiscoveredCharacteristic.h"
 #include "ble/CharacteristicDescriptorDiscovery.h"
 
-// Device name advertised
-static const uint8_t device_name[] = "GattClient";
+#include "BLEProcess.h"
 
 /**
  * Handle discovery of the GATT server.
@@ -30,6 +48,14 @@ class GattClientProcess : private mbed::NonCopyable<GattClientProcess> {
     // It is used as a shorthand to pass member function as callbacks.
     typedef GattClientProcess Self;
 
+    typedef CharacteristicDescriptorDiscovery::DiscoveryCallbackParams_t
+        DiscoveryCallbackParams_t;
+
+    typedef CharacteristicDescriptorDiscovery::TerminationCallbackParams_t
+        TerminationCallbackParams_t;
+
+    typedef DiscoveredCharacteristic::Properties_t Properties_t;
+
 public:
 
     /**
@@ -42,12 +68,36 @@ public:
         _connection_handle(),
         _characteristics(NULL),
         _it(NULL),
-        _descriptor_handle(0) {
+        _descriptor_handle(0),
+        _ble_interface(NULL),
+        _event_queue(NULL) {
     }
 
     ~GattClientProcess()
     {
         stop();
+    }
+
+    void init(BLE &ble_interface, events::EventQueue &event_queue)
+    {
+        _ble_interface = &ble_interface;
+        _event_queue = &event_queue;
+        _client = &_ble_interface->gattClient();
+
+        _ble_interface->gap().onConnection(as_cb(&Self::on_connection));
+        _ble_interface->gap().onDisconnection(as_cb(&Self::on_disconnection));
+    }
+
+    /**
+     * Event handler invoked when a connection is established.
+     *
+     * This function setup the connection handle to operate on then start the
+     * discovery process.
+     */
+    void on_connection(const Gap::ConnectionCallbackParams_t* connection_event)
+    {
+        _connection_handle = connection_event->handle;
+        _event_queue->call(mbed::callback(this, &Self::start));
     }
 
     /**
@@ -58,11 +108,8 @@ public:
      * @param[in] connection_handle Reference of the connection to the GATT
      * server which will be discovered.
      */
-    bool start(GattClient &client, Gap::Handle_t connection_handle)
+    void start()
     {
-        _client = &client;
-        _connection_handle = connection_handle;
-
         // setup the event handlers called during the process
         _client->onDataWritten().add(as_cb(&Self::when_descriptor_written));
         _client->onHVX().add(as_cb(&Self::when_characteristic_changed));
@@ -80,17 +127,27 @@ public:
 
         if (error) {
             printf("Error %u returned by _client->launchServiceDiscovery.\r\n", error);
-            return false;
+            return;
         }
 
         printf("Client process started: initiate service discovery.\r\n");
-        return true;
     }
 
     /**
      * Stop the discovery process and clean the instance.
      */
-    void stop(void)
+    void on_disconnection(const Gap::DisconnectionCallbackParams_t* disconnection_event)
+    {
+        if (!_client || disconnection_event->handle != _connection_handle) {
+            return;
+        }
+        stop();
+    }
+
+    /**
+     * Stop the discovery process and clean the instance.
+     */
+    void stop()
     {
         if (!_client) {
             return;
@@ -105,7 +162,6 @@ public:
         clear_characteristics();
 
         // clean up the instance
-        _client = NULL;
         _connection_handle = 0;
         _characteristics = NULL;
         _it = NULL;
@@ -127,7 +183,7 @@ private:
      */
     void when_service_discovered(const DiscoveredService *discovered_service)
     {
-        // print information of the service discovered
+        // print informations of the service discovered
         printf("Service discovered: value = ");
         print_uuid(discovered_service->getUUID());
         printf(", start = %u, end = %u.\r\n",
@@ -139,7 +195,7 @@ private:
     /**
      * Handle characteristics discovered.
      *
-     * The GattClient invokes this function when a characteristic has been
+     * The GattClient invoke this function when a characteristic has been
      * discovered.
      *
      * @see GattClient::launchServiceDiscovery
@@ -171,7 +227,7 @@ private:
     /**
      * Handle termination of the service and characteristic discovery process.
      *
-     * The GattClient invokes this function when the service and characteristic
+     * The GattClient invoke this function when a the service and characteristic
      * discovery process ends.
      *
      * @see GattClient::onServiceDiscoveryTermination
@@ -187,7 +243,7 @@ private:
 
         // reset iterator and start processing characteristics in order
         _it = NULL;
-        process_next_characteristic();
+        _event_queue->call(mbed::callback(this, &Self::process_next_characteristic));
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -203,15 +259,14 @@ private:
      */
     void process_next_characteristic(void)
     {
-        if (_it == NULL) {
+        if (_it == 0) {
             _it = _characteristics;
         } else {
             _it = _it->next;
         }
 
         while (_it) {
-            DiscoveredCharacteristic::Properties_t properties =
-                _it->value.getProperties();
+            Properties_t properties = _it->value.getProperties();
 
             if (properties.read()) {
                 read_characteristic(_it->value);
@@ -260,7 +315,7 @@ private:
      * server initiated event by writing the CCCD discovered. Otherwise start
      * the processing of the next characteristic discovered in the server.
      */
-    void when_characteristic_read(const GattReadCallbackParams* read_event)
+    void when_characteristic_read(const GattReadCallbackParams *read_event)
     {
         printf("\tCharacteristic value at %u equal to: ", read_event->handle);
         for (size_t i = 0; i <  read_event->len; ++i) {
@@ -268,8 +323,7 @@ private:
         }
         printf(".\r\n");
 
-        DiscoveredCharacteristic::Properties_t properties =
-            _it->value.getProperties();
+        Properties_t properties = _it->value.getProperties();
 
         if(properties.notify() || properties.indicate()) {
             discover_descriptors(_it->value);
@@ -310,7 +364,7 @@ private:
      * process has ended subscribe to server initiated events by writing the
      * value of the CCCD.
      */
-    void when_descriptor_discovered(const CharacteristicDescriptorDiscovery::DiscoveryCallbackParams_t* event)
+    void when_descriptor_discovered(const DiscoveryCallbackParams_t* event)
     {
         printf("\tDescriptor discovered at %u, UUID: ", event->descriptor.getAttributeHandle());
         print_uuid(event->descriptor.getUUID());
@@ -328,9 +382,7 @@ private:
      * If a CCCD has been found subscribe to server initiated events by writing
      * its value.
      */
-    void when_descriptor_discovery_ends(
-        const CharacteristicDescriptorDiscovery::TerminationCallbackParams_t* event
-    ) {
+    void when_descriptor_discovery_ends(const TerminationCallbackParams_t *event) {
         // shall never happen but happen with android devices ...
         // process the next charateristic
         if (!_descriptor_handle) {
@@ -339,8 +391,7 @@ private:
             return;
         }
 
-        DiscoveredCharacteristic::Properties_t properties =
-            _it->value.getProperties();
+        Properties_t properties = _it->value.getProperties();
 
         uint16_t cccd_value =
             (properties.notify() << 0) | (properties.indicate() << 1);
@@ -471,36 +522,26 @@ private:
     /**
      * Print the value of a characteristic properties.
      */
-    static void print_properties(const DiscoveredCharacteristic::Properties_t &properties)
+    static void print_properties(const Properties_t &properties)
     {
+        const struct {
+            bool (Properties_t::*fn)() const;
+            const char* str;
+        } prop_to_str[] = {
+            { &Properties_t::broadcast, "broadcast" },
+            { &Properties_t::read, "read" },
+            { &Properties_t::writeWoResp, "writeWoResp" },
+            { &Properties_t::write, "write" },
+            { &Properties_t::notify, "notify" },
+            { &Properties_t::indicate, "indicate" },
+            { &Properties_t::authSignedWrite, "authSignedWrite" }
+        };
+
         printf("[");
-
-        if (properties.broadcast()) {
-            printf(" broadcast");
-        }
-
-        if (properties.read()) {
-            printf(" read");
-        }
-
-        if (properties.writeWoResp()) {
-            printf(" writeWoResp");
-        }
-
-        if (properties.write()) {
-            printf(" write");
-        }
-
-        if (properties.notify()) {
-            printf(" notify");
-        }
-
-        if (properties.indicate()) {
-            printf(" indicate");
-        }
-
-        if (properties.authSignedWrite()) {
-            printf(" authSignedWrite");
+        for (size_t i = 0; i < (sizeof(prop_to_str) / sizeof(prop_to_str[0])); ++i) {
+            if ((properties.*(prop_to_str[i].fn))()) {
+                printf(" %s", prop_to_str[i].str);
+            }
         }
         printf(" ]");
     }
@@ -510,193 +551,23 @@ private:
     DiscoveredCharacteristicNode *_characteristics;
     DiscoveredCharacteristicNode *_it;
     GattAttribute::Handle_t _descriptor_handle;
+    BLE *_ble_interface;
+    events::EventQueue *_event_queue;
 };
 
-/**
- * Handle initialization and shutdown of the BLE Instance.
- *
- * Setup advertising payload and manage advertising state.
- * Delegate to GattClientProcess once the connection is established.
- */
-class BLEProcess : private mbed::NonCopyable<BLEProcess> {
-public:
-    /**
-     * Construct a BLEProcess from an event queue and a ble interface.
-     *
-     * Call start() to initiate ble processing.
-     */
-    BLEProcess(events::EventQueue &event_queue, BLE &ble_interface) :
-        _event_queue(event_queue),
-        _ble_interface(ble_interface) {
-    }
-
-    ~BLEProcess()
-    {
-        stop();
-    }
-
-    /**
-     * Initialize the ble interface, configure it and start advertising.
-     */
-    bool start()
-    {
-        printf("Ble process started.\r\n");
-
-        if (_ble_interface.hasInitialized()) {
-            printf("Error: the ble instance has already been initialized.\r\n");
-            return false;
-        }
-
-        _ble_interface.onEventsToProcess(
-            makeFunctionPointer(
-                this, &BLEProcess::schedule_ble_events
-            )
-        );
-
-        ble_error_t error = _ble_interface.init(
-            this, &BLEProcess::when_init_complete
-        );
-
-        if (error) {
-            printf("Error: %u returned by BLE::init.\r\n", error);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Close existing connections and stop the process.
-     */
-    void stop()
-    {
-        if (_ble_interface.hasInitialized()) {
-            gatt_client_process.stop();
-            _ble_interface.shutdown();
-            printf("Ble process stopped.");
-        }
-    }
-
-private:
-
-    /**
-     * Schedule processing of events from the BLE middleware in the event queue.
-     */
-    void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *event)
-    {
-        _event_queue.call(
-            mbed::callback(&event->ble, &BLE::processEvents)
-        );
-    }
-
-    /**
-     * Sets up adverting payload and start advertising.
-     *
-     * This function is invoked when the ble interface is initialized.
-     */
-    void when_init_complete(BLE::InitializationCompleteCallbackContext *event)
-    {
-        if (event->error) {
-            printf("Error %u during the initialization\r\n", event->error);
-            return;
-        }
-        printf("Ble instance initialized\r\n");
-
-        Gap &gap = _ble_interface.gap();
-        ble_error_t error = gap.setAdvertisingPayload(make_advertising_data());
-        if (error) {
-            printf("Error %u during gap.setAdvertisingPayload\r\n", error);
-            return;
-        }
-
-        gap.setAdvertisingParams(make_advertising_params());
-
-        gap.onConnection(this, &BLEProcess::when_connection);
-        gap.onDisconnection(this, &BLEProcess::when_disconnection);
-
-        error = gap.startAdvertising();
-        if (error) {
-            printf("Error %u during gap.startAdvertising.\r\n", error);
-            return;
-        } else {
-            printf("Advertising started.\r\n");
-        }
-    }
-
-    /**
-     * Start the gatt client process when a connection event is received.
-     */
-    void when_connection(const Gap::ConnectionCallbackParams_t *connection_event)
-    {
-        printf("Connected.\r\n");
-        gatt_client_process.start(
-            _ble_interface.gattClient(),
-            connection_event->handle
-        );
-    }
-
-    /**
-     * Stop the gatt client process when the device is disconnected then restart
-     * advertising.
-     */
-    void when_disconnection(const Gap::DisconnectionCallbackParams_t *event)
-    {
-        printf("Disconnected.\r\n");
-        gatt_client_process.stop();
-        ble_error_t error = _ble_interface.gap().startAdvertising();
-
-        if (error) {
-            printf("Error: cannot restart advertising.\r\n");
-        } else {
-            printf("Advertising started.\r\n");
-        }
-    }
-
-    /**
-     * Build data advertise by the BLE interface.
-     */
-    static GapAdvertisingData make_advertising_data(void)
-    {
-        GapAdvertisingData advertising_data;
-
-        // add advertising flags
-        advertising_data.addFlags(
-            GapAdvertisingData::LE_GENERAL_DISCOVERABLE |
-            GapAdvertisingData::BREDR_NOT_SUPPORTED
-        );
-
-        // add device name
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            device_name,
-            sizeof(device_name)
-        );
-
-        return advertising_data;
-    }
-
-    /**
-     * Build advertising parameters used by the BLE interface.
-     */
-    static GapAdvertisingParams make_advertising_params(void)
-    {
-        return GapAdvertisingParams(
-            /* type */ GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,
-            /* interval */ GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-            /* timeout */ 0
-        );
-    }
-
-    events::EventQueue &_event_queue;
-    BLE &_ble_interface;
-    GattClientProcess gatt_client_process;
-};
 
 int main() {
 
     BLE &ble_interface = BLE::Instance();
     events::EventQueue event_queue;
     BLEProcess ble_process(event_queue, ble_interface);
+    GattClientProcess gatt_client_process;
+
+    // Register GattClientProcess::init in the ble_process; this function will
+    // be called once the ble_interface is initialized.
+    ble_process.on_init(
+        mbed::callback(&gatt_client_process, &GattClientProcess::init)
+    );
 
     // bind the event queue to the ble interface, initialize the interface
     // and start advertising

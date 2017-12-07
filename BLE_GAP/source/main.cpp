@@ -38,6 +38,9 @@ static const size_t MODE_DURATION_MS      = 6000;
 /* Time between each mode in milliseconds */
 static const size_t TIME_BETWEEN_MODES_MS = 2000;
 
+/* how long to wait before disconnecting in milliseconds */
+static const size_t CONNECTION_DURATION = 3000;
+
 typedef struct {
     GapAdvertisingParams::AdvertisingType_t adv_type;
     uint16_t interval;
@@ -151,6 +154,13 @@ private:
             printf("Error during the initialisation\r\n");
             return;
         }
+
+        /* print device address */
+        Gap::AddressType_t addr_type;
+        Gap::Address_t addr;
+        _ble.gap().getAddress(&addr_type, addr);
+        printf("Device address: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+               addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 
         /* all calls are serialised on the user thread through the event queue */
         _event_queue.call(this, &GAPDevice::demo_mode_start);
@@ -307,7 +317,7 @@ private:
                 continue;
             }
             const uint8_t type = params->advertisingData[i + 1];
-            const uint8_t* value = params->advertisingData + i + 2;
+            const uint8_t *value = params->advertisingData + i + 2;
 
             /* connect to a discoverable device */
             if ((type == GapAdvertisingData::FLAGS)
@@ -337,6 +347,8 @@ private:
 
                 return;
             }
+
+            i += record_length;
         }
     };
 
@@ -352,7 +364,7 @@ private:
         _event_queue.cancel(_on_duration_end_id);
 
         _event_queue.call_in(
-            2000, &_ble.gap(), &Gap::disconnect, Gap::LOCAL_HOST_TERMINATED_CONNECTION
+            CONNECTION_DURATION, &_ble.gap(), &Gap::disconnect, Gap::LOCAL_HOST_TERMINATED_CONNECTION
         );
     };
 
@@ -507,7 +519,7 @@ int main()
     while (1) {
         gap_device.run();
         wait_ms(TIME_BETWEEN_MODES_MS);
-        printf("\r\n -- Next GAP demo mode -- \r\n");
+        printf("\r\nStarting next GAP demo mode\r\n");
     };
 
     return 0;

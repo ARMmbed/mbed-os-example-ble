@@ -20,7 +20,7 @@ To build these examples, you need to have a computer with the following software
 * [ARM GCC toolchain 4.9.x](https://launchpad.net/gcc-arm-embedded/+milestone/4.9-2015-q3-update).
 * A serial terminal emulator (e.g. screen, pySerial, cu).
 * If the OS used is Windows, the serial driver of the board has to be correctly installed.
-	* For boards with mbed interface firmware the installation instructions are located (here)[https://developer.mbed.org/handbook/Windows-serial-configuration]
+	* For boards with mbed interface firmware the installation instructions are located [here](https://os.mbed.com/docs/latest/tutorials/windows-serial-driver.html)
 	* For nrf51-based board with a J-Link interface  please install the J-Link *software and documentation pack* available (here)[https://www.segger.com/jlink-software.html]
 
 

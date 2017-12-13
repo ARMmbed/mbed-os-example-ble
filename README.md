@@ -32,7 +32,7 @@ In order to use BLE in mbed OS you need one of the following hardware combinatio
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
 
 
-The [`ble`module](https://github.com/ARMmbed/mbed-os/tree/master/bluetooth/ble) provides the BLE APIs on mbed OS.
+The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
 Targets for BLE
 ---------------

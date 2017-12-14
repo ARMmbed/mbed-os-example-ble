@@ -95,7 +95,7 @@ __To build an example:__
 1. Update the source tree:
 
 	```
-	mbed update
+	mbed deploy
 	```
 
 1. Run the build:

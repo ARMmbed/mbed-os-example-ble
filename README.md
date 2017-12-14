@@ -7,10 +7,8 @@ Please browse to subdirectories for specific documentation.
 Getting Started
 ===============
 
-
 Pre-Requisites
 --------------
-
 
 To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/setup.html).
 
@@ -22,7 +20,7 @@ In order to use BLE in mbed OS you need one of the following hardware combinatio
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
 
 
-The [`ble`module](https://github.com/ARMmbed/mbed-os/tree/master/bluetooth/ble) provides the BLE APIs on mbed OS.
+The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
 Targets for BLE
 ---------------
@@ -67,7 +65,7 @@ As an example, this is the JSON bit which has to be added in the `target_overrid
         },
 ```
 
-<span> **Note:** You can get more informations about the configuration system in the [documentation](https://github.com/ARMmbed/mbed-os/blob/master/docs/config_system.md)</span>
+<span> **Note:** You can get more information about the configuration system in the [documentation](https://os.mbed.com/docs/latest/reference/configuration.html)</span>
 
 <span> **Important:** It is required to apply an hardware patch to the ST shield if it is used on a board with an Arduino connector. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 

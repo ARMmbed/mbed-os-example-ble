@@ -13,6 +13,9 @@
         "NRF52_DK": {
             "ble_button_pin_name": "BUTTON1"
         },
+        "MTB_UBLOX_NINA_B1": {
+            "ble_button_pin_name": "BUTTON1"
+        },            
         "K64F": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"],

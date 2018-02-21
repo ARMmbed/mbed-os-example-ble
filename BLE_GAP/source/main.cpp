@@ -364,7 +364,7 @@ private:
         _event_queue.cancel(_on_duration_end_id);
 
         _event_queue.call_in(
-            CONNECTION_DURATION, &_ble.gap(), &Gap::disconnect, Gap::LOCAL_HOST_TERMINATED_CONNECTION
+            CONNECTION_DURATION, &_ble.gap(), &Gap::disconnect, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
     };
 

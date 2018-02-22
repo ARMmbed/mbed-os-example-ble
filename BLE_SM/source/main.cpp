@@ -40,9 +40,10 @@ class SMDevice : private mbed::NonCopyable<SMDevice>,
                  public SecurityManager::SecurityManagerEventHandler
 {
 public:
-    SMDevice() :
+    SMDevice(BLE &ble, events::EventQueue &event_queue) :
         _led1(LED1, 0),
-        _ble(BLE::Instance()),
+        _ble(ble),
+        _event_queue(event_queue),
         _handle(0),
         _is_connecting(false) { };
 
@@ -194,12 +195,14 @@ private:
 
 protected:
     BLE &_ble;
-    events::EventQueue _event_queue;
+    events::EventQueue &_event_queue;
     ble::connection_handle_t _handle;
     bool _is_connecting;
 };
 
 class SMDeviceCentral : public SMDevice {
+public:
+    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue) : SMDevice(ble, event_queue) {}
 
     virtual void start()
     {
@@ -279,6 +282,8 @@ class SMDeviceCentral : public SMDevice {
 };
 
 class SMDevicePeripheral : public SMDevice {
+public:
+    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue) : SMDevice(ble, event_queue) {}
 
     virtual void start()
     {
@@ -348,19 +353,19 @@ class SMDevicePeripheral : public SMDevice {
 
 int main()
 {
-    while (true) {
-        {
-            printf("\r\n CENTRAL \r\n\r\n");
-            SMDeviceCentral central;
-            central.run();
-        }
+    BLE& ble = BLE::Instance();
+    events::EventQueue queue;
 
-        {
-            printf("\r\n PERIPHERAL \r\n\r\n");
-            SMDevicePeripheral peripheral;
-            peripheral.run();
-        }
+    {
+        printf("\r\n CENTRAL \r\n\r\n");
+        SMDeviceCentral central(ble, queue);
+        central.run();
+    }
 
+    {
+        printf("\r\n PERIPHERAL \r\n\r\n");
+        SMDevicePeripheral peripheral(ble, queue);
+        peripheral.run();
     }
 
     return 0;

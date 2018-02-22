@@ -20,20 +20,23 @@
 #include "SecurityManager.h"
 
 /** This example demonstrates all the basic setup required
- *  to advertise, scan and connect to other devices.
+ *  for pairing and setting up link security both as a central and peripheral
  *
- *  It contains a single class that performs both scans and advertisements.
+ *  The example is implemented as two classes, one for the peripheral and one
+ *  for central inheriting from a common base. They are run in sequence and
+ *  require a peer device to connect to.
  *
- *  The demonstrations happens in sequence, after each "mode" ends
- *  the demo jumps to the next mode to continue. There are several modes
- *  that show scanning and several showing advertising. These are configured
- *  according to the two arrays containing parameters. During scanning
- *  a connection will be made to a connectable device upon its discovery.
+ *  During the test output is written on the serial connection to monitor its
+ *  progress.
  */
 
 static const uint8_t DEVICE_NAME[] = "SM_device";
 
-/** Demonstrate advertising, scanning and connecting
+/** Base class for both peripheral and central. The same class that provides
+ *  the logic for the application also implements the SecurityManagerEventHandler
+ *  which is the interface used by the Security Manager to communicate events
+ *  back to the applications. You can provide overrides for a selection of events
+ *  your application is interested in.
  */
 class SMDevice : private mbed::NonCopyable<SMDevice>,
                  public SecurityManager::SecurityManagerEventHandler
@@ -58,6 +61,9 @@ public:
     {
         ble_error_t error;
 
+        /* to show we're running we'll blink every 500ms */
+        _event_queue.call_every(500, this, &SMDevice::blink);
+
         if (_ble.hasInitialized()) {
             printf("Ble instance already initialised.\r\n");
             return;
@@ -81,17 +87,15 @@ public:
             return;
         }
 
-        /* to show we're running we'll blink every 500ms */
-        _event_queue.call_every(500, this, &SMDevice::blink);
-
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
     };
 
-    virtual void start() = 0;
-
     /* event handler functions */
 
+    /** Respond to a pairing request. This will be called by the stack
+     * when a pairing request arrives and expects the application to
+     * call acceptPairingRequest or cancelPairingRequest */
     virtual void pairingRequest(
         connection_handle_t connectionHandle
     ) {
@@ -99,6 +103,7 @@ public:
         _ble.securityManager().acceptPairingRequest(connectionHandle);
     }
 
+    /** Inform the application of a successful pairing. Terminate the demonstration. */
     virtual void pairingResult(
         connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
@@ -106,11 +111,13 @@ public:
         printf("paringResult %d\r\n", result);
 
         _event_queue.call_in(
-            5000, &_ble.gap(),
+            500, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
     }
 
+    /** Inform the application of change in encryption status. This will be
+     * communicated through the serial port */
     virtual void linkEncryptionResult(
         connection_handle_t connectionHandle,
         link_encryption_t result
@@ -124,21 +131,32 @@ public:
         }
     }
 
+protected:
+    /** Override to start chosen activity when initialisation completes */
+    virtual void start() = 0;
+
 private:
-    /** This is called when BLE interface is initialised and starts the first mode */
+    /** This is called when BLE interface is initialised and starts the demonstration */
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
+        ble_error_t error;
+
         if (event->error) {
             printf("Error during the initialisation\r\n");
             return;
         }
 
-        ble_error_t error = _ble.securityManager().init();
+        /* If the security manager is required this needs to be called before any
+         * calls to the Security manager happen. */
+        error = _ble.securityManager().init();
+
         if (error) {
             printf("Error during init %d\r\n", error);
             return;
         }
 
+        /* Tell the security manager to use methids in this class to inform us
+         * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
 
         /* print device address */
@@ -153,31 +171,30 @@ private:
         _ble.gap().onConnection(this, &SMDevice::on_connect);
         _ble.gap().onDisconnection(this, &SMDevice::on_disconnect);
 
-
+        /* start test in 500 ms */
         _event_queue.call_in(500, this, &SMDevice::start);
     };
 
-    /** This is called by Gap to notify the application we connected,
-     *  in our case it immediately disconnects */
+    /** This is called by Gap to notify the application we connected */
     virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event) = 0;
 
     /** This is called by Gap to notify the application we disconnected,
-     *  in our case it calls demo_mode_end() to progress the demo */
+     *  in our case it ends the demonstration. */
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
         printf("Disconnected %x \r\n", event->reason);
         _event_queue.break_dispatch();
     };
 
-    /** called if timeout is reached during advertising, scanning
-     *  or connection initiation */
+    /** End demonstration unexpectedly. Called if timeout is reached during advertising,
+     * scanning or connection initiation */
     void on_timeout(const Gap::TimeoutSource_t source)
     {
         printf("Unexpected timeout\r\n");
         _event_queue.break_dispatch();
     };
 
-    /** Schedule processing of events from the BLE middleware in the event queue. */
+    /** Schedule processing of events from the BLE in the event queue. */
     void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
     {
         _event_queue.call(mbed::callback(&context->ble, &BLE::processEvents));

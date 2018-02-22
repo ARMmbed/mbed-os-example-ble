@@ -32,7 +32,6 @@
  */
 
 static const uint8_t DEVICE_NAME[] = "SM_device";
-static const uint8_t PEER_NAME[] = "Moto";
 
 /** Demonstrate advertising, scanning and connecting
  */
@@ -237,11 +236,9 @@ public:
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t *value = params->advertisingData + i + 2;
 
-            /* connect to a device based on the name, it only needs to match
-             * up to the number of characters specified */
-            if ((type == GapAdvertisingData::COMPLETE_LOCAL_NAME)
-                && (record_length >= (sizeof(PEER_NAME) - 1))
-                && (memcmp(value, PEER_NAME, sizeof(PEER_NAME) - 1) == 0)) {
+            /* connect to a discoverable device */
+            if ((type == GapAdvertisingData::FLAGS)
+                && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
 
                 ble_error_t error = _ble.gap().connect(
                     params->peerAddr, params->addressType,

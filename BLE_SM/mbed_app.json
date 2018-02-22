@@ -1,8 +1,5 @@
 {
     "target_overrides": {
-        "*": {
-            "platform.stdio-baud-rate": 921600
-        },
         "K64F": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["ST_BLUENRG"]

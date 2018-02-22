@@ -1,0 +1,19 @@
+{
+    "target_overrides": {
+        "*": {
+            "platform.stdio-baud-rate": 921600
+        },
+        "K64F": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG"]
+        },
+        "NUCLEO_F401RE": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG", "CORDIO"]
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["ST_BLUENRG", "CORDIO"]
+        }
+    }
+}

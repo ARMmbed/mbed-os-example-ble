@@ -108,8 +108,13 @@ public:
         connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
     ) {
-        printf("paringResult %d\r\n", result);
+        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
+            printf("Pairing successful\r\n", result);
+        } else {
+            printf("Pairing failed\r\n", result);
+        }
 
+        /* disconnect in 500 ms */
         _event_queue.call_in(
             500, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
@@ -182,7 +187,7 @@ private:
      *  in our case it ends the demonstration. */
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
-        printf("Disconnected %x \r\n", event->reason);
+        printf("Disconnected - demonstration ended \r\n", event->reason);
         _event_queue.break_dispatch();
     };
 
@@ -190,7 +195,7 @@ private:
      * scanning or connection initiation */
     void on_timeout(const Gap::TimeoutSource_t source)
     {
-        printf("Unexpected timeout\r\n");
+        printf("Unexpected timeout - aborting \r\n");
         _event_queue.break_dispatch();
     };
 
@@ -216,16 +221,18 @@ protected:
     bool _is_connecting;
 };
 
+/** A central device will scan, connect to a peer and request pairing. */
 class SMDeviceCentral : public SMDevice {
 public:
-    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue) : SMDevice(ble, event_queue) {}
+    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue)
+        : SMDevice(ble, event_queue) { }
 
     virtual void start()
     {
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
         ble_error_t error = _ble.gap().startScan(this, &SMDeviceCentral::on_scan);
-        printf("Scanning\r\n");
+
         if (error) {
             printf("Error during Gap::startScan %d\r\n", error);
             return;
@@ -280,33 +287,37 @@ public:
     };
 
     /** This is called by Gap to notify the application we connected,
-     *  in our case it immediately disconnects */
+     *  in our case it immediately request pairing */
     virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
         ble_error_t error;
-        _handle = connection_event->handle;
-        printf("Connected\r\n");
 
+        /* store the handle for future Security Manager requests */
+        _handle = connection_event->handle;
+
+        /* in this example the local device is the master so we request pairing */
         error = _ble.securityManager().requestPairing(_handle);
+
         if (error) {
             printf("Error during SM::requestPairing %d\r\n", error);
             return;
         }
+
+        /* upon pairing success the application will disconnect */
     };
 };
 
+/** A peripheral device will advertise, accept the connection and request
+ * a change in link security. */
 class SMDevicePeripheral : public SMDevice {
 public:
-    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue) : SMDevice(ble, event_queue) {}
+    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue)
+        : SMDevice(ble, event_queue) { }
 
     virtual void start()
     {
-        advertise();
-    }
+        /* Set up and start advertising */
 
-    /** Set up and start advertising */
-    void advertise()
-    {
         ble_error_t error;
         GapAdvertisingData advertising_data;
 
@@ -346,13 +357,19 @@ public:
     };
 
     /** This is called by Gap to notify the application we connected,
-     *  in our case it immediately disconnects */
+     *  in our case it immediately requests a change in link security */
     virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
         ble_error_t error;
-        _handle = connection_event->handle;
-        printf("Connected\r\n");
 
+        /* store the handle for future Security Manager requests */
+        _handle = connection_event->handle;
+
+        /* Request a change in link security. This will be done
+         * indirectly by asking the master of the connection to
+         * change it. Depending on circumstances different actions
+         * may be taken by the master which will trigger events
+         * which the applications should deal with. */
         error = _ble.securityManager().setLinkSecurity(
             _handle,
             SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM

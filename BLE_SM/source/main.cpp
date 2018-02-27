@@ -39,7 +39,7 @@ static const uint8_t DEVICE_NAME[] = "SM_device";
  *  your application is interested in.
  */
 class SMDevice : private mbed::NonCopyable<SMDevice>,
-                 public SecurityManager::SecurityManagerEventHandler
+                 public SecurityManager::EventHandler
 {
 public:
     SMDevice(BLE &ble, events::EventQueue &event_queue) :

@@ -136,11 +136,10 @@ public:
         }
     }
 
-protected:
+private:
     /** Override to start chosen activity when initialisation completes */
     virtual void start() = 0;
 
-private:
     /** This is called when BLE interface is initialised and starts the demonstration */
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
@@ -160,7 +159,7 @@ private:
             return;
         }
 
-        /* Tell the security manager to use methids in this class to inform us
+        /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
 
@@ -353,6 +352,10 @@ public:
             return;
         }
 
+        /** This tells the stack to generate a pairingRequest event
+         * which will require this application to respond before pairing
+         * can proceed. Setting it to false will automatically accept
+         * pairing. */
         _ble.securityManager().setPairingRequestAuthorisation(true);
     };
 

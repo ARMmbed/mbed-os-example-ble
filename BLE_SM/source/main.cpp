@@ -97,7 +97,7 @@ public:
      * when a pairing request arrives and expects the application to
      * call acceptPairingRequest or cancelPairingRequest */
     virtual void pairingRequest(
-        connection_handle_t connectionHandle
+        ble::connection_handle_t connectionHandle
     ) {
         printf("Pairing requested. Authorising.\r\n");
         _ble.securityManager().acceptPairingRequest(connectionHandle);
@@ -105,13 +105,13 @@ public:
 
     /** Inform the application of a successful pairing. Terminate the demonstration. */
     virtual void pairingResult(
-        connection_handle_t connectionHandle,
+        ble::connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
     ) {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
-            printf("Pairing successful\r\n", result);
+            printf("Pairing successful\r\n");
         } else {
-            printf("Pairing failed\r\n", result);
+            printf("Pairing failed\r\n");
         }
 
         /* disconnect in 500 ms */
@@ -124,14 +124,14 @@ public:
     /** Inform the application of change in encryption status. This will be
      * communicated through the serial port */
     virtual void linkEncryptionResult(
-        connection_handle_t connectionHandle,
-        link_encryption_t result
+        ble::connection_handle_t connectionHandle,
+        ble::link_encryption_t result
     ) {
-        if (result == link_encryption_t::ENCRYPTED) {
+        if (result == ble::link_encryption_t::ENCRYPTED) {
             printf("Link ENCRYPTED\r\n");
-        } else if (result == link_encryption_t::ENCRYPTED_WITH_MITM) {
+        } else if (result == ble::link_encryption_t::ENCRYPTED_WITH_MITM) {
             printf("Link ENCRYPTED_WITH_MITM\r\n");
-        } else if (result == link_encryption_t::NOT_ENCRYPTED) {
+        } else if (result == ble::link_encryption_t::NOT_ENCRYPTED) {
             printf("Link NOT_ENCRYPTED\r\n");
         }
     }
@@ -186,7 +186,7 @@ private:
      *  in our case it ends the demonstration. */
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
-        printf("Disconnected - demonstration ended \r\n", event->reason);
+        printf("Disconnected - demonstration ended \r\n");
         _event_queue.break_dispatch();
     };
 

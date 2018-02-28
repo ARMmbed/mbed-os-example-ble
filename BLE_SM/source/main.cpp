@@ -24,13 +24,21 @@
  *
  *  The example is implemented as two classes, one for the peripheral and one
  *  for central inheriting from a common base. They are run in sequence and
- *  require a peer device to connect to.
+ *  require a peer device to connect to. During the peripheral device demonstration
+ *  a peer device is required to connect. In the central device demonstration
+ *  this peer device will be scanned for and connected to - therefore it should
+ *  be advertising with the same address as when it connected.
  *
  *  During the test output is written on the serial connection to monitor its
  *  progress.
  */
 
 static const uint8_t DEVICE_NAME[] = "SM_device";
+
+/* for demonstration purposes we will store the peer device address
+ * of the device that connects to us in the first demonstration
+ * so we can use its address to reconnect to it later */
+static BLEProtocol::AddressBytes_t peer_address;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -42,10 +50,11 @@ class SMDevice : private mbed::NonCopyable<SMDevice>,
                  public SecurityManager::EventHandler
 {
 public:
-    SMDevice(BLE &ble, events::EventQueue &event_queue) :
+    SMDevice(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address) :
         _led1(LED1, 0),
         _ble(ble),
         _event_queue(event_queue),
+        _peer_address(peer_address),
         _handle(0),
         _is_connecting(false) { };
 
@@ -216,102 +225,17 @@ private:
 protected:
     BLE &_ble;
     events::EventQueue &_event_queue;
+    BLEProtocol::AddressBytes_t &_peer_address;
     ble::connection_handle_t _handle;
     bool _is_connecting;
-};
-
-/** A central device will scan, connect to a peer and request pairing. */
-class SMDeviceCentral : public SMDevice {
-public:
-    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue)
-        : SMDevice(ble, event_queue) { }
-
-    virtual void start()
-    {
-        /* start scanning and attach a callback that will handle advertisements
-         * and scan requests responses */
-        ble_error_t error = _ble.gap().startScan(this, &SMDeviceCentral::on_scan);
-
-        if (error) {
-            printf("Error during Gap::startScan %d\r\n", error);
-            return;
-        }
-    }
-
-    /** Look at scan payload to find a peer device and connect to it */
-    void on_scan(const Gap::AdvertisementCallbackParams_t *params)
-    {
-        /* don't bother with analysing scan result if we're already connecting */
-        if (_is_connecting) {
-            return;
-        }
-
-        /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
-            /* The advertising payload is a collection of key/value records where
-             * byte 0: length of the record excluding this byte
-             * byte 1: The key, it is the type of the data
-             * byte [2..N] The value. N is equal to byte0 - 1 */
-            const uint8_t record_length = params->advertisingData[i];
-            if (record_length == 0) {
-                continue;
-            }
-            const uint8_t type = params->advertisingData[i + 1];
-            const uint8_t *value = params->advertisingData + i + 2;
-
-            /* connect to a discoverable device */
-            if ((type == GapAdvertisingData::FLAGS)
-                && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-
-                ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, params->addressType,
-                    NULL, NULL
-                );
-
-                if (error) {
-                    printf("Error during Gap::connect %d\r\n", error);
-                    return;
-                }
-
-                /* we may have already scan events waiting
-                 * to be processed so we need to remember
-                 * that we are already connecting and ignore them */
-                _is_connecting = true;
-
-                return;
-            }
-
-            i += record_length;
-        }
-    };
-
-    /** This is called by Gap to notify the application we connected,
-     *  in our case it immediately request pairing */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
-    {
-        ble_error_t error;
-
-        /* store the handle for future Security Manager requests */
-        _handle = connection_event->handle;
-
-        /* in this example the local device is the master so we request pairing */
-        error = _ble.securityManager().requestPairing(_handle);
-
-        if (error) {
-            printf("Error during SM::requestPairing %d\r\n", error);
-            return;
-        }
-
-        /* upon pairing success the application will disconnect */
-    };
 };
 
 /** A peripheral device will advertise, accept the connection and request
  * a change in link security. */
 class SMDevicePeripheral : public SMDevice {
 public:
-    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue)
-        : SMDevice(ble, event_queue) { }
+    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address)
+        : SMDevice(ble, event_queue, peer_address) { }
 
     virtual void start()
     {
@@ -365,6 +289,10 @@ public:
     {
         ble_error_t error;
 
+        /* remember the device that connects to us now so we can connect to it
+         * during the next demonstration */
+        memcpy(_peer_address, connection_event->peerAddr, sizeof(_peer_address));
+
         /* store the handle for future Security Manager requests */
         _handle = connection_event->handle;
 
@@ -385,21 +313,104 @@ public:
     };
 };
 
+/** A central device will scan, connect to a peer and request pairing. */
+class SMDeviceCentral : public SMDevice {
+public:
+    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address)
+        : SMDevice(ble, event_queue, peer_address) { }
+
+    virtual void start()
+    {
+        /* start scanning and attach a callback that will handle advertisements
+         * and scan requests responses */
+        ble_error_t error = _ble.gap().startScan(this, &SMDeviceCentral::on_scan);
+
+        if (error) {
+            printf("Error during Gap::startScan %d\r\n", error);
+            return;
+        }
+    }
+
+    /** Look at scan payload to find a peer device and connect to it */
+    void on_scan(const Gap::AdvertisementCallbackParams_t *params)
+    {
+        /* don't bother with analysing scan result if we're already connecting */
+        if (_is_connecting) {
+            return;
+        }
+
+        /* parse the advertising payload, looking for a discoverable device */
+        for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
+            /* The advertising payload is a collection of key/value records where
+             * byte 0: length of the record excluding this byte
+             * byte 1: The key, it is the type of the data
+             * byte [2..N] The value. N is equal to byte0 - 1 */
+            const uint8_t record_length = params->advertisingData[i];
+            if (record_length == 0) {
+                continue;
+            }
+
+            /* connect to the same device that connected to us */
+            if (memcmp(params->peerAddr, _peer_address, sizeof(_peer_address)) == 0) {
+
+                ble_error_t error = _ble.gap().connect(
+                    params->peerAddr, params->addressType,
+                    NULL, NULL
+                );
+
+                if (error) {
+                    printf("Error during Gap::connect %d\r\n", error);
+                    return;
+                }
+
+                /* we may have already scan events waiting
+                 * to be processed so we need to remember
+                 * that we are already connecting and ignore them */
+                _is_connecting = true;
+
+                return;
+            }
+
+            i += record_length;
+        }
+    };
+
+    /** This is called by Gap to notify the application we connected,
+     *  in our case it immediately request pairing */
+    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    {
+        ble_error_t error;
+
+        /* store the handle for future Security Manager requests */
+        _handle = connection_event->handle;
+
+        /* in this example the local device is the master so we request pairing */
+        error = _ble.securityManager().requestPairing(_handle);
+
+        if (error) {
+            printf("Error during SM::requestPairing %d\r\n", error);
+            return;
+        }
+
+        /* upon pairing success the application will disconnect */
+    };
+};
+
 int main()
 {
     BLE& ble = BLE::Instance();
     events::EventQueue queue;
 
     {
-        printf("\r\n CENTRAL \r\n\r\n");
-        SMDeviceCentral central(ble, queue);
-        central.run();
+        printf("\r\n PERIPHERAL \r\n\r\n");
+        SMDevicePeripheral peripheral(ble, queue, peer_address);
+        peripheral.run();
     }
 
     {
-        printf("\r\n PERIPHERAL \r\n\r\n");
-        SMDevicePeripheral peripheral(ble, queue);
-        peripheral.run();
+        printf("\r\n CENTRAL \r\n\r\n");
+        SMDeviceCentral central(ble, queue, peer_address);
+        central.run();
     }
 
     return 0;

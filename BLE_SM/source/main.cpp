@@ -19,6 +19,9 @@
 #include "ble/BLE.h"
 #include "SecurityManager.h"
 
+#include "LittleFileSystem.h"
+#include "HeapBlockDevice.h"
+
 /** This example demonstrates all the basic setup required
  *  for pairing and setting up link security both as a central and peripheral
  *
@@ -159,9 +162,19 @@ private:
             return;
         }
 
+        /* This path will be used to store bonding information but will fallback
+         * to storing in memory if file access fails (for example due to lack of a filesystem) */
+        const char* db_path = "/fs/bt_sec_db";
         /* If the security manager is required this needs to be called before any
          * calls to the Security manager happen. */
-        error = _ble.securityManager().init();
+        error = _ble.securityManager().init(
+            true,
+            false,
+            SecurityManager::IO_CAPS_NONE,
+            NULL,
+            false,
+            db_path
+        );
 
         if (error) {
             printf("Error during init %d\r\n", error);
@@ -396,21 +409,64 @@ public:
     };
 };
 
+bool create_filesystem()
+{
+    static LittleFileSystem fs("fs");
+
+    /* replace this with any physical block device your board supports (like an SD card) */
+    static HeapBlockDevice bd(4096, 256);
+
+    int err = bd.init();
+
+    if (err) {
+        return false;
+    }
+
+    err = bd.erase(0, bd.size());
+
+    if (err) {
+        return false;
+    }
+
+    err = fs.mount(&bd);
+
+    if (err) {
+        /* Reformat if we can't mount the filesystem */
+        printf("No filesystem found, formatting...\r\n");
+
+        err = fs.reformat(&bd);
+
+        if (err) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int main()
 {
     BLE& ble = BLE::Instance();
     events::EventQueue queue;
 
-    {
-        printf("\r\n PERIPHERAL \r\n\r\n");
-        SMDevicePeripheral peripheral(ble, queue, peer_address);
-        peripheral.run();
+    /* if filesystem creation fails or there is no filesystem the security manager
+     * will fallback to storing the security databse in memory */
+    if (!create_filesystem()) {
+        printf("Filesystem creation failed, will use memory storage\r\n");
     }
 
-    {
-        printf("\r\n CENTRAL \r\n\r\n");
-        SMDeviceCentral central(ble, queue, peer_address);
-        central.run();
+    while(1) {
+        {
+            printf("\r\n PERIPHERAL \r\n\r\n");
+            SMDevicePeripheral peripheral(ble, queue, peer_address);
+            peripheral.run();
+        }
+
+        {
+            printf("\r\n CENTRAL \r\n\r\n");
+            SMDeviceCentral central(ble, queue, peer_address);
+            central.run();
+        }
     }
 
     return 0;

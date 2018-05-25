@@ -309,7 +309,7 @@ private:
         /* since we have two boards which might start running this example at the same time
          * we randomise the interval of advertising to have them meet when one is advertising
          * and the other one is scanning (we use their random address as source of randomness) */
-        uint16_t random_interval = 1 + rand() % 10;
+        uint16_t random_interval = 1 + rand() % 5;
         _ble.gap().setAdvertisingTimeout(random_interval);
         printf("advertising for %d\r\n", random_interval);
 

@@ -105,7 +105,7 @@ public:
             printf("Pairing failed\r\n");
         }
 
-        /* disconnect in 500 ms */
+        /* disconnect in 1000 ms */
         _event_queue.call_in(
             1000, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
@@ -172,8 +172,8 @@ public:
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
 
-        /* start test in 100 ms */
-        _event_queue.call_in(100, this, &PrivacyDevice::start);
+        /* start test in 1000 ms */
+        _event_queue.call_in(1000, this, &PrivacyDevice::start);
     };
 
     /** This is called by Gap to notify the application we connected */
@@ -181,7 +181,7 @@ public:
     {
         printf("Connected to: ");
         print_address(connection_event->peerAddr);
-        printf("(Resolvable address: ");
+        printf("Resolvable address: ");
         print_address(connection_event->peerResolvableAddr);
 
         _handle = connection_event->handle;
@@ -191,7 +191,8 @@ public:
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
         if (_bonded) {
-            start_after_bonding();
+            printf("Disconnected.\r\n");
+            _event_queue.call_in(1000, this, &PrivacyDevice::start_after_bonding);
         } else {
             printf("Failed to bond.\r\n");
             _event_queue.break_dispatch();
@@ -277,8 +278,7 @@ public:
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
-        /* we can now discard any requests that do not belong to the device we bonded with */
-        _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_FILTER_ALL_REQS);
+        _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
 
         start_advertising();
     }
@@ -373,7 +373,7 @@ public:
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
-        _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_FILTER_ALL_ADV);
+        _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
 
         start_scanning();
     }
@@ -417,7 +417,6 @@ public:
                         return;
                     }
 
-
                     /* we may have already scan events waiting
                      * to be processed so we need to remember
                      * that we are already connecting and ignore them */
@@ -437,6 +436,8 @@ public:
     {
         printf("Connected to: ");
         print_address(connection_event->peerAddr);
+        printf("Resolvable address: ");
+        print_address(connection_event->peerResolvableAddr);
 
         _handle = connection_event->handle;
 

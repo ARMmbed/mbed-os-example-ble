@@ -302,7 +302,7 @@ private:
 
     bool start_advertising()
     {
-        _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
+        _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
         _ble.gap().setAdvertisingInterval(20);
         /* since we have two boards which might start running this example at the same time
          * we randomise the interval of advertising to have them meet when one is advertising

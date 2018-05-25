@@ -24,6 +24,13 @@
 
 static const uint8_t DEVICE_NAME[] = "Privacy";
 
+/** print device address to the terminal */
+void print_address(const Gap::Address_t &addr)
+{
+    printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
+           addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+}
+
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
  *  which is the interface used by the Security Manager to communicate events
@@ -35,11 +42,11 @@ class PrivacyDevice : private mbed::NonCopyable<PrivacyDevice>,
 {
 public:
     PrivacyDevice(BLE &ble, events::EventQueue &event_queue) :
-        _led1(LED1, 0),
         _ble(ble),
         _event_queue(event_queue),
         _handle(0),
-        _bonded(false) { };
+        _bonded(false),
+        _led1(LED1, 0) { };
 
     virtual ~PrivacyDevice()
     {
@@ -116,6 +123,19 @@ public:
             return;
         }
 
+        /* for use by tools we print out own address and also use it to seed RNG
+         * as the address is unique */
+        if (!_seeded) {
+            _seeded = true;
+            Gap::AddressType_t addr_type;
+            Gap::Address_t addr;
+            _ble.gap().getAddress(&addr_type, addr);
+            printf("Device address: ");
+            print_address(addr);
+            /* use the address as a seed */
+            srand(*((unsigned*)addr));
+        }
+
         /* when scanning we want to connect to a peer device so we need to
          * attach callbacks that are used by Gap to notify us of events */
         _ble.gap().onConnection(this, &PrivacyDevice::on_connect);
@@ -133,7 +153,7 @@ public:
         );
 
         if (error) {
-            printf("Error during security manager initialisation\r\n", error);
+            printf("Error during security manager initialisation\r\n");
             _event_queue.break_dispatch();
             return;
         }
@@ -186,23 +206,8 @@ public:
         _led1 = !_led1;
     };
 
-    /* helper functions */
-
-    /** print device address to the terminal */
-    void print_address(const Gap::Address_t &addr)
-    {
-        printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
-               addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
-    }
-
-    /** return own address */
-    const Gap::Address_t& get_address()
-    {
-        Gap::AddressType_t addr_type;
-        Gap::Address_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
-        return addr;
-    }
+public:
+    static bool _seeded;
 
 protected:
     BLE &_ble;
@@ -239,9 +244,6 @@ public:
         if (!start_advertising()) {
             return;
         }
-
-        printf("Device address: ");
-        print_address(get_address());
     };
 
     /** advertise and filer based on known devices */
@@ -295,7 +297,7 @@ private:
         /* since we have two boards which might start running this example at the same time
          * we randomise the interval of advertising to have them meet when one is advertising
          * and the other one is scanning (we use their random address as source of randomness) */
-        uint16_t random_interval = 2 + get_address()[0] / 64;
+        uint16_t random_interval = 2 + rand() % 5;
         _ble.gap().setAdvertisingTimeout(random_interval);
         printf("advertising for %d\r\n", random_interval);
 
@@ -379,7 +381,7 @@ public:
                 && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
 
                 ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, params->addressType,
+                    params->peerAddr, params->peerAddrType,
                     NULL, NULL
                 );
                 printf("Connecting\r\n");
@@ -420,6 +422,8 @@ private:
     bool _is_connecting;
 };
 
+bool PrivacyDevice::_seeded = false;
+
 int main()
 {
     BLE& ble = BLE::Instance();
@@ -433,7 +437,7 @@ int main()
         }
         {
             printf("\r\n * Device is a central *\r\n\r\n");
-            PrivacyPeripheral peripheral(ble, queue);
+            PrivacyCentral peripheral(ble, queue);
             peripheral.run();
         }
     }

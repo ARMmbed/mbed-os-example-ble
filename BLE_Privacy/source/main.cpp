@@ -126,11 +126,11 @@ public:
     void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
     {
         if (whitelist->size) {
-            printf("Whitelist generated.\r\n", );
+            printf("Whitelist generated.\r\n");
             _whitelist_generated = true;
             _ble.gap().setWhitelist(*whitelist);
         } else {
-            printf("Whitelist failed to generate.\r\n", );
+            printf("Whitelist failed to generate.\r\n");
         }
 
         delete whitelist->addresses;

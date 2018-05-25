@@ -11,18 +11,7 @@ Getting Started
 Pre-Requisites
 --------------
 
-
-To build these examples, you need to have a computer with the following software installed:
-
-* [CMake](http://www.cmake.org/download/).
-* [mbed-cli](https://github.com/ARMmbed/mbed-cli). Please note that **mbed-cli has its own set of dependencies**, listed in the installation instructions.
-* [Python](https://www.python.org/downloads/).
-* [ARM GCC toolchain 4.9.x](https://launchpad.net/gcc-arm-embedded/+milestone/4.9-2015-q3-update).
-* A serial terminal emulator (e.g. screen, pySerial, cu).
-* If the OS used is Windows, the serial driver of the board has to be correctly installed.
-	* For boards with mbed interface firmware the installation instructions are located (here)[https://developer.mbed.org/handbook/Windows-serial-configuration]
-	* For nrf51-based board with a J-Link interface  please install the J-Link *software and documentation pack* available (here)[https://www.segger.com/jlink-software.html]
-
+To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/setup.html).
 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
@@ -32,7 +21,7 @@ In order to use BLE in mbed OS you need one of the following hardware combinatio
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
 
 
-The [`ble`module](https://github.com/ARMmbed/mbed-os/tree/master/bluetooth/ble) provides the BLE APIs on mbed OS.
+The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
 Targets for BLE
 ---------------
@@ -77,7 +66,7 @@ As an example, this is the JSON bit which has to be added in the `target_overrid
         },
 ```
 
-<span> **Note:** You can get more informations about the configuration system in the [documentation](https://github.com/ARMmbed/mbed-os/blob/master/docs/config_system.md)</span>
+<span> **Note:** You can get more information about the configuration system in the [documentation](https://os.mbed.com/docs/latest/reference/configuration.html)</span>
 
 <span> **Important:** It is required to apply an hardware patch to the ST shield if it is used on a board with an Arduino connector. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 
@@ -106,7 +95,7 @@ __To build an example:__
 1. Update the source tree:
 
 	```
-	mbed update
+	mbed deploy
 	```
 
 1. Run the build:

@@ -46,6 +46,7 @@ public:
         _event_queue(event_queue),
         _handle(0),
         _bonded(false),
+        _whitelist_generated(false),
         _led1(LED1, 0) { };
 
     virtual ~PrivacyDevice()
@@ -100,7 +101,16 @@ public:
     ) {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
-            _bonded = true;
+            if (!_bonded) {
+                _bonded = true;
+
+                /* generate whitelist */
+                Gap::Whitelist_t* whitelist = new Gap::Whitelist_t;
+                whitelist->size = 0;
+                whitelist->capacity = 1;
+                whitelist->addresses = new BLEProtocol::Address_t();
+                _ble.securityManager().generateWhitelistFromBondTable(whitelist);
+            }
         } else {
             printf("Pairing failed\r\n");
         }
@@ -110,6 +120,21 @@ public:
             1000, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
+    }
+
+
+    void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
+    {
+        if (whitelist->size) {
+            printf("Whitelist generated.\r\n", );
+            _whitelist_generated = true;
+            _ble.gap().setWhitelist(*whitelist);
+        } else {
+            printf("Whitelist failed to generate.\r\n", );
+        }
+
+        delete whitelist->addresses;
+        delete whitelist;
     }
 
     /* callbacks */
@@ -237,6 +262,7 @@ protected:
     events::EventQueue &_event_queue;
     ble::connection_handle_t _handle;
     bool _bonded;
+    bool _whitelist_generated;
 
 private:
     DigitalOut _led1;
@@ -373,7 +399,11 @@ public:
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
-        _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
+        if (_whitelist_generated) {
+            _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_FILTER_ALL_ADV);
+        } else {
+            _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
+        }
 
         start_scanning();
     }

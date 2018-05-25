@@ -101,11 +101,13 @@ public:
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
             _bonded = true;
+        } else {
+            printf("Pairing failed\r\n");
         }
 
         /* disconnect in 500 ms */
         _event_queue.call_in(
-            500, &_ble.gap(),
+            1000, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
     }
@@ -157,6 +159,8 @@ public:
             _event_queue.break_dispatch();
             return;
         }
+
+        _ble.gap().enablePrivacy(true);
 
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
@@ -297,7 +301,7 @@ private:
         /* since we have two boards which might start running this example at the same time
          * we randomise the interval of advertising to have them meet when one is advertising
          * and the other one is scanning (we use their random address as source of randomness) */
-        uint16_t random_interval = 2 + rand() % 5;
+        uint16_t random_interval = 1 + rand() % 10;
         _ble.gap().setAdvertisingTimeout(random_interval);
         printf("advertising for %d\r\n", random_interval);
 
@@ -308,6 +312,13 @@ private:
             _event_queue.break_dispatch();
             return false;
         }
+
+        /* show what address we are using now */
+        Gap::AddressType_t addr_type;
+        Gap::Address_t addr;
+        _ble.gap().getAddress(&addr_type, addr);
+        printf("local address: ");
+        print_address(addr);
 
         return true;
     }
@@ -368,35 +379,35 @@ public:
              * byte [2..N] The value. N is equal to byte0 - 1 */
 
             const uint8_t record_length = params->advertisingData[i];
-            if (record_length == 0) {
-                printf("Scan 0\r\n");
-                continue;
-            }
-
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t *value = params->advertisingData + i + 2;
 
-            /* connect to a discoverable device */
+
+            /* connect to a discoverable device only */
             if ((type == GapAdvertisingData::FLAGS)
-                && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+                && !(*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+                return;
+            } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
+                if (strcmp((const char*)DEVICE_NAME, (const char*)value) == 0) {
+                    ble_error_t error = _ble.gap().connect(
+                        params->peerAddr, params->peerAddrType,
+                        NULL, NULL
+                    );
+                    printf("Connecting to: ");
+                    print_address(params->peerAddr);
 
-                ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, params->peerAddrType,
-                    NULL, NULL
-                );
-                printf("Connecting\r\n");
+                    if (error) {
+                        printf("Error during Gap::connect %d\r\n", error);
+                        return;
+                    }
 
-                if (error) {
-                    printf("Error during Gap::connect %d\r\n", error);
+                    /* we may have already scan events waiting
+                     * to be processed so we need to remember
+                     * that we are already connecting and ignore them */
+                    _is_connecting = true;
+
                     return;
                 }
-
-                /* we may have already scan events waiting
-                 * to be processed so we need to remember
-                 * that we are already connecting and ignore them */
-                _is_connecting = true;
-
-                return;
             }
 
             i += record_length;
@@ -406,7 +417,7 @@ public:
     /* helper functions */
 private:
     bool start_scanning() {
-        _ble.gap().setScanTimeout(2);
+        _ble.gap().setScanTimeout(5);
         ble_error_t error = _ble.gap().startScan(this, &PrivacyCentral::on_scan);
 
         if (error) {

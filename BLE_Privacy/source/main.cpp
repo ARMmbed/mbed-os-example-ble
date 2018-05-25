@@ -218,6 +218,16 @@ public:
         _led1 = !_led1;
     };
 
+    void print_local_address()
+    {
+        /* show what address we are using now */
+        Gap::AddressType_t addr_type;
+        Gap::Address_t addr;
+        _ble.gap().getAddress(&addr_type, addr);
+        printf("Local address: ");
+        print_address(addr);
+    }
+
 public:
     static bool _seeded;
 
@@ -306,12 +316,15 @@ private:
     {
         _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
         _ble.gap().setAdvertisingInterval(20);
-        /* since we have two boards which might start running this example at the same time
-         * we randomise the interval of advertising to have them meet when one is advertising
-         * and the other one is scanning (we use their random address as source of randomness) */
-        uint16_t random_interval = 1 + rand() % 5;
-        _ble.gap().setAdvertisingTimeout(random_interval);
-        printf("advertising for %d\r\n", random_interval);
+        if (_bonded) {
+            _ble.gap().setAdvertisingTimeout(0);
+        } else {
+            /* since we have two boards which might start running this example at the same time
+             * we randomise the interval of advertising to have them meet when one is advertising
+             * and the other one is scanning (we use their random address as source of randomness) */
+            const uint16_t random_interval = 1 + rand() % 5;
+            _ble.gap().setAdvertisingTimeout(random_interval);
+        }
 
         ble_error_t error = _ble.gap().startAdvertising();
 
@@ -321,12 +334,9 @@ private:
             return false;
         }
 
-        /* show what address we are using now */
-        Gap::AddressType_t addr_type;
-        Gap::Address_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
-        printf("local address: ");
-        print_address(addr);
+        printf("Advertising...\r\n");
+
+        print_local_address();
 
         return true;
     }
@@ -435,7 +445,14 @@ public:
     /* helper functions */
 private:
     bool start_scanning() {
-        _ble.gap().setScanTimeout(5);
+        if (_bonded) {
+            _ble.gap().setScanTimeout(0);
+        } else {
+            _ble.gap().setScanTimeout(5);
+        }
+
+        _is_connecting = false;
+
         ble_error_t error = _ble.gap().startScan(this, &PrivacyCentral::on_scan);
 
         if (error) {
@@ -443,6 +460,10 @@ private:
             _event_queue.break_dispatch();
             return false;
         }
+
+        printf("Scanning...\r\n");
+
+        print_local_address();
 
         return true;
     }

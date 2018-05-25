@@ -177,7 +177,7 @@ public:
     };
 
     /** This is called by Gap to notify the application we connected */
-    void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
         printf("Connected to: ");
         print_address(connection_event->peerAddr);

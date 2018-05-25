@@ -181,6 +181,8 @@ public:
     {
         printf("Connected to: ");
         print_address(connection_event->peerAddr);
+        printf("(Resolvable address: ");
+        print_address(connection_event->peerResolvableAddr);
 
         _handle = connection_event->handle;
     };
@@ -329,7 +331,6 @@ private:
         return true;
     }
 
-private:
 };
 
 /** A central device will scan, connect to a peer and request pairing. */
@@ -417,6 +418,18 @@ public:
 
             i += record_length;
         }
+    };
+
+    /* TODO: remove this, pairing should be done by the strategy automatically */
+    /** This is called by Gap to notify the application we connected */
+    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    {
+        printf("Connected to: ");
+        print_address(connection_event->peerAddr);
+
+        _handle = connection_event->handle;
+
+        _ble.securityManager().requestPairing(_handle);
     };
 
     /* helper functions */

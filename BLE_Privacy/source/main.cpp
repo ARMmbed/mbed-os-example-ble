@@ -162,6 +162,12 @@ public:
 
         _ble.gap().enablePrivacy(true);
 
+        if (error) {
+            printf("Error enabling privacy.\r\n");
+            _event_queue.break_dispatch();
+            return;
+        }
+
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
@@ -381,7 +387,6 @@ public:
             const uint8_t record_length = params->advertisingData[i];
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t *value = params->advertisingData + i + 2;
-
 
             /* connect to a discoverable device only */
             if ((type == GapAdvertisingData::FLAGS)

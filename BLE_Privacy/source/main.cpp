@@ -405,17 +405,18 @@ public:
                 return;
             } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
                 if (strcmp((const char*)DEVICE_NAME, (const char*)value) == 0) {
+                    _ble.gap().stopScan();
+
                     ble_error_t error = _ble.gap().connect(
                         params->peerAddr, params->peerAddrType,
                         NULL, NULL
                     );
-                    printf("Connecting to: ");
-                    print_address(params->peerAddr);
 
                     if (error) {
                         printf("Error during Gap::connect %d\r\n", error);
                         return;
                     }
+
 
                     /* we may have already scan events waiting
                      * to be processed so we need to remember

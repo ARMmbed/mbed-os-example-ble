@@ -434,12 +434,7 @@ public:
     /** This is called by Gap to notify the application we connected */
     virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
-        printf("Connected to: ");
-        print_address(connection_event->peerAddr);
-        printf("Resolvable address: ");
-        print_address(connection_event->peerResolvableAddr);
-
-        _handle = connection_event->handle;
+        PrivacyDevice::on_connect(connection_event);
 
         _ble.securityManager().requestPairing(_handle);
     };

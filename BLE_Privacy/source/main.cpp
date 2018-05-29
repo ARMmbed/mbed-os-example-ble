@@ -130,7 +130,12 @@ public:
 
                 /* this will only fill the whitelist up to the provided capacity,
                  * we hand over the memory ownership to the function */
-                _ble.securityManager().generateWhitelistFromBondTable(whitelist);
+                ble_error_t error = _ble.securityManager().generateWhitelistFromBondTable(whitelist);
+
+                if (error != BLE_ERROR_NONE) {
+                    delete whitelist->addresses;
+                    delete whitelist;
+                }
             }
         } else {
             printf("Pairing failed\r\n");

@@ -19,7 +19,20 @@
 #include "ble/BLE.h"
 #include "SecurityManager.h"
 
-/** This example demonstrates privacy
+/** This example demonstrates privacy features in Gap. It shows how to use
+ *  private addresses when advertising and connecting and how filtering ties
+ *  in with these operations.
+ *
+ *  The application will start by repeatedly trying to connect to the same
+ *  application running on another board. It will do this by advertising and
+ *  scanning for random intervals waiting until the difference in intervals
+ *  between the boards will make them meet when one is advertising and the
+ *  other scanning.
+ *
+ *  Two devices will be operating using random resolvable addresses. The
+ *  applications will connect to the peer and pair. It will attempt bonding
+ *  and if possible create a whitelist based on the bond. Subsequent connections
+ *  will turn on filtering if the whitelist has been successfully created.
  */
 
 static const uint8_t DEVICE_NAME[] = "Privacy";
@@ -64,6 +77,10 @@ public:
         /* to show we're running we'll blink every 500ms */
         _event_queue.call_every(500, this, &PrivacyDevice::blink);
 
+        /* for use by tools we print out own address and also use it
+         * to seed RNG as the address is unique */
+        print_local_address();
+
         if (_ble.hasInitialized()) {
             printf("Ble instance already initialised.\r\n");
             return;
@@ -94,21 +111,29 @@ public:
 
     /* event handler functions */
 
-    /** Inform the application of pairing. */
+    /** Inform the application of pairing. When succesful we will attempt
+     *  to create a whitelist based on the newly created bond */
     virtual void pairingResult(
         ble::connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
     ) {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
+
             if (!_bonded) {
+                /* generate whitelist only the first time we bond */
                 _bonded = true;
 
-                /* generate whitelist */
+                /* provide memory for the generated whitelist */
                 Gap::Whitelist_t* whitelist = new Gap::Whitelist_t;
                 whitelist->size = 0;
+                /* we only need space for one address in our demonstration
+                 * but this can return all the bonded addresses */
                 whitelist->capacity = 1;
                 whitelist->addresses = new BLEProtocol::Address_t();
+
+                /* this will only fill the whitelist up to the provided capacity,
+                 * we hand over the memory ownership to the function */
                 _ble.securityManager().generateWhitelistFromBondTable(whitelist);
             }
         } else {
@@ -128,11 +153,15 @@ public:
         if (whitelist->size) {
             printf("Whitelist generated.\r\n");
             _whitelist_generated = true;
+
+            /* set the newly created whitelist at the link layer,
+             * see BLUETOOTH SPECIFICATION Version 5.0 | Vol 6, Part B - 4.3 */
             _ble.gap().setWhitelist(*whitelist);
         } else {
             printf("Whitelist failed to generate.\r\n");
         }
 
+        /* this callback transfer memory ownership to us so we have to dispose of it */
         delete whitelist->addresses;
         delete whitelist;
     }
@@ -150,19 +179,6 @@ public:
             return;
         }
 
-        /* for use by tools we print out own address and also use it to seed RNG
-         * as the address is unique */
-        if (!_seeded) {
-            _seeded = true;
-            Gap::AddressType_t addr_type;
-            Gap::Address_t addr;
-            _ble.gap().getAddress(&addr_type, addr);
-            printf("Device address: ");
-            print_address(addr);
-            /* use the address as a seed */
-            srand(*((unsigned*)addr));
-        }
-
         /* when scanning we want to connect to a peer device so we need to
          * attach callbacks that are used by Gap to notify us of events */
         _ble.gap().onConnection(this, &PrivacyDevice::on_connect);
@@ -170,13 +186,14 @@ public:
         _ble.gap().onTimeout(makeFunctionPointer(this, &PrivacyDevice::on_timeout));
 
         /* Privacy requires the security manager */
+
         error = _ble.securityManager().init(
-            true,
-            false,
-            SecurityManager::IO_CAPS_NONE,
-            NULL,
-            false,
-            NULL
+            /* enableBonding */ true,
+            /* requireMITM */ false,
+            /* iocaps */ SecurityManager::IO_CAPS_NONE,
+            /* passkey */ NULL,
+            /* signing */ false,
+            /* dbFilepath */ NULL
         );
 
         if (error) {
@@ -185,6 +202,12 @@ public:
             return;
         }
 
+        /* Tell the security manager to use methods in this class to inform us
+         * of any events. Class needs to implement SecurityManagerEventHandler. */
+        _ble.securityManager().setSecurityManagerEventHandler(this);
+
+        /* privacy */
+
         _ble.gap().enablePrivacy(true);
 
         if (error) {
@@ -192,10 +215,6 @@ public:
             _event_queue.break_dispatch();
             return;
         }
-
-        /* Tell the security manager to use methods in this class to inform us
-         * of any events. Class needs to implement SecurityManagerEventHandler. */
-        _ble.securityManager().setSecurityManagerEventHandler(this);
 
         /* start test in 1000 ms */
         _event_queue.call_in(1000, this, &PrivacyDevice::start);
@@ -216,6 +235,9 @@ public:
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
         if (_bonded) {
+            /* we have connected to and bonded with the other device, from now
+             * on we will use the second start function and stay in the same role
+             * as peripheral or central */
             printf("Disconnected.\r\n");
             _event_queue.call_in(1000, this, &PrivacyDevice::start_after_bonding);
         } else {
@@ -250,8 +272,14 @@ public:
         Gap::AddressType_t addr_type;
         Gap::Address_t addr;
         _ble.gap().getAddress(&addr_type, addr);
-        printf("Local address: ");
+        printf("Device address: ");
         print_address(addr);
+
+        if (!_seeded) {
+            _seeded = true;
+            /* use the address as a seed */
+            srand(*((unsigned*)addr));
+        }
     }
 
 public:
@@ -268,8 +296,7 @@ private:
     DigitalOut _led1;
 };
 
-/** A peripheral device will advertise, accept the connection and request
- * a change in link security. */
+/** A peripheral device will advertise and accept the connections */
 class PrivacyPeripheral : public PrivacyDevice {
 public:
     PrivacyPeripheral(BLE &ble, events::EventQueue &event_queue)
@@ -304,7 +331,14 @@ public:
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
-        _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
+
+        /* enable filtering only if a whitelist has been created and set */
+        if (_whitelist_generated) {
+            _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_FILTER_ALL_REQS);
+        } else {
+            /* it's illegal to apply a whitelist if there are no entries present */
+            _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
+        }
 
         start_advertising();
     }
@@ -342,7 +376,10 @@ private:
     {
         _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
         _ble.gap().setAdvertisingInterval(20);
+
         if (_bonded) {
+            /* if we bonded it means we have found the other device, from now on
+             * wait at each step until completion */
             _ble.gap().setAdvertisingTimeout(0);
         } else {
             /* since we have two boards which might start running this example at the same time
@@ -369,7 +406,7 @@ private:
 
 };
 
-/** A central device will scan, connect to a peer and request pairing. */
+/** A central device will scan and connect to a peer. */
 class PrivacyCentral : public PrivacyDevice {
 public:
     PrivacyCentral(BLE &ble, events::EventQueue &event_queue)
@@ -399,9 +436,12 @@ public:
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
+
+        /* enable filtering only if a whitelist has been created and set */
         if (_whitelist_generated) {
             _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_FILTER_ALL_ADV);
         } else {
+            /* it's illegal to apply a whitelist if there are no entries present */
             _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
         }
 
@@ -429,11 +469,13 @@ public:
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t *value = params->advertisingData + i + 2;
 
-            /* connect to a discoverable device only */
-            if ((type == GapAdvertisingData::FLAGS)
-                && !(*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-                return;
+            if ((type == GapAdvertisingData::FLAGS)) {
+                /* connect to discoverable devices only */
+                if (!(*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+                    return;
+                }
             } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
+                /* connect based on the name of the device */
                 if (strcmp((const char*)DEVICE_NAME, (const char*)value) == 0) {
                     _ble.gap().stopScan();
 
@@ -473,8 +515,12 @@ public:
 private:
     bool start_scanning() {
         if (_bonded) {
+            /* if we bonded it means we have found the other device, from now on
+             * wait at each step until completion */
             _ble.gap().setScanTimeout(0);
         } else {
+            /* otherwise only scan for a limited time before changing roles again
+             * if we fail to find the other device */
             _ble.gap().setScanTimeout(5);
         }
 
@@ -499,6 +545,7 @@ private:
     bool _is_connecting;
 };
 
+/* only seed the random number generation once per application run */
 bool PrivacyDevice::_seeded = false;
 
 int main()
@@ -521,4 +568,3 @@ int main()
 
     return 0;
 }
-

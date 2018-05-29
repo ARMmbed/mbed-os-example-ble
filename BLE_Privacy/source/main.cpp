@@ -77,10 +77,6 @@ public:
         /* to show we're running we'll blink every 500ms */
         _event_queue.call_every(500, this, &PrivacyDevice::blink);
 
-        /* for use by tools we print out own address and also use it
-         * to seed RNG as the address is unique */
-        print_local_address();
-
         if (_ble.hasInitialized()) {
             printf("Ble instance already initialised.\r\n");
             return;
@@ -179,6 +175,10 @@ public:
             return;
         }
 
+        /* for use by tools we print out own address and also use it
+         * to seed RNG as the address is unique */
+        print_local_address();
+
         /* when scanning we want to connect to a peer device so we need to
          * attach callbacks that are used by Gap to notify us of events */
         _ble.gap().onConnection(this, &PrivacyDevice::on_connect);
@@ -216,8 +216,7 @@ public:
             return;
         }
 
-        /* start test in 1000 ms */
-        _event_queue.call_in(1000, this, &PrivacyDevice::start);
+        start();
     };
 
     /** This is called by Gap to notify the application we connected */

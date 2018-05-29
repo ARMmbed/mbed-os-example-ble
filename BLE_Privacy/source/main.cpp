@@ -141,9 +141,9 @@ public:
             printf("Pairing failed\r\n");
         }
 
-        /* disconnect in 1000 ms */
+        /* disconnect in 2s */
         _event_queue.call_in(
-            1000, &_ble.gap(),
+            2000, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
     }
@@ -152,12 +152,15 @@ public:
     virtual void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
     {
         if (whitelist->size) {
-            printf("Whitelist generated.\r\n");
-            _whitelist_generated = true;
-
             /* set the newly created whitelist at the link layer,
              * see BLUETOOTH SPECIFICATION Version 5.0 | Vol 6, Part B - 4.3 */
-            _ble.gap().setWhitelist(*whitelist);
+            ble_error_t error = _ble.gap().setWhitelist(*whitelist);
+            if (error == BLE_ERROR_NONE) {
+                printf("Whitelist generated.\r\n");
+                _whitelist_generated = true;
+            } else {
+                printf("Whitelist generated but applying it failed.\r\n");
+            }
         } else {
             printf("Whitelist failed to generate.\r\n");
         }
@@ -327,7 +330,7 @@ public:
         }
     };
 
-    /** advertise and filer based on known devices */
+    /** advertise and filter based on known devices */
     virtual void start_after_bonding()
     {
         Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {

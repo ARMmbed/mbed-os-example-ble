@@ -148,7 +148,7 @@ public:
     }
 
 
-    void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
+    virtual void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
     {
         if (whitelist->size) {
             printf("Whitelist generated.\r\n");
@@ -278,7 +278,8 @@ public:
         if (!_seeded) {
             _seeded = true;
             /* use the address as a seed */
-            srand(*((unsigned*)addr));
+            uint8_t* random_data = addr;
+            srand(*((unsigned int*)random_data));
         }
     }
 
@@ -323,7 +324,7 @@ public:
     };
 
     /** advertise and filer based on known devices */
-    void start_after_bonding()
+    virtual void start_after_bonding()
     {
         Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,

@@ -18,6 +18,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "SecurityManager.h"
+#include <algorithm>
 
 /** This example demonstrates privacy features in Gap. It shows how to use
  *  private addresses when advertising and connecting and how filtering ties
@@ -246,7 +247,7 @@ public:
              * on we will use the second start function and stay in the same role
              * as peripheral or central */
             printf("Disconnected.\r\n");
-            _event_queue.call_in(1000, this, &PrivacyDevice::start_after_bonding);
+            _event_queue.call_in(2000, this, &PrivacyDevice::start_after_bonding);
         } else {
             printf("Failed to bond.\r\n");
             _event_queue.break_dispatch();
@@ -467,24 +468,27 @@ public:
         }
 
         /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
+        for (uint8_t i = 0; (i + 2) < params->advertisingDataLen; ++i) {
             /* The advertising payload is a collection of key/value records where
              * byte 0: length of the record excluding this byte
              * byte 1: The key, it is the type of the data
              * byte [2..N] The value. N is equal to byte0 - 1 */
-
-            const uint8_t record_length = params->advertisingData[i];
+            const uint8_t max_record_length = params->advertisingDataLen - i;
+            const uint8_t record_length = std::min(params->advertisingData[i],
+                                                   max_record_length);
             const uint8_t type = params->advertisingData[i + 1];
             const uint8_t *value = params->advertisingData + i + 2;
 
-            if ((type == GapAdvertisingData::FLAGS)) {
+            if (record_length < 2) {
+                /* malformed record */
+            } else if ((type == GapAdvertisingData::FLAGS)) {
                 /* connect to discoverable devices only */
                 if (!(*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
                     return;
                 }
             } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
                 /* connect based on the name of the device */
-                if (strcmp((const char*)DEVICE_NAME, (const char*)value) == 0) {
+                if (memcmp((const char*)DEVICE_NAME, (const char*)value, record_length - 1) == 0) {
                     _ble.gap().stopScan();
 
                     ble_error_t error = _ble.gap().connect(
@@ -569,8 +573,8 @@ int main()
         }
         {
             printf("\r\n * Device is a central *\r\n\r\n");
-            PrivacyCentral peripheral(ble, queue);
-            peripheral.run();
+            PrivacyCentral central(ble, queue);
+            central.run();
         }
     }
 

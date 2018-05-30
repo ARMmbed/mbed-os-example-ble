@@ -1,0 +1,4 @@
+mbed-os/features/net/*
+mbed-os/uvisor-mbed-lib/*
+mbed-os/frameworks/*
+mbed-os/features/mbedtls/*

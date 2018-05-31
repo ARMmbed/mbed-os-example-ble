@@ -32,8 +32,8 @@
  *
  *  Two devices will be operating using random resolvable addresses. The
  *  applications will connect to the peer and pair. It will attempt bonding
- *  and if possible create a whitelist based on the bond. Subsequent connections
- *  will turn on filtering if the whitelist has been successfully created.
+ *  to store the IRK that resolve the peer. Subsequent connections will
+ *  turn on filtering based on stored IRKs.
  */
 
 static const uint8_t DEVICE_NAME[] = "Privacy";
@@ -60,7 +60,6 @@ public:
         _event_queue(event_queue),
         _handle(0),
         _bonded(false),
-        _whitelist_generated(false),
         _led1(LED1, 0) { };
 
     virtual ~PrivacyDevice()
@@ -108,36 +107,14 @@ public:
 
     /* event handler functions */
 
-    /** Inform the application of pairing. When succesful we will attempt
-     *  to create a whitelist based on the newly created bond */
+    /** Inform the application of pairing */
     virtual void pairingResult(
         ble::connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
     ) {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
-
-            if (!_bonded) {
-                /* generate whitelist only the first time we bond */
-                _bonded = true;
-
-                /* provide memory for the generated whitelist */
-                Gap::Whitelist_t* whitelist = new Gap::Whitelist_t;
-                whitelist->size = 0;
-                /* we only need space for one address in our demonstration
-                 * but this can return all the bonded addresses */
-                whitelist->capacity = 1;
-                whitelist->addresses = new BLEProtocol::Address_t();
-
-                /* this will only fill the whitelist up to the provided capacity,
-                 * we hand over the memory ownership to the function */
-                ble_error_t error = _ble.securityManager().generateWhitelistFromBondTable(whitelist);
-
-                if (error != BLE_ERROR_NONE) {
-                    delete whitelist->addresses;
-                    delete whitelist;
-                }
-            }
+            _bonded = true;
         } else {
             printf("Pairing failed\r\n");
         }
@@ -147,28 +124,6 @@ public:
             2000, &_ble.gap(),
             &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
-    }
-
-
-    virtual void whitelistFromBondTable(Gap::Whitelist_t* whitelist)
-    {
-        if (whitelist->size) {
-            /* set the newly created whitelist at the link layer,
-             * see BLUETOOTH SPECIFICATION Version 5.0 | Vol 6, Part B - 4.3 */
-            ble_error_t error = _ble.gap().setWhitelist(*whitelist);
-            if (error == BLE_ERROR_NONE) {
-                printf("Whitelist generated.\r\n");
-                _whitelist_generated = true;
-            } else {
-                printf("Whitelist generated but applying it failed.\r\n");
-            }
-        } else {
-            printf("Whitelist failed to generate.\r\n");
-        }
-
-        /* this callback transfer memory ownership to us so we have to dispose of it */
-        delete whitelist->addresses;
-        delete whitelist;
     }
 
     /* callbacks */
@@ -299,7 +254,6 @@ protected:
     events::EventQueue &_event_queue;
     ble::connection_handle_t _handle;
     bool _bonded;
-    bool _whitelist_generated;
 
 private:
     DigitalOut _led1;
@@ -324,7 +278,6 @@ public:
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
-        _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
 
         start_advertising();
     };
@@ -338,14 +291,6 @@ public:
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
-
-        /* enable filtering only if a whitelist has been created and set */
-        if (_whitelist_generated) {
-            _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_FILTER_ALL_REQS);
-        } else {
-            /* it's illegal to apply a whitelist if there are no entries present */
-            _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
-        }
 
         start_advertising();
     }
@@ -426,7 +371,6 @@ public:
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
-        _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
 
         start_scanning();
     }
@@ -440,13 +384,6 @@ public:
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
 
-        /* enable filtering only if a whitelist has been created and set */
-        if (_whitelist_generated) {
-            _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_FILTER_ALL_ADV);
-        } else {
-            /* it's illegal to apply a whitelist if there are no entries present */
-            _ble.gap().setScanningPolicyMode(Gap::SCAN_POLICY_IGNORE_WHITELIST);
-        }
 
         start_scanning();
     }

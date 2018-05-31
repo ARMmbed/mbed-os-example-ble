@@ -73,20 +73,19 @@ public:
         if (_ble.hasInitialized()) {
             /* ble instance already initialised, skip init and start activity */
             start();
-            return;
-        }
+        } else {
+            /* this will inform us off all events so we can schedule their handling
+             * using our event queue */
+            _ble.onEventsToProcess(
+                makeFunctionPointer(this, &PrivacyDevice::schedule_ble_events)
+            );
 
-        /* this will inform us off all events so we can schedule their handling
-         * using our event queue */
-        _ble.onEventsToProcess(
-            makeFunctionPointer(this, &PrivacyDevice::schedule_ble_events)
-        );
+            ble_error_t error = _ble.init(this, &PrivacyDevice::on_init_complete);
 
-        error = _ble.init(this, &PrivacyDevice::on_init_complete);
-
-        if (error) {
-            printf("Error returned by BLE::init.\r\n");
-            return;
+            if (error) {
+                printf("Error returned by BLE::init.\r\n");
+                return;
+            }
         }
 
         /* this will not return until shutdown */

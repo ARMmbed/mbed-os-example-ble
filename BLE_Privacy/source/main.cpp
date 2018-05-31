@@ -543,15 +543,16 @@ bool PrivacyDevice::_seeded = false;
 int main()
 {
     BLE& ble = BLE::Instance();
-    events::EventQueue queue;
 
     while(1) {
         {
+            events::EventQueue queue;
             printf("\r\n * Device is a peripheral *\r\n\r\n");
             PrivacyPeripheral peripheral(ble, queue);
             peripheral.run();
         }
         {
+            events::EventQueue queue;
             printf("\r\n * Device is a central *\r\n\r\n");
             PrivacyCentral central(ble, queue);
             central.run();

@@ -229,7 +229,7 @@ public:
     };
 
     /** This is called by Gap to notify the application we connected */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
         printf("Connected to: ");
         print_address(connection_event->peerAddr);
@@ -326,9 +326,7 @@ public:
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
         _ble.gap().setAdvertisingPolicyMode(Gap::ADV_POLICY_IGNORE_WHITELIST);
 
-        if (!start_advertising()) {
-            return;
-        }
+        start_advertising();
     };
 
     /** advertise and filter based on known devices */
@@ -512,15 +510,6 @@ public:
 
             i += record_length;
         }
-    };
-
-    /* TODO: remove this, pairing should be done by the strategy automatically */
-    /** This is called by Gap to notify the application we connected */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
-    {
-        PrivacyDevice::on_connect(connection_event);
-
-        _ble.securityManager().requestPairing(_handle);
     };
 
     /* helper functions */

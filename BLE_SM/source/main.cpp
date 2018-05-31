@@ -450,7 +450,7 @@ int main()
     events::EventQueue queue;
 
     /* if filesystem creation fails or there is no filesystem the security manager
-     * will fallback to storing the security databse in memory */
+     * will fallback to storing the security database in memory */
     if (!create_filesystem()) {
         printf("Filesystem creation failed, will use memory storage\r\n");
     }

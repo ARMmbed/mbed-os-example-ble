@@ -179,9 +179,9 @@ public:
     /** This is called by Gap to notify the application we connected */
     void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
     {
-        printf("Connected to: ");
+        printf("Connected to peer: ");
         print_address(connection_event->peerAddr);
-        printf("Resolvable address: ");
+        printf("Peer random resolvable address: ");
         print_address(connection_event->peerResolvableAddr);
 
         _handle = connection_event->handle;
@@ -348,8 +348,6 @@ private:
 
         printf("Advertising...\r\n");
 
-        print_local_address();
-
         return true;
     }
 
@@ -464,8 +462,6 @@ private:
         }
 
         printf("Scanning...\r\n");
-
-        print_local_address();
 
         return true;
     }

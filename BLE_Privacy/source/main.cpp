@@ -385,7 +385,6 @@ public:
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
 
-
         start_scanning();
     }
 
@@ -447,11 +446,11 @@ private:
         if (_bonded) {
             /* if we bonded it means we have found the other device, from now on
              * wait at each step until completion */
-            _ble.gap().setScanTimeout(0);
+            _ble.gap().setScanParams(4, 4, 0 /*timeout*/);
         } else {
             /* otherwise only scan for a limited time before changing roles again
              * if we fail to find the other device */
-            _ble.gap().setScanTimeout(5);
+            _ble.gap().setScanParams(4, 4, 4/*timeout*/);
         }
 
         _is_connecting = false;

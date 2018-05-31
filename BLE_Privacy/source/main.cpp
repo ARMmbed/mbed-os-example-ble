@@ -357,10 +357,6 @@ private:
     {
         GapAdvertisingData advertising_data;
 
-        /* add advertising flags */
-        advertising_data.addFlags(GapAdvertisingData::LE_GENERAL_DISCOVERABLE
-                                  | GapAdvertisingData::BREDR_NOT_SUPPORTED);
-
         /* add device name */
         advertising_data.addData(
             GapAdvertisingData::COMPLETE_LOCAL_NAME,
@@ -479,11 +475,6 @@ public:
 
             if (record_length < 2) {
                 /* malformed record */
-            } else if ((type == GapAdvertisingData::FLAGS)) {
-                /* connect to discoverable devices only */
-                if (!(*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-                    return;
-                }
             } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
                 /* connect based on the name of the device */
                 if (memcmp((const char*)DEVICE_NAME, (const char*)value, record_length - 1) == 0) {

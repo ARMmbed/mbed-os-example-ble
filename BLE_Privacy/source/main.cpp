@@ -62,23 +62,17 @@ public:
         _bonded(false),
         _led1(LED1, 0) { };
 
-    virtual ~PrivacyDevice()
-    {
-        if (_ble.hasInitialized()) {
-            _ble.shutdown();
-        }
-    };
+    virtual ~PrivacyDevice() { };
 
     /** Start BLE interface initialisation */
     void run()
     {
-        ble_error_t error;
-
         /* to show we're running we'll blink every 500ms */
         _event_queue.call_every(500, this, &PrivacyDevice::blink);
 
         if (_ble.hasInitialized()) {
-            printf("Ble instance already initialised.\r\n");
+            /* ble instance already initialised, skip init and start activity */
+            start();
             return;
         }
 
@@ -192,6 +186,14 @@ public:
         print_address(connection_event->peerResolvableAddr);
 
         _handle = connection_event->handle;
+
+        if (_bonded) {
+            /* disconnect in 2s */
+            _event_queue.call_in(
+                2000, &_ble.gap(),
+                &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
+            );
+        }
     };
 
     /** This is called by Gap to notify the application we disconnected */

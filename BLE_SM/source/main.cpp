@@ -19,8 +19,10 @@
 #include "ble/BLE.h"
 #include "SecurityManager.h"
 
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
 #include "LittleFileSystem.h"
 #include "HeapBlockDevice.h"
+#endif //MBED_CONF_APP_FILESYSTEM_SUPPORT
 
 /** This example demonstrates all the basic setup required
  *  for pairing and setting up link security both as a central and peripheral
@@ -409,6 +411,8 @@ public:
     };
 };
 
+
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
 bool create_filesystem()
 {
     static LittleFileSystem fs("fs");
@@ -443,17 +447,20 @@ bool create_filesystem()
 
     return true;
 }
+#endif //MBED_CONF_APP_FILESYSTEM_SUPPORT
 
 int main()
 {
     BLE& ble = BLE::Instance();
     events::EventQueue queue;
 
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
     /* if filesystem creation fails or there is no filesystem the security manager
      * will fallback to storing the security database in memory */
     if (!create_filesystem()) {
         printf("Filesystem creation failed, will use memory storage\r\n");
     }
+#endif
 
     while(1) {
         {

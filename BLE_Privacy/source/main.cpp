@@ -217,7 +217,7 @@ public:
 
         /* privacy */
 
-        _ble.gap().enablePrivacy(true);
+        error = _ble.gap().enablePrivacy(true);
 
         if (error) {
             printf("Error enabling privacy.\r\n");

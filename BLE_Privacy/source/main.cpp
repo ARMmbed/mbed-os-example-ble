@@ -62,7 +62,9 @@ public:
         _bonded(false),
         _led1(LED1, 0) { };
 
-    virtual ~PrivacyDevice() { };
+    virtual ~PrivacyDevice() {
+        _ble.onEventsToProcess(NULL);
+    };
 
     /** Start BLE interface initialisation */
     void run()

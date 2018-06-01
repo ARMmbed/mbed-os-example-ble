@@ -70,16 +70,16 @@ public:
         /* to show we're running we'll blink every 500ms */
         _event_queue.call_every(500, this, &PrivacyDevice::blink);
 
+        /* this will inform us off all events so we can schedule their handling
+         * using our event queue */
+        _ble.onEventsToProcess(
+            makeFunctionPointer(this, &PrivacyDevice::schedule_ble_events)
+        );
+
         if (_ble.hasInitialized()) {
             /* ble instance already initialised, skip init and start activity */
             start();
         } else {
-            /* this will inform us off all events so we can schedule their handling
-             * using our event queue */
-            _ble.onEventsToProcess(
-                makeFunctionPointer(this, &PrivacyDevice::schedule_ble_events)
-            );
-
             ble_error_t error = _ble.init(this, &PrivacyDevice::on_init_complete);
 
             if (error) {

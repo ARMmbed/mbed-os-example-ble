@@ -17,7 +17,7 @@
 #include <stdio.h>
 
 #include "platform/Callback.h"
-#include "events/Eventqueue.h"
+#include "events/EventQueue.h"
 #include "platform/NonCopyable.h"
 
 #include "ble/BLE.h"

@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "events/Eventqueue.h"
+#include "events/EventQueue.h"
 #include "platform/Callback.h"
 #include "platform/NonCopyable.h"
 

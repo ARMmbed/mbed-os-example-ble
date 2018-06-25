@@ -177,13 +177,13 @@ private:
     /**
      * Handle services discovered.
      *
-     * The GattClient invoke this function when a service has been discovered.
+     * The GattClient invokes this function when a service has been discovered.
      *
      * @see GattClient::launchServiceDiscovery
      */
     void when_service_discovered(const DiscoveredService *discovered_service)
     {
-        // print informations of the service discovered
+        // print information of the service discovered
         printf("Service discovered: value = ");
         print_uuid(discovered_service->getUUID());
         printf(", start = %u, end = %u.\r\n",
@@ -227,7 +227,7 @@ private:
     /**
      * Handle termination of the service and characteristic discovery process.
      *
-     * The GattClient invoke this function when a the service and characteristic
+     * The GattClient invokes this function when the service and characteristic
      * discovery process ends.
      *
      * @see GattClient::onServiceDiscoveryTermination

@@ -146,8 +146,8 @@ private:
     }
 
     /**
-     * Stop the gatt client process when a the device is disconnected then
-     * restart advertising.
+     * Stop the gatt client process when the device is disconnected then restart
+     * advertising.
      */
     void when_disconnection(const Gap::DisconnectionCallbackParams_t *event)
     {

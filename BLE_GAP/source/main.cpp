@@ -92,7 +92,7 @@ static const size_t ADV_PARAM_SET_MAX  =
 
 /** Demonstrate advertising, scanning and connecting
  */
-class GAPDevice : private mbed::NonCopyable<GAPDevice>
+class GAPDevice : private mbed::NonCopyable<GAPDevice>, public Gap::EventHandler
 {
 public:
     GAPDevice() :
@@ -132,6 +132,9 @@ public:
             makeFunctionPointer(this, &GAPDevice::on_timeout)
         );
 
+        /* handle gap events */
+        _ble.gap().setEventHandler(this);
+
         error = _ble.init(this, &GAPDevice::on_init_complete);
 
         if (error) {
@@ -161,6 +164,14 @@ private:
         _ble.gap().getAddress(&addr_type, addr);
         printf("Device address: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
                addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+
+        /* setup the default phy used in connection to 2M to reduce power consumption */
+        Gap::Phys_t tx_phys = { /* 1M */ false, /* 2M */ true, /* coded */ false };
+        Gap::Phys_t rx_phys = { /* 1M */ false, /* 2M */ true, /* coded */ false };
+        ble_error_t err = _ble.gap().setPreferedPhys(&tx_phys, &rx_phys);
+        if (err) {
+            printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(err));
+        }
 
         /* all calls are serialised on the user thread through the event queue */
         _event_queue.call(this, &GAPDevice::demo_mode_start);
@@ -377,6 +388,56 @@ private:
         /* we have successfully disconnected ending the demo, move to next mode */
         _event_queue.call(this, &GAPDevice::demo_mode_end);
     };
+
+    /**
+     * Implementation of Gap::EventHandler::onReadPhy
+     */
+    virtual void onReadPhy(
+        ble_error_t error,
+        Gap::Handle_t connectionHandle,
+        ble::phy_t txPhy,
+        ble::phy_t rxPhy
+    ) {
+        if (error) {
+            printf(
+                "Phy read on connection %d failed with error code %s\r\n",
+                connectionHandle,
+                BLE::errorToString(error)
+            );
+        } else {
+            printf(
+                "Phy read on connection %d - Tx Phy: %d, Rx Phy: %d\r\n",
+                connectionHandle,
+                txPhy.value(),
+                rxPhy.value()
+            );
+        }
+    }
+
+    /**
+     * Implementation of Gap::EventHandler::onPhyUpdateComplete
+     */
+    virtual void onPhyUpdateComplete(
+        ble_error_t error,
+        Gap::Handle_t connectionHandle,
+        ble::phy_t txPhy,
+        ble::phy_t rxPhy
+    ) {
+        if (error) {
+            printf(
+                "Phy update on connection: %d failed with error code %s\r\n",
+                connectionHandle,
+                BLE::errorToString(error)
+            );
+        } else {
+            printf(
+                "Phy update on connection %d - Tx Phy: %d, Rx Phy: %d\r\n",
+                connectionHandle,
+                txPhy.value(),
+                rxPhy.value()
+            );
+        }
+    }
 
     /** called if timeout is reached during advertising, scanning
      *  or connection initiation */

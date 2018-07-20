@@ -19,7 +19,7 @@
 #include <new>
 #include <stdio.h>
 
-#include "events/Eventqueue.h"
+#include "events/EventQueue.h"
 #include "platform/NonCopyable.h"
 
 #include "ble/BLE.h"

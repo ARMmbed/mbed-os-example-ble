@@ -183,6 +183,12 @@ private:
             return;
         }
 
+        error = _ble.securityManager().preserveBondingStateOnReset(true);
+
+        if (error) {
+            printf("Error during preserveBondingStateOnReset %d\r\n", error);
+        }
+
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);

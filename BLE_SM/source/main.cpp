@@ -113,7 +113,7 @@ public:
     virtual void pairingRequest(
         ble::connection_handle_t connectionHandle
     ) {
-        printf("Pairing requested. Authorising.\r\n");
+        printf("Pairing requested - authorising\r\n");
         _ble.securityManager().acceptPairingRequest(connectionHandle);
     }
 
@@ -216,7 +216,7 @@ private:
      *  in our case it ends the demonstration. */
     void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
     {
-        printf("Disconnected - demonstration ended \r\n");
+        printf("Diconnected\r\n");
         _event_queue.break_dispatch();
     };
 
@@ -224,7 +224,7 @@ private:
      * scanning or connection initiation */
     void on_timeout(const Gap::TimeoutSource_t source)
     {
-        printf("Unexpected timeout - aborting \r\n");
+        printf("Unexpected timeout - aborting\r\n");
         _event_queue.break_dispatch();
     };
 
@@ -297,6 +297,8 @@ public:
             return;
         }
 
+        printf("Please connect to device\r\n");
+
         /** This tells the stack to generate a pairingRequest event
          * which will require this application to respond before pairing
          * can proceed. Setting it to false will automatically accept
@@ -313,6 +315,10 @@ public:
         /* remember the device that connects to us now so we can connect to it
          * during the next demonstration */
         memcpy(_peer_address, connection_event->peerAddr, sizeof(_peer_address));
+
+        printf("Connected to: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+                _peer_address[5], _peer_address[4], _peer_address[3],
+                _peer_address[2], _peer_address[1], _peer_address[0]);
 
         /* store the handle for future Security Manager requests */
         _handle = connection_event->handle;
@@ -345,6 +351,12 @@ public:
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
         ble_error_t error = _ble.gap().startScan(this, &SMDeviceCentral::on_scan);
+
+        printf("Please advertise\r\n");
+
+        printf("Scanning for: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+               _peer_address[5], _peer_address[4], _peer_address[3],
+               _peer_address[2], _peer_address[1], _peer_address[0]);
 
         if (error) {
             printf("Error during Gap::startScan %d\r\n", error);
@@ -407,6 +419,8 @@ public:
 
         /* in this example the local device is the master so we request pairing */
         error = _ble.securityManager().requestPairing(_handle);
+
+        printf("Connected\r\n");
 
         if (error) {
             printf("Error during SM::requestPairing %d\r\n", error);

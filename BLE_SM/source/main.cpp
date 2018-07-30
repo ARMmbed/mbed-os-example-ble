@@ -372,39 +372,27 @@ public:
             return;
         }
 
-        /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
-            /* The advertising payload is a collection of key/value records where
-             * byte 0: length of the record excluding this byte
-             * byte 1: The key, it is the type of the data
-             * byte [2..N] The value. N is equal to byte0 - 1 */
-            const uint8_t record_length = params->advertisingData[i];
-            if (record_length == 0) {
-                continue;
-            }
+        /* connect to the same device that connected to us */
+        if (memcmp(params->peerAddr, _peer_address, sizeof(_peer_address)) == 0) {
 
-            /* connect to the same device that connected to us */
-            if (memcmp(params->peerAddr, _peer_address, sizeof(_peer_address)) == 0) {
+            ble_error_t error = _ble.gap().connect(
+                params->peerAddr, params->addressType,
+                NULL, NULL
+            );
 
-                ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, params->addressType,
-                    NULL, NULL
-                );
-
-                if (error) {
-                    printf("Error during Gap::connect %d\r\n", error);
-                    return;
-                }
-
-                /* we may have already scan events waiting
-                 * to be processed so we need to remember
-                 * that we are already connecting and ignore them */
-                _is_connecting = true;
-
+            if (error) {
+                printf("Error during Gap::connect %d\r\n", error);
                 return;
             }
 
-            i += record_length;
+            printf("Connecting... ");
+
+            /* we may have already scan events waiting
+             * to be processed so we need to remember
+             * that we are already connecting and ignore them */
+            _is_connecting = true;
+
+            return;
         }
     };
 

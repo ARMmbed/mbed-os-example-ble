@@ -304,8 +304,6 @@ public:
          * can proceed. Setting it to false will automatically accept
          * pairing. */
         _ble.securityManager().setPairingRequestAuthorisation(true);
-
-        _ble.securityManager().setHintFutureRoleReversal(true);
     };
 
     /** This is called by Gap to notify the application we connected,
@@ -364,6 +362,9 @@ public:
             printf("Error during Gap::startScan %d\r\n", error);
             return;
         }
+
+        /* send our keys since we will be a peripheral next */
+        _ble.securityManager().setHintFutureRoleReversal(true);
     }
 
     /** Look at scan payload to find a peer device and connect to it */

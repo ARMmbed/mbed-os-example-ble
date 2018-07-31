@@ -304,6 +304,8 @@ public:
          * can proceed. Setting it to false will automatically accept
          * pairing. */
         _ble.securityManager().setPairingRequestAuthorisation(true);
+
+        _ble.securityManager().setHintFutureRoleReversal(true);
     };
 
     /** This is called by Gap to notify the application we connected,

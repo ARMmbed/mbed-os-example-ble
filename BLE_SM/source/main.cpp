@@ -127,12 +127,6 @@ public:
         } else {
             printf("Pairing failed\r\n");
         }
-
-        /* disconnect in 500 ms */
-        _event_queue.call_in(
-            500, &_ble.gap(),
-            &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
-        );
     }
 
     /** Inform the application of change in encryption status. This will be
@@ -148,6 +142,12 @@ public:
         } else if (result == ble::link_encryption_t::NOT_ENCRYPTED) {
             printf("Link NOT_ENCRYPTED\r\n");
         }
+
+        /* disconnect in 2 s */
+        _event_queue.call_in(
+            2000, &_ble.gap(),
+            &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
+        );
     }
 
 private:

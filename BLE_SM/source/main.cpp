@@ -189,6 +189,30 @@ private:
             printf("Error during preserveBondingStateOnReset %d\r\n", error);
         }
 
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
+        /* Enable privacy so we can find the keys */
+        error = _ble.gap().enablePrivacy(true);
+
+        if (error) {
+            printf("Error enabling privacy\r\n");
+        }
+
+        Gap::PeripheralPrivacyConfiguration_t configuration_p = {
+            /* use_non_resolvable_random_address */ false,
+            Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
+        };
+        _ble.gap().setPeripheralPrivacyConfiguration(&configuration_p);
+
+        Gap::CentralPrivacyConfiguration_t configuration_c = {
+            /* use_non_resolvable_random_address */ false,
+            Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
+        };
+        _ble.gap().setCentralPrivacyConfiguration(&configuration_c);
+
+        /* this demo switches between being master and slave */
+        _ble.securityManager().setHintFutureRoleReversal(true);
+#endif
+
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
@@ -362,9 +386,6 @@ public:
             printf("Error during Gap::startScan %d\r\n", error);
             return;
         }
-
-        /* send our keys since we will be a peripheral next */
-        _ble.securityManager().setHintFutureRoleReversal(true);
     }
 
     /** Look at scan payload to find a peer device and connect to it */
@@ -379,7 +400,7 @@ public:
         if (memcmp(params->peerAddr, _peer_address, sizeof(_peer_address)) == 0) {
 
             ble_error_t error = _ble.gap().connect(
-                params->peerAddr, params->addressType,
+                params->peerAddr, params->peerAddrType,
                 NULL, NULL
             );
 

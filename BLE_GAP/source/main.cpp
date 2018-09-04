@@ -89,6 +89,18 @@ static const size_t SCAN_PARAM_SET_MAX =
 static const size_t ADV_PARAM_SET_MAX  =
     sizeof(advertising_params) / sizeof(GapAdvertisingParams);
 
+static const char* to_string(Gap::Phy_t phy) {
+    switch(phy.value()) {
+        case Gap::Phy_t::LE_1M:
+            return "LE 1M";
+        case Gap::Phy_t::LE_2M:
+            return "LE 2M";
+        case Gap::Phy_t::LE_CODED:
+            return "LE coded";
+        default:
+            return "invalid PHY";
+    }
+}
 
 /** Demonstrate advertising, scanning and connecting
  */
@@ -395,8 +407,8 @@ private:
     virtual void onReadPhy(
         ble_error_t error,
         Gap::Handle_t connectionHandle,
-        ble::phy_t txPhy,
-        ble::phy_t rxPhy
+        Gap::Phy_t txPhy,
+        Gap::Phy_t rxPhy
     ) {
         if (error) {
             printf(
@@ -406,10 +418,10 @@ private:
             );
         } else {
             printf(
-                "Phy read on connection %d - Tx Phy: %d, Rx Phy: %d\r\n",
+                "Phy read on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
                 connectionHandle,
-                txPhy.value(),
-                rxPhy.value()
+                to_string(txPhy),
+                to_string(rxPhy)
             );
         }
     }
@@ -420,8 +432,8 @@ private:
     virtual void onPhyUpdateComplete(
         ble_error_t error,
         Gap::Handle_t connectionHandle,
-        ble::phy_t txPhy,
-        ble::phy_t rxPhy
+        Gap::Phy_t txPhy,
+        Gap::Phy_t rxPhy
     ) {
         if (error) {
             printf(
@@ -431,10 +443,10 @@ private:
             );
         } else {
             printf(
-                "Phy update on connection %d - Tx Phy: %d, Rx Phy: %d\r\n",
+                "Phy update on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
                 connectionHandle,
-                txPhy.value(),
-                rxPhy.value()
+                to_string(txPhy),
+                to_string(rxPhy)
             );
         }
     }

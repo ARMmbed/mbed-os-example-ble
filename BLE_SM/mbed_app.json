@@ -13,11 +13,11 @@
         },
         "NUCLEO_F401RE": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG", "CORDIO"]
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
         "DISCO_L475VG_IOT01A": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG", "CORDIO"]
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         }
     }
 }

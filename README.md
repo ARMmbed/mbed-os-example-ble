@@ -45,24 +45,24 @@ The following targets have been tested and work with these examples:
 
 It is possible to use the ST Nucleo shield on boards not directly supported by these examples as long as the board has an Arduino UNO R3 connector.
 
-To makes the board compatible with the ST shield three things are required: 
+To makes the board compatible with the ST shield three things are required:
 * Add the BLE feature to your target.
 * Add the BLE implementation for the ST shield to the list of modules which have to be compiled.
 * Indicate to the BLE implementation that your board use an Arduino connector.
 
 All these operations can be done in the file `mbed_app.json` present in every example.
 
-In the section `target_overrides` add a new object named after your target. 
+In the section `target_overrides` add a new object named after your target.
 In this object two fields are required:
 * `"target.features_add": ["BLE"]` Add the BLE feature to the target.
-* `"target.extra_labels_add": ["ST_BLUENRG"]`: Add the BLE implementation of the ST shield to the list of the application modules.
+* `"target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]`: Add the BLE implementation of the ST shield to the list of the application modules.
 
 As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
 
 ```json
         "NUCLEO_F411RE": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["ST_BLUENRG"]
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
 ```
 
@@ -120,7 +120,7 @@ chosen. For Nordic Semiconductor targets, the following .hex files will be prese
 **Note:** On non Nordic targets, the file to flash can also be named `<module_name>.bin`. Refer to mbed-cli, mbed-os and your board vendor documentation for more informations.
 
 
-Known issues 
+Known issues
 ============
 
 * [NUCLEO_F411RE]: Some BLE examples doesn't work with the X-NUCLEO BLE shield. See [#40](https://github.com/ARMmbed/mbed-os-example-ble/issues/40)

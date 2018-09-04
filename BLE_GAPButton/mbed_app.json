@@ -18,17 +18,17 @@
         },        
         "K64F": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["ST_BLUENRG"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
             "ble_button_pin_name": "SW2"
         },
         "NUCLEO_F401RE": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["ST_BLUENRG"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
             "ble_button_pin_name": "USER_BUTTON"
         },
         "DISCO_L475VG_IOT01A": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["ST_BLUENRG"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
             "ble_button_pin_name": "USER_BUTTON"
         }
     }

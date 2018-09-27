@@ -178,9 +178,9 @@ private:
                addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        Gap::Phys_t tx_phys = { /* 1M */ false, /* 2M */ true, /* coded */ false };
-        Gap::Phys_t rx_phys = { /* 1M */ false, /* 2M */ true, /* coded */ false };
-        ble_error_t err = _ble.gap().setPreferedPhys(&tx_phys, &rx_phys);
+        Gap::PhySet_t tx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+        Gap::PhySet_t rx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+        ble_error_t err = _ble.gap().setPreferredPhys(&tx_phys, &rx_phys);
         if (err) {
             printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(err));
         }

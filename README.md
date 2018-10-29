@@ -11,7 +11,7 @@ Getting Started
 Pre-Requisites
 --------------
 
-To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/setup.html).
+To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/index.html).
 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 

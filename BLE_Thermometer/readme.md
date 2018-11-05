@@ -8,7 +8,7 @@ This example uses the [Health Thermometer Profile](https://developer.bluetooth.o
 
 For more information see:
 
-* [Temperature Service](https://developer.bluetooth.org/gatt/profiles/Pages/ProfileViewer.aspx?u=org.bluetooth.profile.health_thermometer.xml): GATT profile details.
+* [Health Thermometer Service](https://developer.bluetooth.org/gatt/services/Pages/ServiceViewer.aspx?u=org.bluetooth.service.health_thermometer.xml): GATT profile details.
 
 * [Temperature Measurement](https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.temperature_measurement.xml): GATT characteristic details for temperature measurement.
 

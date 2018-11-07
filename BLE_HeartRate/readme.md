@@ -8,9 +8,7 @@ Technical details are better presented [in the mbed Classic equivalent of this e
 
 ## Requirements
 
-To see the heart rate information on your phone, download Panobike for [iOS](https://itunes.apple.com/gb/app/panobike/id567403997?mt=8) or [Android](https://play.google.com/store/apps/details?id=com.topeak.panobike&hl=en).
-
-You could also use a generic BLE scanners:
+To see the heart rate information on your phone, use a BLE scanner:
 
 - [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 

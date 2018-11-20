@@ -26,6 +26,18 @@ const static char DEVICE_NAME[] = "BATTERY";
 
 static events::EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
+void printMacAddress() {
+    /* Print out device MAC address to the console*/
+    Gap::AddressType_t addr_type;
+    Gap::Address_t address;
+    BLE::Instance().gap().getAddress(&addr_type, address);
+    printf("DEVICE MAC ADDRESS: ");
+    for (int i = 5; i >= 1; i--){
+        printf("%02x:", address[i]);
+    }
+    printf("%02x\r\n", address[0]);
+}
+
 class BatteryDemo : ble::Gap::EventHandler {
 public:
     BatteryDemo(BLE &ble, events::EventQueue &eventQueue) :
@@ -101,18 +113,6 @@ private:
 
     void blinkCallback(void) {
         led1 = !led1;
-    }
-
-    void printMacAddress() {
-        /* Print out device MAC address to the console */
-        Gap::AddressType_t addr_type;
-        Gap::Address_t address;
-        _ble.gap().getAddress(&addr_type, address);
-        printf("DEVICE MAC ADDRESS: ");
-        for (int i = 5; i >= 1; i--){
-            printf("%02x:", address[i]);
-        }
-        printf("%02x\r\n", address[0]);
     }
 
 private:

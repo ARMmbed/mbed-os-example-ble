@@ -20,95 +20,117 @@
 #include "ble/Gap.h"
 #include "ble/services/BatteryService.h"
 
-DigitalOut led1(LED1, 1);
+static DigitalOut led1(LED1, 1);
 
-const static char     DEVICE_NAME[] = "BATTERY";
-static const uint16_t uuid16_list[] = {GattService::UUID_BATTERY_SERVICE};
+const static char DEVICE_NAME[] = "BATTERY";
 
-static uint8_t batteryLevel = 50;
-static BatteryService* batteryServicePtr;
+static events::EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
-static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
+class BatteryDemo : ble::Gap::EventHandler {
+public:
+    BatteryDemo(BLE &ble, events::EventQueue &eventQueue) :
+        _ble(ble),
+        _eventQueue(eventQueue),
+        _batteryUUID(GattService::UUID_BATTERY_SERVICE),
+        _batteryLevel(50),
+        _batteryService(ble, _batteryLevel) { }
 
-void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
-{
-    BLE::Instance().gap().startAdvertising();
-}
+    void start() {
+        _ble.gap().setEventHandler(this);
 
-void updateSensorValue() {
-    batteryLevel++;
-    if (batteryLevel > 100) {
-        batteryLevel = 20;
+        _ble.init(this, &BatteryDemo::initComplete);
+
+        _eventQueue.call_every(500, this, &BatteryDemo::blinkCallback);
+        _eventQueue.call_every(1000, this, &BatteryDemo::updateSensorValue);
+
+        _eventQueue.dispatch_forever();
     }
 
-    batteryServicePtr->updateBatteryLevel(batteryLevel);
-}
+private:
+    /** Callback triggered when the ble initialization process has finished */
+    void initComplete(BLE::InitializationCompleteCallbackContext *params) {
+        if (params->error != BLE_ERROR_NONE) {
+            printf("Ble initialization failed.");
+            return;
+        }
 
-void blinkCallback(void)
-{
-    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+        printMacAddress();
 
-    BLE &ble = BLE::Instance();
-    if (ble.gap().getState().connected) {
-        eventQueue.call(updateSensorValue);
-    }
-}
+        /* Create advertising parameters and payload */
 
-/**
- * This function is called when the ble initialization process has failled
- */
-void onBleInitError(BLE &ble, ble_error_t error)
-{
-    /* Initialization error handling should go here */
-}
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(1000))
+        );
 
-void printMacAddress()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
+        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
 
-/**
- * Callback triggered when the ble initialization process has finished
- */
-void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
-{
-    BLE&        ble   = params->ble;
-    ble_error_t error = params->error;
+        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
 
-    if (error != BLE_ERROR_NONE) {
-        /* In case of error, forward the error handling to onBleInitError */
-        onBleInitError(ble, error);
-        return;
+        adv_data_builder.setFlags();
+        adv_data_builder.setLocalServiceList(mbed::make_Span(&_batteryUUID, 1));
+        adv_data_builder.setName(DEVICE_NAME);
+
+        /* Setup advertising */
+
+        _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
+
+        _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_data_builder.getAdvertisingData()
+        );
+
+        /* Start advertising */
+
+        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
     }
 
-    /* Ensure that it is the default instance of BLE */
-    if(ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
-        return;
+    void updateSensorValue() {
+        if (_ble.gap().getState().connected) {
+            _batteryLevel++;
+            if (_batteryLevel > 100) {
+                _batteryLevel = 20;
+            }
+
+            _batteryService.updateBatteryLevel(_batteryLevel);
+        }
     }
 
-    ble.gap().onDisconnection(disconnectionCallback);
+    void blinkCallback(void) {
+        led1 = !led1;
+    }
 
-    /* Setup primary service */
-    batteryServicePtr = new BatteryService(ble, batteryLevel);
+    void printMacAddress() {
+        /* Print out device MAC address to the console */
+        Gap::AddressType_t addr_type;
+        Gap::Address_t address;
+        _ble.gap().getAddress(&addr_type, address);
+        printf("DEVICE MAC ADDRESS: ");
+        for (int i = 5; i >= 1; i--){
+            printf("%02x:", address[i]);
+        }
+        printf("%02x\r\n", address[0]);
+    }
 
-    /* Setup advertising */
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *) uuid16_list, sizeof(uuid16_list));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *) DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* 1000ms */
-    ble.gap().startAdvertising();
+private:
+    /* Event handler */
 
-    printMacAddress();
-}
+    void onDisconnection(const ble::DisconnectionEvent&) {
+        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+    }
+
+private:
+    BLE &_ble;
+    events::EventQueue &_eventQueue;
+
+    UUID _batteryUUID;
+
+    uint8_t _batteryLevel;
+    BatteryService _batteryService;
+};
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
     BLE &ble = BLE::Instance();
@@ -117,13 +139,11 @@ void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context)
 
 int main()
 {
-    eventQueue.call_every(500, blinkCallback);
-
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
-    ble.init(bleInitComplete);
 
-    eventQueue.dispatch_forever();
+    BatteryDemo demo(ble, eventQueue);
+    demo.start();
 
     return 0;
 }

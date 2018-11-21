@@ -133,8 +133,7 @@ private:
 };
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    BLE &ble = BLE::Instance();
-    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()

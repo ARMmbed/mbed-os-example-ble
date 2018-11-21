@@ -30,6 +30,8 @@
  *  a connection will be made to a connectable device upon its discovery.
  */
 
+events::EventQueue event_queue;
+
 static const uint8_t DEVICE_NAME[]        = "GAP_device";
 
 /* Duration of each mode in milliseconds */
@@ -104,24 +106,25 @@ static const char* to_string(Gap::Phy_t phy) {
 
 /** Demonstrate advertising, scanning and connecting
  */
-class GAPDevice : private mbed::NonCopyable<GAPDevice>, public Gap::EventHandler
+class GapDemo : private mbed::NonCopyable<GapDemo>, public ble::Gap::EventHandler
 {
 public:
-    GAPDevice() :
-        _ble(BLE::Instance()),
+    GapDemo(BLE& ble, events::EventQueue& event_queue) :
+        _ble(ble),
+        _event_queue(event_queue),
         _led1(LED1, 0),
         _set_index(0),
         _is_in_scanning_mode(false),
         _is_connecting(false),
         _on_duration_end_id(0),
-        _scan_count(0) { };
+        _scan_count(0) { }
 
-    ~GAPDevice()
+    ~GapDemo()
     {
         if (_ble.hasInitialized()) {
             _ble.shutdown();
         }
-    };
+    }
 
     /** Start BLE interface initialisation */
     void run()
@@ -133,21 +136,15 @@ public:
             return;
         }
 
-        /* this will inform us off all events so we can schedule their handling
-         * using our event queue */
-        _ble.onEventsToProcess(
-            makeFunctionPointer(this, &GAPDevice::schedule_ble_events)
-        );
-
         /* handle timeouts, for example when connection attempts fail */
         _ble.gap().onTimeout(
-            makeFunctionPointer(this, &GAPDevice::on_timeout)
+            makeFunctionPointer(this, &GapDemo::on_timeout)
         );
 
         /* handle gap events */
         _ble.gap().setEventHandler(this);
 
-        error = _ble.init(this, &GAPDevice::on_init_complete);
+        error = _ble.init(this, &GapDemo::on_init_complete);
 
         if (error) {
             printf("Error returned by BLE::init.\r\n");
@@ -155,11 +152,11 @@ public:
         }
 
         /* to show we're running we'll blink every 500ms */
-        _event_queue.call_every(500, this, &GAPDevice::blink);
+        _event_queue.call_every(500, this, &GapDemo::blink);
 
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
-    };
+    }
 
 private:
     /** This is called when BLE interface is initialised and starts the first mode */
@@ -186,21 +183,16 @@ private:
         }
 
         /* all calls are serialised on the user thread through the event queue */
-        _event_queue.call(this, &GAPDevice::demo_mode_start);
-    };
+        _event_queue.call(this, &GapDemo::demo_mode_start);
+    }
 
     /** queue up start of the current demo mode */
     void demo_mode_start()
     {
         if (_is_in_scanning_mode) {
-            /* when scanning we want to connect to a peer device so we need to
-             * attach callbacks that are used by Gap to notify us of events */
-            _ble.gap().onConnection(this, &GAPDevice::on_connect);
-            _ble.gap().onDisconnection(this, &GAPDevice::on_disconnect);
-
-            _event_queue.call(this, &GAPDevice::scan);
+            _event_queue.call(this, &GapDemo::scan);
         } else {
-            _event_queue.call(this, &GAPDevice::advertise);
+            _event_queue.call(this, &GapDemo::advertise);
         }
 
         /* for performance measurement keep track of duration of the demo mode */
@@ -210,7 +202,7 @@ private:
 
         /* queue up next demo mode */
         _on_duration_end_id = _event_queue.call_in(
-            MODE_DURATION_MS, this, &GAPDevice::on_duration_end
+            MODE_DURATION_MS, this, &GapDemo::on_duration_end
         );
 
         printf("\r\n");
@@ -265,7 +257,7 @@ private:
 
         printf("Advertising started (type: 0x%x, interval: %dms, timeout: %ds)\r\n",
                adv_type, interval, timeout);
-    };
+    }
 
     /** Set up and start scanning */
     void scan()
@@ -297,7 +289,7 @@ private:
 
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
-        error = _ble.gap().startScan(this, &GAPDevice::on_scan);
+        error = _ble.gap().startScan();
 
         if (error) {
             printf("Error during Gap::startScan\r\n");
@@ -306,7 +298,7 @@ private:
 
         printf("Scanning started (interval: %dms, window: %dms, timeout: %ds).\r\n",
                interval, window, timeout);
-    };
+    }
 
     /** After a set duration this cycles to the next demo mode
      *  unless a connection happened first */
@@ -315,11 +307,14 @@ private:
         print_performance();
 
         /* alloted time has elapsed, move to next demo mode */
-        _event_queue.call(this, &GAPDevice::demo_mode_end);
-    };
+        _event_queue.call(this, &GapDemo::demo_mode_end);
+    }
+
+private:
+    /* Gap::EventHandler */
 
     /** Look at scan payload to find a peer device and connect to it */
-    void on_scan(const Gap::AdvertisementCallbackParams_t *params)
+    virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
     {
         /* keep track of scan events for performance reporting */
         _scan_count++;
@@ -330,17 +325,17 @@ private:
         }
 
         /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; i < params->advertisingDataLen; ++i) {
+        for (uint8_t i = 0; i < event.getAdvertisingData().size(); ++i) {
             /* The advertising payload is a collection of key/value records where
              * byte 0: length of the record excluding this byte
              * byte 1: The key, it is the type of the data
              * byte [2..N] The value. N is equal to byte0 - 1 */
-            const uint8_t record_length = params->advertisingData[i];
+            const uint8_t record_length = event.getAdvertisingData()[i];
             if (record_length == 0) {
                 continue;
             }
-            const uint8_t type = params->advertisingData[i + 1];
-            const uint8_t *value = params->advertisingData + i + 2;
+            const uint8_t type = event.getAdvertisingData()[i + 1];
+            const uint8_t *value = event.getAdvertisingData().data() + i + 2;
 
             /* connect to a discoverable device */
             if ((type == GapAdvertisingData::FLAGS)
@@ -351,15 +346,18 @@ private:
 
                 printf("We found a connectable device\r\n");
 
+                const ble::ConnectionParameters connection_params;
+
                 ble_error_t error = _ble.gap().connect(
-                    params->peerAddr, Gap::ADDR_TYPE_RANDOM_STATIC,
-                    NULL, &connection_scan_params
+                    event.getPeerAddressType().getTargetAddressType(),
+                    event.getPeerAddress(),
+                    connection_params
                 );
 
                 if (error) {
                     printf("Error during Gap::connect\r\n");
                     /* since no connection will be attempted end the mode */
-                    _event_queue.call(this, &GAPDevice::demo_mode_end);
+                    _event_queue.call(this, &GapDemo::demo_mode_end);
                     return;
                 }
 
@@ -373,11 +371,11 @@ private:
 
             i += record_length;
         }
-    };
+    }
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately disconnects */
-    void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
         print_performance();
 
@@ -389,17 +387,16 @@ private:
         _event_queue.call_in(
             CONNECTION_DURATION, &_ble.gap(), &Gap::disconnect, Gap::REMOTE_USER_TERMINATED_CONNECTION
         );
-    };
+    }
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it calls demo_mode_end() to progress the demo */
-    void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
-    {
+    virtual void onDisconnection(const ble::DisconnectionEvent &event) {
         printf("Disconnected\r\n");
 
         /* we have successfully disconnected ending the demo, move to next mode */
-        _event_queue.call(this, &GAPDevice::demo_mode_end);
-    };
+        _event_queue.call(this, &GapDemo::demo_mode_end);
+    }
 
     /**
      * Implementation of Gap::EventHandler::onReadPhy
@@ -451,6 +448,7 @@ private:
         }
     }
 
+private:
     /** called if timeout is reached during advertising, scanning
      *  or connection initiation */
     void on_timeout(const Gap::TimeoutSource_t source)
@@ -466,14 +464,14 @@ private:
                 break;
             case Gap::TIMEOUT_SRC_CONN:
                 printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
-                _event_queue.call(this, &GAPDevice::print_performance);
-                _event_queue.call(this, &GAPDevice::demo_mode_end);
+                _event_queue.call(this, &GapDemo::print_performance);
+                _event_queue.call(this, &GapDemo::demo_mode_end);
                 break;
             default:
                 printf("Unexpected timeout\r\n");
                 break;
         }
-    };
+    }
 
     /** clean up after last run, cycle to the next mode and launch it */
     void demo_mode_end()
@@ -495,7 +493,7 @@ private:
 
         _ble.shutdown();
         _event_queue.break_dispatch();
-    };
+    }
 
     /** print some information about our radio activity */
     void print_performance()
@@ -552,23 +550,17 @@ private:
                 printf("We created at least %d tx and rx events\r\n", events);
             }
         }
-    };
-
-    /** Schedule processing of events from the BLE middleware in the event queue. */
-    void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
-    {
-        _event_queue.call(mbed::callback(&context->ble, &BLE::processEvents));
-    };
+    }
 
     /** Blink LED to show we're running */
     void blink(void)
     {
         _led1 = !_led1;
-    };
+    }
 
 private:
     BLE                &_ble;
-    events::EventQueue  _event_queue;
+    events::EventQueue &_event_queue;
     DigitalOut          _led1;
 
     /* Keep track of our progress through demo modes */
@@ -585,12 +577,24 @@ private:
     size_t              _scan_count;
 };
 
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
+{
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
+}
+
 int main()
 {
-    GAPDevice gap_device;
+    BLE &ble = BLE::Instance();
+
+    /* this will inform us off all events so we can schedule their handling
+     * using our event queue */
+    ble.onEventsToProcess(schedule_ble_events);
+
+    GapDemo demo(ble, event_queue);
 
     while (1) {
-        gap_device.run();
+        demo.run();
         wait_ms(TIME_BETWEEN_MODES_MS);
         printf("\r\nStarting next GAP demo mode\r\n");
     };

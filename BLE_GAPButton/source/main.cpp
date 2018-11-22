@@ -154,8 +154,6 @@ private:
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
-        ble::AdvertisingDataBuilder ;
-
         _adv_data_builder.setFlags();
         _adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
         _adv_data_builder.setName(DEVICE_NAME);
@@ -194,7 +192,7 @@ private:
         }
     }
 
-    void update_button_payload(void)
+    void update_button_payload()
     {
         /* The Service Data data type consists of a service UUID with the data associated with that service. */
         ble_error_t error = _adv_data_builder.setServiceData(
@@ -207,7 +205,7 @@ private:
         }
     }
 
-    void button_pressed_callback(void)
+    void button_pressed_callback()
     {
         ++_button_count;
 

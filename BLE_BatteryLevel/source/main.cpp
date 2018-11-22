@@ -45,7 +45,8 @@ public:
         _eventQueue(eventQueue),
         _batteryUUID(GattService::UUID_BATTERY_SERVICE),
         _batteryLevel(50),
-        _batteryService(ble, _batteryLevel) { }
+        _batteryService(ble, _batteryLevel),
+        _adv_data_builder(_adv_buffer) { }
 
     void start() {
         _ble.gap().setEventHandler(this);
@@ -75,13 +76,9 @@ private:
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
-        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
-
-        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
-
-        adv_data_builder.setFlags();
-        adv_data_builder.setLocalServiceList(mbed::make_Span(&_batteryUUID, 1));
-        adv_data_builder.setName(DEVICE_NAME);
+        _adv_data_builder.setFlags();
+        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_batteryUUID, 1));
+        _adv_data_builder.setName(DEVICE_NAME);
 
         /* Setup advertising */
 
@@ -92,7 +89,7 @@ private:
 
         _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
-            adv_data_builder.getAdvertisingData()
+            _adv_data_builder.getAdvertisingData()
         );
 
         /* Start advertising */
@@ -130,11 +127,13 @@ private:
 
     uint8_t _batteryLevel;
     BatteryService _batteryService;
+
+    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    BLE &ble = BLE::Instance();
-    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
+    eventQueue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()

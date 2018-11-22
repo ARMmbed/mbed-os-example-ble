@@ -46,19 +46,19 @@ static const size_t CONNECTION_DURATION   = 3000;
 typedef struct {
     ble::advertising_type_t adv_type;
     ble::adv_interval_t interval;
-} AdvModeParam_t;
+} DemoAdvParams_t;
 
 typedef struct {
-    uint16_t interval;
-    uint16_t window;
-    uint16_t timeout;
+    ble::scan_interval_t interval;
+    ble::scan_window_t   window;
+    ble::scan_duration_t duration;
     bool active;
-} ScanModeParam_t;
+} DemoScanParam_t;
 
 /** the entries in this array are used to configure our advertising
  *  parameters for each of the modes we use in our demo */
-static const AdvModeParam_t advertising_params[] = {
-    /*            advertising type                        interval */
+static const DemoAdvParams_t advertising_params[] = {
+    /*            advertising type                                    interval          */
     { ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,     ble::adv_interval_t(40)  },
     { ble::advertising_type_t::ADV_SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100) },
     { ble::advertising_type_t::ADV_NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100) }
@@ -68,27 +68,18 @@ static const AdvModeParam_t advertising_params[] = {
 
 /** the entries in this array are used to configure our scanning
  *  parameters for each of the modes we use in our demo */
-static const ScanModeParam_t scanning_params[] = {
-/* interval      window    timeout       active */
-    {   4,/*ms*/   4,/*ms*/   0,/*s*/    false },
-    { 160,       100,         3,         false },
-    { 160,        40,         0,         true  },
-    { 500,        10,         0,         false }
+static const DemoScanParam_t scanning_params[] = {
+/*                      interval                  window                 duration active */
+/*                      0.625ms                  0.625ms                     10ms        */
+    {   ble::scan_interval_t(4),   ble::scan_window_t(4), ble::scan_duration_t(0), false },
+    { ble::scan_interval_t(160), ble::scan_window_t(100), ble::scan_duration_t(3), false },
+    { ble::scan_interval_t(160),  ble::scan_window_t(40), ble::scan_duration_t(0), true  },
+    { ble::scan_interval_t(500),  ble::scan_window_t(10), ble::scan_duration_t(0), false }
 };
 
-/* parameters to use when attempting to connect to maximise speed of connection */
-static const GapScanningParams connection_scan_params(
-    GapScanningParams::SCAN_INTERVAL_MAX,
-    GapScanningParams::SCAN_WINDOW_MAX,
-    3,
-    false
-);
-
 /* get number of items in our arrays */
-static const size_t SCAN_PARAM_SET_MAX =
-    sizeof(scanning_params) / sizeof(GapScanningParams);
-static const size_t ADV_PARAM_SET_MAX  =
-    sizeof(advertising_params) / sizeof(GapAdvertisingParams);
+static const size_t SCAN_PARAM_SET_MAX = sizeof(scanning_params) / sizeof(DemoScanParam_t);
+static const size_t ADV_PARAM_SET_MAX = sizeof(advertising_params) / sizeof(DemoAdvParams_t);
 
 static const char* to_string(Gap::Phy_t phy) {
     switch(phy.value()) {
@@ -141,8 +132,6 @@ public:
     /** Start BLE interface initialisation */
     void run()
     {
-        ble_error_t error;
-
         if (_ble.hasInitialized()) {
             printf("Ble instance already initialised.\r\n");
             return;
@@ -151,7 +140,7 @@ public:
         /* handle gap events */
         _ble.gap().setEventHandler(this);
 
-        error = _ble.init(this, &GapDemo::on_init_complete);
+        ble_error_t error = _ble.init(this, &GapDemo::on_init_complete);
 
         if (error) {
             printf("Error returned by BLE::init.\r\n");
@@ -177,12 +166,11 @@ private:
         printMacAddress();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        Gap::PhySet_t tx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
-        Gap::PhySet_t rx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+        Gap::PhySet_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
-        ble_error_t err = _ble.gap().setPreferredPhys(&tx_phys, &rx_phys);
-        if (err) {
-            printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(err));
+        ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
+        if (error) {
+            printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(error));
         }
 
         /* all calls are serialised on the user thread through the event queue */
@@ -216,8 +204,6 @@ private:
     /** Set up and start advertising */
     void advertise()
     {
-        ble_error_t error;
-
         uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
 
         ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
@@ -225,7 +211,7 @@ private:
         adv_data_builder.setFlags();
         adv_data_builder.setName(DEVICE_NAME);
 
-        error = _ble.gap().setAdvertisingPayload(
+        ble_error_t error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_data_builder.getAdvertisingData()
         );
@@ -254,6 +240,11 @@ private:
             adv_parameters
         );
 
+        if (error) {
+            printf("Error during Gap::setAdvertisingParameters.\r\n");
+            return;
+        }
+
         error = _ble.gap().startAdvertising(
             ble::LEGACY_ADVERTISING_HANDLE,
             ble::adv_duration_t(ble::second_t(3))
@@ -264,41 +255,44 @@ private:
             return;
         }
 
-        printf("Advertising started (type: 0x%x, interval: %d * 0.625ms)\r\n",
-               adv_type.value(), interval.value());
+        printf("Advertising started (type: 0x%x, interval: %dms)\r\n",
+               adv_type.value(), interval.valueInMs() );
     }
 
     /** Set up and start scanning */
     void scan()
     {
-        ble_error_t error;
-
         /* scanning happens repeatedly, interval is the number of milliseconds
          * between each cycle of scanning */
-        uint16_t interval = scanning_params[_set_index].interval;
+        ble::scan_interval_t interval = scanning_params[_set_index].interval;
 
         /* number of milliseconds we scan for each time we enter
          * the scanning cycle after the interval set above */
-        uint16_t window = scanning_params[_set_index].window;
+        ble::scan_window_t window = scanning_params[_set_index].window;
 
         /* how long to repeat the cycles of scanning in seconds */
-        uint16_t timeout = scanning_params[_set_index].timeout;
+        ble::scan_duration_t duration = scanning_params[_set_index].duration;
 
         /* active scanning will send a scan request to any scanable devices that
          * we see advertising */
         bool active = scanning_params[_set_index].active;
 
         /* set the scanning parameters according to currently selected set */
-        error = _ble.gap().setScanParams(interval, window, timeout, active);
+        const ble::ScanParameters params(interval, window, active);
+
+        ble_error_t error = _ble.gap().setScanParameters(params);
 
         if (error) {
-            printf("Error during Gap::setScanParams\r\n");
+            printf("Error during Gap::setScanParameters\r\n");
             return;
         }
 
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
-        error = _ble.gap().startScan();
+        error = _ble.gap().startScan(
+            ble::duplicates_filter_t::DISABLE,
+            duration
+        );
 
         if (error) {
             printf("Error during Gap::startScan\r\n");
@@ -306,7 +300,7 @@ private:
         }
 
         printf("Scanning started (interval: %dms, window: %dms, timeout: %ds).\r\n",
-               interval, window, timeout);
+               interval.value(), window.value(), duration.value());
     }
 
     /** After a set duration this cycles to the next demo mode
@@ -510,23 +504,17 @@ private:
     {
         /* measure time from mode start, may have been stopped by timeout */
         uint16_t duration_ms = _demo_duration.read_ms();
+        uint16_t duration_ts = ble::scan_duration_t(ble::millisecond_t(duration_ms)).value();
 
         if (_is_in_scanning_mode) {
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
-            uint16_t interval_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                scanning_params[_set_index].interval
-            );
-            uint16_t window_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                scanning_params[_set_index].window
-            );
-            uint16_t duration_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                duration_ms
-            );
+            uint16_t interval_ts = scanning_params[_set_index].interval.value();
+            uint16_t window_ts = scanning_params[_set_index].window.value();
             /* this is how long we scanned for in timeslots */
             uint16_t rx_ts = (duration_ts / interval_ts) * window_ts;
             /* convert to milliseconds */
-            uint16_t rx_ms = (rx_ts * GapScanningParams::UNIT_0_625_MS) / 1000;
+            uint16_t rx_ms = ble::scan_interval_t(rx_ts).valueInMs();
 
             printf("We have scanned for %dms with an interval of %d"
                     " timeslot and a window of %d timeslots\r\n",
@@ -539,9 +527,6 @@ private:
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
             uint16_t interval_ts = advertising_params[_set_index].interval.value();
-            uint16_t duration_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
-                duration_ms
-            );
             /* this is how many times we advertised */
             uint16_t events = duration_ts / interval_ts;
 

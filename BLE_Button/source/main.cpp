@@ -52,22 +52,22 @@ class BatteryDemo : ble::Gap::EventHandler {
 public:
     BatteryDemo(BLE &ble, events::EventQueue &eventQueue) :
         _ble(ble),
-        _eventQueue(eventQueue),
-        _buttonUUID(ButtonService::BUTTON_SERVICE_UUID) { }
+        _event_queue(eventQueue),
+        _button_uuid(ButtonService::BUTTON_SERVICE_UUID) { }
 
     void start() {
         _ble.gap().setEventHandler(this);
 
-        _ble.init(this, &BatteryDemo::initComplete);
+        _ble.init(this, &BatteryDemo::on_init_complete);
 
-        _eventQueue.call_every(500, this, &BatteryDemo::blinkCallback);
+        _event_queue.call_every(500, this, &BatteryDemo::blinkCallback);
 
-        _eventQueue.dispatch_forever();
+        _event_queue.dispatch_forever();
     }
 
 private:
     /** Callback triggered when the ble initialization process has finished */
-    void initComplete(BLE::InitializationCompleteCallbackContext *params) {
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
         if (params->error != BLE_ERROR_NONE) {
             printf("Ble initialization failed.");
             return;
@@ -82,6 +82,10 @@ private:
         button.fall(buttonPressedCallback);
         button.rise(buttonReleasedCallback);
 
+        start_advertising();
+    }
+
+    void start_advertising() {
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
@@ -94,24 +98,39 @@ private:
         ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
 
         adv_data_builder.setFlags();
-        adv_data_builder.setLocalServiceList(mbed::make_Span(&_buttonUUID, 1));
+        adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
         adv_data_builder.setName(DEVICE_NAME);
 
         /* Setup advertising */
 
-        _ble.gap().setAdvertisingParameters(
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_parameters
         );
 
-        _ble.gap().setAdvertisingPayload(
+        if (error) {
+            print_error(err, "_ble.gap().setAdvertisingParameters() failed\r\n");
+            return;
+        }
+
+        error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_data_builder.getAdvertisingData()
         );
 
+        if (error) {
+            print_error(err, "_ble.gap().setAdvertisingPayload() failed\r\n");
+            return;
+        }
+
         /* Start advertising */
 
-        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            print_error(err, "_ble.gap().startAdvertising() failed\r\n");
+            return;
+        }
     }
 
     void blinkCallback(void) {
@@ -127,9 +146,9 @@ private:
 
 private:
     BLE &_ble;
-    events::EventQueue &_eventQueue;
+    events::EventQueue &_event_queue;
 
-    UUID _buttonUUID;
+    UUID _button_uuid;
 };
 
 void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {

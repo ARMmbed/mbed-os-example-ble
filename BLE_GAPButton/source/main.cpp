@@ -1,5 +1,5 @@
 /* mbed Microcontroller Library
- * Copyright (c) 2006-2013 ARM Limited
+ * Copyright (c) 2006-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,10 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 
-DigitalOut  led1(LED1, 1);
-InterruptIn button(BLE_BUTTON_PIN_NAME);
-uint8_t cnt;
-
 // Change your device name below
-const char DEVICE_NAME[] = "GAPButton";
+static const char DEVICE_NAME[] = "GAPButton";
 
-/* We can arbiturarily choose the GAPButton service UUID to be 0xAA00
- * as long as it does not overlap with the UUIDs defined here:
- * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
-#define GAPButtonUUID 0xAA00
-const uint16_t uuid16_list[] = {GAPButtonUUID};
-
-static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
+static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 void print_error(ble_error_t error, const char* msg)
 {
@@ -80,34 +70,8 @@ void print_error(ble_error_t error, const char* msg)
     printf("\r\n");
 }
 
-void updatePayload(void)
-{
-    // Update the count in the SERVICE_DATA field of the advertising payload
-    uint8_t service_data[3];
-    service_data[0] = GAPButtonUUID & 0xff;
-    service_data[1] = GAPButtonUUID >> 8;
-    service_data[2] = cnt; // Put the button click count in the third byte
-    ble_error_t err = BLE::Instance().gap().updateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Updating payload failed");
-    }
-}
 
-void buttonPressedCallback(void)
-{
-    ++cnt;
-
-    // Calling BLE api in interrupt context may cause race conditions
-    // Using mbed-events to schedule calls to BLE api for safety
-    eventQueue.call(updatePayload);
-}
-
-void blinkCallback(void)
-{
-    led1 = !led1;
-}
-
-void printMacAddress()
+void print_mac_address()
 {
     /* Print out device MAC address to the console*/
     Gap::AddressType_t addr_type;
@@ -120,90 +84,177 @@ void printMacAddress()
     printf("%02x\r\n", address[0]);
 }
 
-void bleInitComplete(BLE::InitializationCompleteCallbackContext *context)
+/** Demonstrate advertising, scanning and connecting
+ */
+class GapButtonDemo : private mbed::NonCopyable<GapButtonDemo>, public ble::Gap::EventHandler
 {
-    BLE&        ble = context->ble;
-    ble_error_t err = context->error;
+public:
+    GapButtonDemo(BLE& ble, events::EventQueue& event_queue) :
+        _ble(ble),
+        _event_queue(event_queue),
+        /* We can arbiturarily choose the GAPButton service UUID to be 0xAA00
+         * as long as it does not overlap with the UUIDs defined here:
+         * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
+        _button_uuid(0xAA00),
+        _led1(LED1, 0),
+        _button(BLE_BUTTON_PIN_NAME),
+        _adv_data_builder(_adv_buffer) { }
 
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "BLE initialisation failed");
-        return;
+    ~GapButtonDemo()
+    {
+        if (_ble.hasInitialized()) {
+            _ble.shutdown();
+        }
     }
 
-    // Set up the advertising flags. Note: not all combination of flags are valid
-    // BREDR_NOT_SUPPORTED: Device does not support Basic Rate or Enchanced Data Rate, It is Low Energy only.
-    // LE_GENERAL_DISCOVERABLE: Peripheral device is discoverable at any moment
-    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Setting GAP flags failed");
-        return;
+    /** Start BLE interface initialisation */
+    void run()
+    {
+        if (_ble.hasInitialized()) {
+            printf("Ble instance already initialised.\r\n");
+            return;
+        }
+
+        /* handle gap events */
+        _ble.gap().setEventHandler(this);
+
+        ble_error_t error = _ble.init(this, &GapButtonDemo::on_init_complete);
+
+        if (error) {
+            printf("Error returned by BLE::init.\r\n");
+            return;
+        }
+
+        /* to show we're running we'll blink every 500ms */
+        _event_queue.call_every(500, this, &GapButtonDemo::blink);
+
+        /* this will not return until shutdown */
+        _event_queue.dispatch_forever();
     }
 
-    // Put the device name in the advertising payload
-    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Setting device name failed");
-        return;
+private:
+    /** This is called when BLE interface is initialised and starts the first mode */
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
+    {
+        if (event->error) {
+            printf("Error during the initialisation\r\n");
+            return;
+        }
+
+        print_mac_address();
+
+        _button.rise(Callback<void()>(this, &GapButtonDemo::button_pressed_callback));
+
+        start_advertising();
     }
 
-    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Setting service UUID failed");
-        return;
+    void start_advertising() {
+        /* Create advertising parameters and payload */
+
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(1000))
+        );
+
+        ble::AdvertisingDataBuilder ;
+
+        _adv_data_builder.setFlags();
+        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
+        _adv_data_builder.setName(DEVICE_NAME);
+
+        update_button_payload();
+
+        /* Setup advertising */
+
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed\r\n");
+            return;
+        }
+
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed\r\n");
+            return;
+        }
+
+        /* Start advertising */
+
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            print_error(error, "_ble.gap().startAdvertising() failed\r\n");
+            return;
+        }
     }
 
-    // The Service Data data type consists of a service UUID with the data associated with that service.
-    // We will encode the number of button clicks in the Service Data field
-    // First two bytes of SERVICE_DATA field should contain the UUID of the service
-    uint8_t service_data[3];
-    service_data[0] = GAPButtonUUID & 0xff;
-    service_data[1] = GAPButtonUUID >> 8;
-    service_data[2] = cnt; // Put the button click count in the third byte
-    err = ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::SERVICE_DATA, (uint8_t *)service_data, sizeof(service_data));
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Setting service data failed");
-        return;
+    void update_button_payload(void)
+    {
+        /* The Service Data data type consists of a service UUID with the data associated with that service. */
+        ble_error_t error = _adv_data_builder.setServiceData(
+            _button_uuid,
+            mbed::make_Span(&_button_count, 1)
+        );
+
+        if (error != BLE_ERROR_NONE) {
+            print_error(error, "Updating payload failed");
+        }
     }
 
-    // It is not connectable as we are just boardcasting
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED);
+    void button_pressed_callback(void)
+    {
+        ++_button_count;
 
-    // Send out the advertising payload every 1000ms
-    ble.gap().setAdvertisingInterval(1000);
-
-    err = ble.gap().startAdvertising();
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "Start advertising failed");
-        return;
+        /* Calling BLE api in interrupt context may cause race conditions
+           Using mbed-events to schedule calls to BLE api for safety */
+        _event_queue.call(Callback<void()>(this, &GapButtonDemo::update_button_payload));
     }
 
-    printMacAddress();
-}
+    /** Blink LED to show we're running */
+    void blink(void)
+    {
+        _led1 = !_led1;
+    }
 
-void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    BLE &ble = BLE::Instance();
-    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
+private:
+    BLE                &_ble;
+    events::EventQueue &_event_queue;
+
+    DigitalOut  _led1;
+    const UUID  _button_uuid;
+
+    InterruptIn _button;
+    uint8_t     _button_count;
+
+    uint8_t     _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
+};
+
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
+{
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
 {
-    cnt = 0;
-
     BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
-    ble_error_t err = ble.init(bleInitComplete);
-    if (err != BLE_ERROR_NONE) {
-        print_error(err, "BLE initialisation failed");
-        return 0;
-    }
 
-    // Blink LED every 500 ms to indicate system aliveness
-    eventQueue.call_every(500, blinkCallback);
+    /* this will inform us of all events so we can schedule their handling
+     * using our event queue */
+    ble.onEventsToProcess(schedule_ble_events);
 
-    // Register function to be called when button is released
-    button.rise(buttonPressedCallback);
+    GapButtonDemo demo(ble, event_queue);
 
-    eventQueue.dispatch_forever();
+    demo.run();
 
     return 0;
 }

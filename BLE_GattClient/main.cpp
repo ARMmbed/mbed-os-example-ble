@@ -1,6 +1,6 @@
 
 /* mbed Microcontroller Library
- * Copyright (c) 2006-2017 ARM Limited
+ * Copyright (c) 2006-2018 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@
  * notifications or indication when available. The client report server
  * indications and notification until the connection end.
  */
-class GattClientProcess : private mbed::NonCopyable<GattClientProcess> {
+class GattClientProcess : private mbed::NonCopyable<GattClientProcess>,
+                          public ble::Gap::EventHandler {
 
     // Internal typedef to this class type.
     // It is used as a shorthand to pass member function as callbacks.
@@ -84,20 +85,7 @@ public:
         _event_queue = &event_queue;
         _client = &_ble_interface->gattClient();
 
-        _ble_interface->gap().onConnection(as_cb(&Self::on_connection));
-        _ble_interface->gap().onDisconnection(as_cb(&Self::on_disconnection));
-    }
-
-    /**
-     * Event handler invoked when a connection is established.
-     *
-     * This function setup the connection handle to operate on then start the
-     * discovery process.
-     */
-    void on_connection(const Gap::ConnectionCallbackParams_t* connection_event)
-    {
-        _connection_handle = connection_event->handle;
-        _event_queue->call(mbed::callback(this, &Self::start));
+        _ble_interface->gap().setEventHandler(this);
     }
 
     /**
@@ -136,17 +124,6 @@ public:
     /**
      * Stop the discovery process and clean the instance.
      */
-    void on_disconnection(const Gap::DisconnectionCallbackParams_t* disconnection_event)
-    {
-        if (!_client || disconnection_event->handle != _connection_handle) {
-            return;
-        }
-        stop();
-    }
-
-    /**
-     * Stop the discovery process and clean the instance.
-     */
     void stop()
     {
         if (!_client) {
@@ -168,6 +145,29 @@ public:
         _descriptor_handle = 0;
 
         printf("Client process stopped.\r\n");
+    }
+
+private:
+    /**
+     * Event handler invoked when a connection is established.
+     *
+     * This function setup the connection handle to operate on then start the
+     * discovery process.
+     */
+    void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    {
+        _connection_handle = event.connectionHandle;
+        _event_queue->call(mbed::callback(this, &Self::start));
+    }
+
+    /**
+     * Stop the discovery process and clean the instance.
+     */
+    void onDisconnection(const ble::DisconnectionEvent &event)
+    {
+        if (_client && event.connectionHandle == _connection_handle) {
+            stop();
+        }
     }
 
 private:

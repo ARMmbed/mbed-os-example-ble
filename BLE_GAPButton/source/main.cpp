@@ -18,7 +18,6 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 
-// Change your device name below
 static const char DEVICE_NAME[] = "GAPButton";
 
 static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
@@ -69,7 +68,6 @@ void print_error(ble_error_t error, const char* msg)
     }
     printf("\r\n");
 }
-
 
 void print_mac_address()
 {

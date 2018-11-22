@@ -32,7 +32,7 @@
 
 events::EventQueue event_queue;
 
-static const uint8_t DEVICE_NAME[]        = "GAP_device";
+static const char   DEVICE_NAME[]         = "GAP_device";
 
 /* Duration of each mode in milliseconds */
 static const size_t MODE_DURATION_MS      = 6000;
@@ -41,12 +41,11 @@ static const size_t MODE_DURATION_MS      = 6000;
 static const size_t TIME_BETWEEN_MODES_MS = 2000;
 
 /* how long to wait before disconnecting in milliseconds */
-static const size_t CONNECTION_DURATION = 3000;
+static const size_t CONNECTION_DURATION   = 3000;
 
 typedef struct {
-    GapAdvertisingParams::AdvertisingType_t adv_type;
-    uint16_t interval;
-    uint16_t timeout;
+    ble::advertising_type_t adv_type;
+    ble::adv_interval_t interval;
 } AdvModeParam_t;
 
 typedef struct {
@@ -59,10 +58,10 @@ typedef struct {
 /** the entries in this array are used to configure our advertising
  *  parameters for each of the modes we use in our demo */
 static const AdvModeParam_t advertising_params[] = {
-    /*            advertising type                        interval  timeout */
-    { GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,      40,/*ms*/ 3/*s*/},
-    { GapAdvertisingParams::ADV_SCANNABLE_UNDIRECTED,       100,       4     },
-    { GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED, 100,       0     }
+    /*            advertising type                        interval */
+    { ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,     ble::adv_interval_t(40)  },
+    { ble::advertising_type_t::ADV_SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100) },
+    { ble::advertising_type_t::ADV_NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100) }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -104,6 +103,19 @@ static const char* to_string(Gap::Phy_t phy) {
     }
 }
 
+void printMacAddress()
+{
+    /* Print out device MAC address to the console*/
+    Gap::AddressType_t addr_type;
+    Gap::Address_t address;
+    BLE::Instance().gap().getAddress(&addr_type, address);
+    printf("DEVICE MAC ADDRESS: ");
+    for (int i = 5; i >= 1; i--){
+        printf("%02x:", address[i]);
+    }
+    printf("%02x\r\n", address[0]);
+}
+
 /** Demonstrate advertising, scanning and connecting
  */
 class GapDemo : private mbed::NonCopyable<GapDemo>, public ble::Gap::EventHandler
@@ -136,11 +148,6 @@ public:
             return;
         }
 
-        /* handle timeouts, for example when connection attempts fail */
-        _ble.gap().onTimeout(
-            makeFunctionPointer(this, &GapDemo::on_timeout)
-        );
-
         /* handle gap events */
         _ble.gap().setEventHandler(this);
 
@@ -167,16 +174,12 @@ private:
             return;
         }
 
-        /* print device address */
-        Gap::AddressType_t addr_type;
-        Gap::Address_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
-        printf("Device address: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
-               addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+        printMacAddress();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
         Gap::PhySet_t tx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
         Gap::PhySet_t rx_phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+
         ble_error_t err = _ble.gap().setPreferredPhys(&tx_phys, &rx_phys);
         if (err) {
             printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(err));
@@ -202,7 +205,9 @@ private:
 
         /* queue up next demo mode */
         _on_duration_end_id = _event_queue.call_in(
-            MODE_DURATION_MS, this, &GapDemo::on_duration_end
+            MODE_DURATION_MS,
+            this,
+            &GapDemo::on_duration_end
         );
 
         printf("\r\n");
@@ -212,20 +217,18 @@ private:
     void advertise()
     {
         ble_error_t error;
-        GapAdvertisingData advertising_data;
 
-        /* add advertising flags */
-        advertising_data.addFlags(GapAdvertisingData::LE_GENERAL_DISCOVERABLE
-                                  | GapAdvertisingData::BREDR_NOT_SUPPORTED);
+        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
 
-        /* add device name */
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            DEVICE_NAME,
-            sizeof(DEVICE_NAME)
+        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
+
+        adv_data_builder.setFlags();
+        adv_data_builder.setName(DEVICE_NAME);
+
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_data_builder.getAdvertisingData()
         );
-
-        error = _ble.gap().setAdvertisingPayload(advertising_data);
 
         if (error) {
             printf("Error during Gap::setAdvertisingPayload\r\n");
@@ -234,29 +237,35 @@ private:
 
         /* set the advertising parameters according to currently selected set,
          * see @AdvertisingType_t for explanation of modes */
-        GapAdvertisingParams::AdvertisingType_t adv_type =
-            advertising_params[_set_index].adv_type;
+        ble::advertising_type_t adv_type = advertising_params[_set_index].adv_type;
 
-        /* how many milliseconds between advertisements, lower interval
-         * increases the chances of being seen at the cost of more power */
-        uint16_t interval = advertising_params[_set_index].interval;
+        /* interval between advertisements, lower interval increases the chances
+         * of being seen at the cost of more power */
+        ble::adv_interval_t interval = advertising_params[_set_index].interval;
 
-        /* advertising will continue for this many seconds or until connected */
-        uint16_t timeout = advertising_params[_set_index].timeout;
+        ble::AdvertisingParameters adv_parameters(
+            adv_type,
+            interval,
+            interval
+        );
 
-        _ble.gap().setAdvertisingType(adv_type);
-        _ble.gap().setAdvertisingInterval(interval);
-        _ble.gap().setAdvertisingTimeout(timeout);
+        error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
 
-        error = _ble.gap().startAdvertising();
+        error = _ble.gap().startAdvertising(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            ble::adv_duration_t(ble::second_t(3))
+        );
 
         if (error) {
             printf("Error during Gap::startAdvertising.\r\n");
             return;
         }
 
-        printf("Advertising started (type: 0x%x, interval: %dms, timeout: %ds)\r\n",
-               adv_type, interval, timeout);
+        printf("Advertising started (type: 0x%x, interval: %d * 0.625ms)\r\n",
+               adv_type.value(), interval.value());
     }
 
     /** Set up and start scanning */
@@ -373,20 +382,44 @@ private:
         }
     }
 
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent_t &event)
+    {
+        if (!event.isConnected()) {
+            printf("Stopped advertising early due to timeout parameter\r\n");
+            _demo_duration.stop();
+        }
+    }
+
+    virtual void onScanTimeout(const ble::ScanTimeoutEvent&)
+    {
+        printf("Stopped scanning early due to timeout parameter\r\n");
+        _demo_duration.stop();
+    }
+
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately disconnects */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        print_performance();
+        _event_queue.call(this, &GapDemo::print_performance);
 
-        printf("Connected in %dms\r\n", _demo_duration.read_ms());
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            printf("Connected in %dms\r\n", _demo_duration.read_ms());
 
-        /* cancel the connect timeout since we connected */
-        _event_queue.cancel(_on_duration_end_id);
+            /* cancel the connect timeout since we connected */
+            _event_queue.cancel(_on_duration_end_id);
 
-        _event_queue.call_in(
-            CONNECTION_DURATION, &_ble.gap(), &Gap::disconnect, Gap::REMOTE_USER_TERMINATED_CONNECTION
-        );
+            _event_queue.call_in(
+                CONNECTION_DURATION,
+                &_ble.gap(),
+                &Gap::disconnect,
+                event.getConnectionHandle(),
+                Gap::REMOTE_USER_TERMINATED_CONNECTION
+            );
+        } else {
+            _demo_duration.stop();
+            printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
+            _event_queue.call(this, &GapDemo::demo_mode_end);
+        }
     }
 
     /** This is called by Gap to notify the application we disconnected,
@@ -449,29 +482,6 @@ private:
     }
 
 private:
-    /** called if timeout is reached during advertising, scanning
-     *  or connection initiation */
-    void on_timeout(const Gap::TimeoutSource_t source)
-    {
-        _demo_duration.stop();
-
-        switch (source) {
-            case Gap::TIMEOUT_SRC_ADVERTISING:
-                printf("Stopped advertising early due to timeout parameter\r\n");
-                break;
-            case Gap::TIMEOUT_SRC_SCAN:
-                printf("Stopped scanning early due to timeout parameter\r\n");
-                break;
-            case Gap::TIMEOUT_SRC_CONN:
-                printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
-                _event_queue.call(this, &GapDemo::print_performance);
-                _event_queue.call(this, &GapDemo::demo_mode_end);
-                break;
-            default:
-                printf("Unexpected timeout\r\n");
-                break;
-        }
-    }
 
     /** clean up after last run, cycle to the next mode and launch it */
     void demo_mode_end()
@@ -499,7 +509,7 @@ private:
     void print_performance()
     {
         /* measure time from mode start, may have been stopped by timeout */
-        uint16_t duration = _demo_duration.read_ms();
+        uint16_t duration_ms = _demo_duration.read_ms();
 
         if (_is_in_scanning_mode) {
             /* convert ms into timeslots for accurate calculation as internally
@@ -511,7 +521,7 @@ private:
                 scanning_params[_set_index].window
             );
             uint16_t duration_ts = GapScanningParams::MSEC_TO_SCAN_DURATION_UNITS(
-                duration
+                duration_ms
             );
             /* this is how long we scanned for in timeslots */
             uint16_t rx_ts = (duration_ts / interval_ts) * window_ts;
@@ -520,7 +530,7 @@ private:
 
             printf("We have scanned for %dms with an interval of %d"
                     " timeslot and a window of %d timeslots\r\n",
-                    duration, interval_ts, window_ts);
+                    duration_ms, interval_ts, window_ts);
 
             printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
 
@@ -528,23 +538,21 @@ private:
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
-            uint16_t interval_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
-                advertising_params[_set_index].interval
-            );
+            uint16_t interval_ts = advertising_params[_set_index].interval.value();
             uint16_t duration_ts = GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(
-                duration
+                duration_ms
             );
             /* this is how many times we advertised */
             uint16_t events = duration_ts / interval_ts;
 
             printf("We have advertised for %dms"
                    " with an interval of %d timeslots\r\n",
-                   duration, interval_ts);
+                   duration_ms, interval_ts);
 
             /* non-scannable and non-connectable advertising
              * skips rx events saving on power consumption */
             if (advertising_params[_set_index].adv_type
-                == GapAdvertisingParams::ADV_NON_CONNECTABLE_UNDIRECTED) {
+                == ble::advertising_type_t::ADV_NON_CONNECTABLE_UNDIRECTED) {
                 printf("We created at least %d tx events\r\n", events);
             } else {
                 printf("We created at least %d tx and rx events\r\n", events);

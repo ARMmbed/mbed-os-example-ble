@@ -19,6 +19,7 @@
 #include "ble/BLE.h"
 #include "ble/DiscoveredCharacteristic.h"
 #include "ble/DiscoveredService.h"
+#include "demo.h"
 
 DigitalOut alivenessLED(LED1, 1);
 static DiscoveredCharacteristic ledCharacteristic;
@@ -170,10 +171,7 @@ void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
     ble.gattClient().onDataRead(triggerToggledWrite);
     ble.gattClient().onDataWrite(triggerRead);
 
-    // scan interval: 400ms and scan window: 400ms.
-    // Every 400ms the device will scan for 400ms
-    // This means that the device will scan continuously.
-    ble.gap().setScanParams(400, 400);
+    ble::ScanParams
     ble.gap().startScan(advertisementCallback);
 
     printMacAddress();

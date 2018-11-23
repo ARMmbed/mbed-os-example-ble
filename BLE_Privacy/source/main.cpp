@@ -19,6 +19,7 @@
 #include "ble/BLE.h"
 #include "SecurityManager.h"
 #include <algorithm>
+#include "demo.h"
 
 /** This example demonstrates privacy features in Gap. It shows how to use
  *  private addresses when advertising and connecting and how filtering ties
@@ -37,13 +38,6 @@
  */
 
 static const uint8_t DEVICE_NAME[] = "Privacy";
-
-/** print device address to the terminal */
-void print_address(const Gap::Address_t &addr)
-{
-    printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
-           addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
-}
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler

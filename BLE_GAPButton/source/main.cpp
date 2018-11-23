@@ -17,70 +17,11 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
+#include "demo.h"
 
 static const char DEVICE_NAME[] = "GAPButton";
 
 static EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
-
-void print_error(ble_error_t error, const char* msg)
-{
-    printf("%s: ", msg);
-    switch(error) {
-        case BLE_ERROR_NONE:
-            printf("BLE_ERROR_NONE: No error");
-            break;
-        case BLE_ERROR_BUFFER_OVERFLOW:
-            printf("BLE_ERROR_BUFFER_OVERFLOW: The requested action would cause a buffer overflow and has been aborted");
-            break;
-        case BLE_ERROR_NOT_IMPLEMENTED:
-            printf("BLE_ERROR_NOT_IMPLEMENTED: Requested a feature that isn't yet implement or isn't supported by the target HW");
-            break;
-        case BLE_ERROR_PARAM_OUT_OF_RANGE:
-            printf("BLE_ERROR_PARAM_OUT_OF_RANGE: One of the supplied parameters is outside the valid range");
-            break;
-        case BLE_ERROR_INVALID_PARAM:
-            printf("BLE_ERROR_INVALID_PARAM: One of the supplied parameters is invalid");
-            break;
-        case BLE_STACK_BUSY:
-            printf("BLE_STACK_BUSY: The stack is busy");
-            break;
-        case BLE_ERROR_INVALID_STATE:
-            printf("BLE_ERROR_INVALID_STATE: Invalid state");
-            break;
-        case BLE_ERROR_NO_MEM:
-            printf("BLE_ERROR_NO_MEM: Out of Memory");
-            break;
-        case BLE_ERROR_OPERATION_NOT_PERMITTED:
-            printf("BLE_ERROR_OPERATION_NOT_PERMITTED");
-            break;
-        case BLE_ERROR_INITIALIZATION_INCOMPLETE:
-            printf("BLE_ERROR_INITIALIZATION_INCOMPLETE");
-            break;
-        case BLE_ERROR_ALREADY_INITIALIZED:
-            printf("BLE_ERROR_ALREADY_INITIALIZED");
-            break;
-        case BLE_ERROR_UNSPECIFIED:
-            printf("BLE_ERROR_UNSPECIFIED: Unknown error");
-            break;
-        case BLE_ERROR_INTERNAL_STACK_FAILURE:
-            printf("BLE_ERROR_INTERNAL_STACK_FAILURE: internal stack faillure");
-            break;
-    }
-    printf("\r\n");
-}
-
-void print_mac_address()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
 
 /** Demonstrate advertising, scanning and connecting
  */
@@ -168,7 +109,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "_ble.gap().setAdvertisingParameters() failed\r\n");
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed");
             return;
         }
 
@@ -178,7 +119,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "_ble.gap().setAdvertisingPayload() failed\r\n");
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
             return;
         }
 
@@ -187,7 +128,7 @@ private:
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (error) {
-            print_error(error, "_ble.gap().startAdvertising() failed\r\n");
+            print_error(error, "_ble.gap().startAdvertising() failed");
             return;
         }
     }
@@ -235,8 +176,7 @@ private:
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */
-void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
-{
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
     event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 

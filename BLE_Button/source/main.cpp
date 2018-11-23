@@ -19,48 +19,30 @@
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "ButtonService.h"
+#include "demo.h"
 
-DigitalOut  led1(LED1, 1);
-InterruptIn button(BLE_BUTTON_PIN_NAME);
-ButtonService *buttonServicePtr;
 const static char DEVICE_NAME[] = "Button";
 
-static EventQueue eventQueue(/* event count */ 10 * EVENTS_EVENT_SIZE);
+static EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
-void printMacAddress()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
-
-void buttonPressedCallback(void) {
-    eventQueue.call(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), true);
-}
-
-void buttonReleasedCallback(void) {
-    eventQueue.call(Callback<void(bool)>(buttonServicePtr, &ButtonService::updateButtonState), false);
-}
 
 class BatteryDemo : ble::Gap::EventHandler {
 public:
-    BatteryDemo(BLE &ble, events::EventQueue &eventQueue) :
+    BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
-        _event_queue(eventQueue),
-        _button_uuid(ButtonService::BUTTON_SERVICE_UUID) { }
+        _event_queue(event_queue),
+        _led1(LED1, 1),
+        _button(BLE_BUTTON_PIN_NAME),
+        _button_service(NULL),
+        _button_uuid(ButtonService::BUTTON_SERVICE_UUID),
+        _adv_data_builder(_adv_buffer) { }
 
     void start() {
         _ble.gap().setEventHandler(this);
 
         _ble.init(this, &BatteryDemo::on_init_complete);
 
-        _event_queue.call_every(500, this, &BatteryDemo::blinkCallback);
+        _event_queue.call_every(500, this, &BatteryDemo::blink);
 
         _event_queue.dispatch_forever();
     }
@@ -73,14 +55,14 @@ private:
             return;
         }
 
-        printMacAddress();
+        print_mac_address();
 
         /* Setup primary service. */
 
-        buttonServicePtr = new ButtonService(_ble, false /* initial value for button pressed */);
+        _button_service = new ButtonService(_ble, false /* initial value for button pressed */);
 
-        button.fall(buttonPressedCallback);
-        button.rise(buttonReleasedCallback);
+        _button.fall(Callback<void()>(this, &BatteryDemo::button_pressed));
+        _button.rise(Callback<void()>(this, &BatteryDemo::button_released));
 
         start_advertising();
     }
@@ -109,17 +91,17 @@ private:
         );
 
         if (error) {
-            print_error(err, "_ble.gap().setAdvertisingParameters() failed\r\n");
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed");
             return;
         }
 
         error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
-            adv_data_builder.getAdvertisingData()
+            _adv_data_builder.getAdvertisingData()
         );
 
         if (error) {
-            print_error(err, "_ble.gap().setAdvertisingPayload() failed\r\n");
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
             return;
         }
 
@@ -128,12 +110,20 @@ private:
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (error) {
-            print_error(err, "_ble.gap().startAdvertising() failed\r\n");
+            print_error(error, "_ble.gap().startAdvertising() failed");
             return;
         }
     }
 
-    void blinkCallback(void) {
+    void button_pressed(void) {
+        _event_queue.call(Callback<void(bool)>(_button_service, &ButtonService::updateButtonState), true);
+    }
+
+    void button_released(void) {
+        _event_queue.call(Callback<void(bool)>(_button_service, &ButtonService::updateButtonState), false);
+    }
+
+    void blink(void) {
         led1 = !led1;
     }
 
@@ -148,19 +138,27 @@ private:
     BLE &_ble;
     events::EventQueue &_event_queue;
 
+    DigitalOut  _led1;
+    InterruptIn _button;
+    ButtonService *_button_service;
+
     UUID _button_uuid;
+
+    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
-void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    eventQueue.call(Callback<void()>(&context->ble, &BLE::processEvents));
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
 {
     BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble.onEventsToProcess(schedule_ble_events);
 
-    BatteryDemo demo(ble, eventQueue);
+    BatteryDemo demo(ble, event_queue);
     demo.start();
 
     return 0;

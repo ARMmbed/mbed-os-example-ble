@@ -18,6 +18,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "SecurityManager.h"
+#include "demo.h"
 
 #if MBED_CONF_APP_FILESYSTEM_SUPPORT
 #include "LittleFileSystem.h"

@@ -18,6 +18,7 @@
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/HealthThermometerService.h"
+#include "demo.h"
 
 DigitalOut led1(LED1, 1);
 
@@ -49,24 +50,6 @@ void periodicCallback(void)
     if (BLE::Instance().gap().getState().connected) {
         eventQueue.call(updateSensorValue);
     }
-}
-
-void onBleInitError(BLE &ble, ble_error_t error)
-{
-   /* Initialization error handling should go here */
-}
-
-void printMacAddress()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
 }
 
 void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)

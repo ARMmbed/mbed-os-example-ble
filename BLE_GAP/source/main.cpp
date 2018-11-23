@@ -17,6 +17,7 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
+#include "demo.h"
 
 /** This example demonstrates all the basic setup required
  *  to advertise, scan and connect to other devices.
@@ -81,32 +82,6 @@ static const DemoScanParam_t scanning_params[] = {
 static const size_t SCAN_PARAM_SET_MAX = sizeof(scanning_params) / sizeof(DemoScanParam_t);
 static const size_t ADV_PARAM_SET_MAX = sizeof(advertising_params) / sizeof(DemoAdvParams_t);
 
-static const char* to_string(Gap::Phy_t phy) {
-    switch(phy.value()) {
-        case Gap::Phy_t::LE_1M:
-            return "LE 1M";
-        case Gap::Phy_t::LE_2M:
-            return "LE 2M";
-        case Gap::Phy_t::LE_CODED:
-            return "LE coded";
-        default:
-            return "invalid PHY";
-    }
-}
-
-void printMacAddress()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
-
 /** Demonstrate advertising, scanning and connecting
  */
 class GapDemo : private mbed::NonCopyable<GapDemo>, public ble::Gap::EventHandler
@@ -120,7 +95,8 @@ public:
         _is_in_scanning_mode(false),
         _is_connecting(false),
         _on_duration_end_id(0),
-        _scan_count(0) { }
+        _scan_count(0),
+        _adv_data_builder(_adv_buffer) { }
 
     ~GapDemo()
     {
@@ -143,7 +119,7 @@ public:
         ble_error_t error = _ble.init(this, &GapDemo::on_init_complete);
 
         if (error) {
-            printf("Error returned by BLE::init.\r\n");
+            print_error(error, "Error returned by BLE::init");
             return;
         }
 
@@ -159,18 +135,18 @@ private:
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
         if (event->error) {
-            printf("Error during the initialisation\r\n");
+            print_error(event->error, "Error during the initialisation");
             return;
         }
 
-        printMacAddress();
+        print_mac_address();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
         Gap::PhySet_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
         ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
         if (error) {
-            printf("INFO: GAP::setPreferedPhys failed with error code %s", BLE::errorToString(error));
+            print_error(error, "INFO: GAP::setPreferedPhys failed");
         }
 
         /* all calls are serialised on the user thread through the event queue */
@@ -217,7 +193,7 @@ private:
         );
 
         if (error) {
-            printf("Error during Gap::setAdvertisingPayload\r\n");
+            print_error(error, "Error during Gap::setAdvertisingPayload");
             return;
         }
 
@@ -235,23 +211,34 @@ private:
             interval
         );
 
-        error = _ble.gap().setAdvertisingParameters(
+        /* Setup advertising */
+
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_parameters
         );
 
         if (error) {
-            printf("Error during Gap::setAdvertisingParameters.\r\n");
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed");
             return;
         }
 
-        error = _ble.gap().startAdvertising(
+        error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
-            ble::adv_duration_t(ble::second_t(3))
+            _adv_data_builder.getAdvertisingData()
         );
 
         if (error) {
-            printf("Error during Gap::startAdvertising.\r\n");
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+            return;
+        }
+
+        /* Start advertising */
+
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            print_error(error, "_ble.gap().startAdvertising() failed");
             return;
         }
 
@@ -283,7 +270,7 @@ private:
         ble_error_t error = _ble.gap().setScanParameters(params);
 
         if (error) {
-            printf("Error during Gap::setScanParameters\r\n");
+            print_error(error, "Error during Gap::setScanParameters");
             return;
         }
 
@@ -295,7 +282,7 @@ private:
         );
 
         if (error) {
-            printf("Error during Gap::startScan\r\n");
+            print_error(error, "Error during Gap::startScan");
             return;
         }
 
@@ -358,7 +345,7 @@ private:
                 );
 
                 if (error) {
-                    printf("Error during Gap::connect\r\n");
+                    print_error(error, "Error during Gap::connect");
                     /* since no connection will be attempted end the mode */
                     _event_queue.call(this, &GapDemo::demo_mode_end);
                     return;
@@ -444,8 +431,8 @@ private:
             printf(
                 "Phy read on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
                 connectionHandle,
-                to_string(txPhy),
-                to_string(rxPhy)
+                phy_to_string(txPhy),
+                phy_to_string(rxPhy)
             );
         }
     }
@@ -469,8 +456,8 @@ private:
             printf(
                 "Phy update on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
                 connectionHandle,
-                to_string(txPhy),
-                to_string(rxPhy)
+                phy_to_string(txPhy),
+                phy_to_string(rxPhy)
             );
         }
     }
@@ -568,11 +555,13 @@ private:
     /* Measure performance of our advertising/scanning */
     Timer               _demo_duration;
     size_t              _scan_count;
+
+    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */
-void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
-{
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
     event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 

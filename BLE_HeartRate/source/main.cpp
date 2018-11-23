@@ -19,28 +19,17 @@
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "ble/services/HeartRateService.h"
+#include "demo.h"
 
 const static char DEVICE_NAME[] = "Heartrate";
 
-static events::EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
-
-void printMacAddress() {
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
+static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 class HeartrateDemo : ble::Gap::EventHandler {
 public:
-    HeartrateDemo(BLE &ble, events::EventQueue &eventQueue) :
+    HeartrateDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
-        _eventQueue(eventQueue),
+        _event_queue(event_queue),
         _led1(LED1, 1),
         _hr_uuid(GattService::UUID_HEART_RATE_SERVICE),
         _hr_counter(100),
@@ -50,23 +39,23 @@ public:
     void start() {
         _ble.gap().setEventHandler(this);
 
-        _ble.init(this, &HeartrateDemo::init_complete);
+        _ble.init(this, &HeartrateDemo::on_init_complete);
 
-        _eventQueue.call_every(500, this, &HeartrateDemo::blink);
-        _eventQueue.call_every(1000, this, &HeartrateDemo::update_sensor_value);
+        _event_queue.call_every(500, this, &HeartrateDemo::blink);
+        _event_queue.call_every(1000, this, &HeartrateDemo::update_sensor_value);
 
-        _eventQueue.dispatch_forever();
+        _event_queue.dispatch_forever();
     }
 
 private:
     /** Callback triggered when the ble initialization process has finished */
-    void init_complete(BLE::InitializationCompleteCallbackContext *params) {
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
         if (params->error != BLE_ERROR_NONE) {
             printf("Ble initialization failed.");
             return;
         }
 
-        printMacAddress();
+        print_mac_address();
 
         start_advertising();
     }
@@ -144,7 +133,7 @@ private:
 
 private:
     BLE &_ble;
-    events::EventQueue &_eventQueue;
+    events::EventQueue &_event_queue;
     DigitalOut _led1;
 
     UUID _hr_uuid;
@@ -156,8 +145,9 @@ private:
     ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
-void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    eventQueue.call(Callback<void()>(&context->ble, &BLE::processEvents));
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
@@ -165,7 +155,7 @@ int main()
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(scheduleBleEventsProcessing);
 
-    HeartrateDemo demo(ble, eventQueue);
+    HeartrateDemo demo(ble, event_queue);
     demo.start();
 
     return 0;

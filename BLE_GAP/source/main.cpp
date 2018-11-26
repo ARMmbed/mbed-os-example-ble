@@ -44,6 +44,11 @@ static const size_t TIME_BETWEEN_MODES_MS = 2000;
 /* how long to wait before disconnecting in milliseconds */
 static const size_t CONNECTION_DURATION   = 3000;
 
+/* how many advertising sets we want to crate at once */
+static const uint8_t ADV_SET_NUMBER       = 2;
+
+static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 1000;
+
 typedef struct {
     ble::advertising_type_t adv_type;
     ble::adv_interval_t interval;
@@ -95,7 +100,11 @@ public:
         _is_in_scanning_mode(false),
         _is_connecting(false),
         _on_duration_end_id(0),
-        _scan_count(0) { }
+        _scan_count(0) {
+        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+            _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
+        }
+    }
 
     ~GapDemo()
     {
@@ -179,22 +188,7 @@ private:
     /** Set up and start advertising */
     void advertise()
     {
-        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
-
-        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
-
-        adv_data_builder.setFlags();
-        adv_data_builder.setName(DEVICE_NAME);
-
-        ble_error_t error = _ble.gap().setAdvertisingPayload(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            adv_data_builder.getAdvertisingData()
-        );
-
-        if (error) {
-            print_error(error, "Error during Gap::setAdvertisingPayload");
-            return;
-        }
+        ble_error_t error;
 
         /* set the advertising parameters according to currently selected set,
          * see @AdvertisingType_t for explanation of modes */
@@ -204,45 +198,103 @@ private:
          * of being seen at the cost of more power */
         ble::adv_interval_t interval = advertising_params[_set_index].interval;
 
+        /* create advertising paramters based on these */
         ble::AdvertisingParameters adv_parameters(
             adv_type,
             interval,
             interval
         );
 
-        /* Setup advertising */
+        /* this is the memory backing for the payload */
+        uint8_t adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
 
-        error = _ble.gap().setAdvertisingParameters(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            adv_parameters
-        );
+        /* how many sets */
+        uint8_t max_adv_set = _ble.gap().getMaxAdvertisingSetNumber();
 
-        if (error) {
-            print_error(error, "_ble.gap().setAdvertisingParameters() failed");
-            return;
+        if (max_adv_set > ADV_SET_NUMBER) {
+            max_adv_set = ADV_SET_NUMBER;
         }
 
-        error = _ble.gap().setAdvertisingPayload(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            adv_data_builder.getAdvertisingData()
-        );
+        /* how much payload in a set */
+        uint8_t max_adv_size = _ble.gap().getMaxAdvertisingDataLength();
 
-        if (error) {
-            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
-            return;
+        if (max_adv_size > MAX_ADVERTISING_PAYLOAD_SIZE) {
+            max_adv_size = MAX_ADVERTISING_PAYLOAD_SIZE;
         }
 
-        /* Start advertising */
+        /* create and start all requested (and possible) advertising sets */
+        for (uint8_t i = 0; i < max_adv_set; ++i) {
 
-        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+            /* If controller is capable of only one advertising set then only
+             * legacy advertising can be used. Legacy advertising set is created
+             * at startup. Calling createAdvertisingSet() would fail as there
+             * aren't any free sets left. */
+            if (max_adv_set == 1) {
 
-        if (error) {
-            print_error(error, "_ble.gap().startAdvertising() failed");
-            return;
+                /* only one set will be used - the legacy set which doesn't require creating */
+                _adv_handles[i] = ble::LEGACY_ADVERTISING_HANDLE;
+
+                /* since the legacy set has been created at startup with default parameters
+                 * we have to apply our new parameters now */
+                error = _ble.gap().setAdvertisingParameters(
+                    _adv_handles[i],
+                    adv_parameters
+                );
+
+                if (error) {
+                    print_error(error, "_ble.gap().setAdvertisingParameters() failed");
+                    return;
+                }
+
+                /* limit the size to what legacy advertising can handle */
+                max_adv_size = ble::LEGACY_ADVERTISING_MAX_SIZE;
+
+            } else {
+                /* we can have multiple sets - create a new advertising set with our parameters */
+                error = _ble.gap().createAdvertisingSet(
+                    &_adv_handles[i],
+                    adv_parameters
+                );
+
+                if (error) {
+                    print_error(error, "_ble.gap().createAdvertisingSet() failed");
+                    return;
+                }
+            }
+
+            /* use the helper to build the payload */
+            ble::AdvertisingDataBuilder adv_data_builder(
+                adv_buffer,
+                max_adv_size
+            );
+
+            adv_data_builder.setFlags();
+            adv_data_builder.setName(DEVICE_NAME);
+
+            /* Set payload for the set */
+            error = _ble.gap().setAdvertisingPayload(
+                _adv_handles[i],
+                adv_data_builder.getAdvertisingData()
+            );
+
+            if (error) {
+                print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+                return;
+            }
+
+            /* Start advertising the set */
+            error = _ble.gap().startAdvertising(
+                _adv_handles[i]
+             );
+
+            if (error) {
+                print_error(error, "_ble.gap().startAdvertising() failed");
+                return;
+            }
+
+            printf("Advertising started (type: 0x%x, interval: %dms)\r\n",
+                   adv_type.value(), interval.valueInMs() );
         }
-
-        printf("Advertising started (type: 0x%x, interval: %dms)\r\n",
-               adv_type.value(), interval.valueInMs() );
     }
 
     /** Set up and start scanning */
@@ -269,7 +321,7 @@ private:
         ble_error_t error = _ble.gap().setScanParameters(params);
 
         if (error) {
-            print_error(error, "Error during Gap::setScanParameters");
+            print_error(error, "Error caused by Gap::setScanParameters");
             return;
         }
 
@@ -281,7 +333,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Error during Gap::startScan");
+            print_error(error, "Error caused by Gap::startScan");
             return;
         }
 
@@ -293,10 +345,41 @@ private:
      *  unless a connection happened first */
     void on_duration_end()
     {
+        ble_error_t error;
+
         print_performance();
 
         /* alloted time has elapsed, move to next demo mode */
         _event_queue.call(this, &GapDemo::demo_mode_end);
+
+        /* stop scanning and advertising */
+        if (_is_in_scanning_mode) {
+            error = _ble.gap().stopScan();
+
+            if (error) {
+                print_error(error, "Error caused by Gap::stopScan");
+                return;
+            }
+        } else {
+            for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+                if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
+                    if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                        error = _ble.gap().stopAdvertising(_adv_handles[i]);
+
+                        if (error) {
+                            print_error(error, "Error caused by Gap::stopAdvertising");
+                            return;
+                        }
+                    }
+                    error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
+
+                    if (error) {
+                        print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+                        return;
+                    }
+                }
+            }
+        }
     }
 
 private:
@@ -344,7 +427,7 @@ private:
                 );
 
                 if (error) {
-                    print_error(error, "Error during Gap::connect");
+                    print_error(error, "Error caused by Gap::connect");
                     /* since no connection will be attempted end the mode */
                     _event_queue.call(this, &GapDemo::demo_mode_end);
                     return;
@@ -509,16 +592,30 @@ private:
             printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
 
         } else /* advertising */ {
+            uint8_t number_of_active_sets = 0;
+
+            for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+                if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
+                    if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                        number_of_active_sets++;
+                    }
+                }
+            }
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
             uint16_t interval_ts = advertising_params[_set_index].interval.value();
             /* this is how many times we advertised */
-            uint16_t events = duration_ts / interval_ts;
+            uint16_t events =( duration_ts / interval_ts) * number_of_active_sets;
 
             printf("We have advertised for %dms"
                    " with an interval of %d timeslots\r\n",
                    duration_ms, interval_ts);
+
+            if (number_of_active_sets > 1) {
+                printf("We had %d active advertising sets\r\n",
+                       number_of_active_sets);
+            }
 
             /* non-scannable and non-connectable advertising
              * skips rx events saving on power consumption */
@@ -554,6 +651,8 @@ private:
     /* Measure performance of our advertising/scanning */
     Timer               _demo_duration;
     size_t              _scan_count;
+
+    ble::advertising_handle_t _adv_handles[ADV_SET_NUMBER];
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */

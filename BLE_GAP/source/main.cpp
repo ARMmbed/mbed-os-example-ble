@@ -95,8 +95,7 @@ public:
         _is_in_scanning_mode(false),
         _is_connecting(false),
         _on_duration_end_id(0),
-        _scan_count(0),
-        _adv_data_builder(_adv_buffer) { }
+        _scan_count(0) { }
 
     ~GapDemo()
     {
@@ -225,7 +224,7 @@ private:
 
         error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
-            _adv_data_builder.getAdvertisingData()
+            adv_data_builder.getAdvertisingData()
         );
 
         if (error) {
@@ -555,9 +554,6 @@ private:
     /* Measure performance of our advertising/scanning */
     Timer               _demo_duration;
     size_t              _scan_count;
-
-    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
-    ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */

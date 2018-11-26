@@ -33,8 +33,6 @@
 
 events::EventQueue event_queue;
 
-static const char   DEVICE_NAME[]         = "GAP_device";
-
 /* Duration of each mode in milliseconds */
 static const size_t MODE_DURATION_MS      = 6000;
 
@@ -48,6 +46,8 @@ static const size_t CONNECTION_DURATION   = 3000;
 static const uint8_t ADV_SET_NUMBER       = 2;
 
 static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 1000;
+
+static char DEVICE_NAME[] = "Advertiser 1";
 
 typedef struct {
     ble::advertising_type_t adv_type;
@@ -250,6 +250,10 @@ private:
                 max_adv_size = ble::LEGACY_ADVERTISING_MAX_SIZE;
 
             } else {
+                /* we can use larger PDUs */
+                adv_parameters.setUseLegacyPDU(false);
+                adv_parameters.setOwnAddressType(ble::own_address_type_t::RANDOM);
+
                 /* we can have multiple sets - create a new advertising set with our parameters */
                 error = _ble.gap().createAdvertisingSet(
                     &_adv_handles[i],
@@ -269,7 +273,15 @@ private:
             );
 
             adv_data_builder.setFlags();
-            adv_data_builder.setName(DEVICE_NAME);
+
+            MBED_ASSERT(i < 9);
+            sprintf(DEVICE_NAME, "Advertiser %d", i);
+            error = adv_data_builder.setName(DEVICE_NAME);
+
+            if (error) {
+                print_error(error, "Gap::setName() failed");
+                return;
+            }
 
             /* Set payload for the set */
             error = _ble.gap().setAdvertisingPayload(

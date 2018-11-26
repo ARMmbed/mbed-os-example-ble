@@ -179,7 +179,7 @@ private:
         _on_duration_end_id = _event_queue.call_in(
             MODE_DURATION_MS,
             this,
-            &GapDemo::on_duration_end
+            &GapDemo::end_demo_mode
         );
 
         printf("\r\n");
@@ -242,7 +242,7 @@ private:
                 );
 
                 if (error) {
-                    print_error(error, "_ble.gap().setAdvertisingParameters() failed");
+                    print_error(error, "Gap::setAdvertisingParameters() failed");
                     return;
                 }
 
@@ -257,7 +257,7 @@ private:
                 );
 
                 if (error) {
-                    print_error(error, "_ble.gap().createAdvertisingSet() failed");
+                    print_error(error, "Gap::createAdvertisingSet() failed");
                     return;
                 }
             }
@@ -278,7 +278,7 @@ private:
             );
 
             if (error) {
-                print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+                print_error(error, "Gap::setAdvertisingPayload() failed");
                 return;
             }
 
@@ -288,7 +288,7 @@ private:
              );
 
             if (error) {
-                print_error(error, "_ble.gap().startAdvertising() failed");
+                print_error(error, "Gap::startAdvertising() failed");
                 return;
             }
 
@@ -343,14 +343,11 @@ private:
 
     /** After a set duration this cycles to the next demo mode
      *  unless a connection happened first */
-    void on_duration_end()
+    void end_demo_mode()
     {
         ble_error_t error;
 
         print_performance();
-
-        /* alloted time has elapsed, move to next demo mode */
-        _event_queue.call(this, &GapDemo::demo_mode_end);
 
         /* stop scanning and advertising */
         if (_is_in_scanning_mode) {
@@ -380,6 +377,9 @@ private:
                 }
             }
         }
+
+        /* alloted time has elapsed, move to next demo mode */
+        _event_queue.call(this, &GapDemo::next_demo_mode);
     }
 
 private:
@@ -429,7 +429,7 @@ private:
                 if (error) {
                     print_error(error, "Error caused by Gap::connect");
                     /* since no connection will be attempted end the mode */
-                    _event_queue.call(this, &GapDemo::demo_mode_end);
+                    _event_queue.call(this, &GapDemo::end_demo_mode);
                     return;
                 }
 
@@ -447,9 +447,8 @@ private:
 
     virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
     {
-        if (!event.isConnected()) {
-            printf("Stopped advertising early due to timeout parameter\r\n");
-            _demo_duration.stop();
+        if (event.isConnected()) {
+            printf("Stopped advertising early due to connection\r\n");
         }
     }
 
@@ -463,7 +462,7 @@ private:
      *  in our case it immediately disconnects */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        _event_queue.call(this, &GapDemo::print_performance);
+        _demo_duration.stop();
 
         if (event.getStatus() == BLE_ERROR_NONE) {
             printf("Connected in %dms\r\n", _demo_duration.read_ms());
@@ -479,19 +478,18 @@ private:
                 Gap::REMOTE_USER_TERMINATED_CONNECTION
             );
         } else {
-            _demo_duration.stop();
             printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
-            _event_queue.call(this, &GapDemo::demo_mode_end);
+            _event_queue.call(this, &GapDemo::end_demo_mode);
         }
     }
 
     /** This is called by Gap to notify the application we disconnected,
-     *  in our case it calls demo_mode_end() to progress the demo */
+     *  in our case it calls next_demo_mode() to progress the demo */
     virtual void onDisconnection(const ble::DisconnectionEvent &event) {
         printf("Disconnected\r\n");
 
         /* we have successfully disconnected ending the demo, move to next mode */
-        _event_queue.call(this, &GapDemo::demo_mode_end);
+        _event_queue.call(this, &GapDemo::end_demo_mode);
     }
 
     /**
@@ -547,7 +545,7 @@ private:
 private:
 
     /** clean up after last run, cycle to the next mode and launch it */
-    void demo_mode_end()
+    void next_demo_mode()
     {
         /* reset the demo ready for the next mode */
         _scan_count = 0;

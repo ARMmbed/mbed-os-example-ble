@@ -60,9 +60,9 @@ typedef struct {
  *  parameters for each of the modes we use in our demo */
 static const DemoAdvParams_t advertising_params[] = {
     /*            advertising type                                    interval          */
-    { ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,     ble::adv_interval_t(40)  },
-    { ble::advertising_type_t::ADV_SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100) },
-    { ble::advertising_type_t::ADV_NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100) }
+    { ble::advertising_type_t::CONNECTABLE_UNDIRECTED,     ble::adv_interval_t(40)  },
+    { ble::advertising_type_t::SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100) },
+    { ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100) }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -524,7 +524,7 @@ private:
             /* non-scannable and non-connectable advertising
              * skips rx events saving on power consumption */
             if (advertising_params[_set_index].adv_type
-                == ble::advertising_type_t::ADV_NON_CONNECTABLE_UNDIRECTED) {
+                == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
                 printf("We created at least %d tx events\r\n", events);
             } else {
                 printf("We created at least %d tx and rx events\r\n", events);

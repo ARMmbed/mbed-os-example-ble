@@ -213,7 +213,7 @@ private:
 
         /* Setup advertising */
 
-        ble_error_t error = _ble.gap().setAdvertisingParameters(
+        error = _ble.gap().setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
             adv_parameters
         );
@@ -265,7 +265,7 @@ private:
         bool active = scanning_params[_set_index].active;
 
         /* set the scanning parameters according to currently selected set */
-        const ble::ScanParameters params(interval, window, active);
+        const ble::ScanParameters params(ble::phy_t::LE_1M, interval, window, active);
 
         ble_error_t error = _ble.gap().setScanParameters(params);
 
@@ -339,7 +339,7 @@ private:
                 const ble::ConnectionParameters connection_params;
 
                 ble_error_t error = _ble.gap().connect(
-                    event.getPeerAddressType().getTargetAddressType(),
+                    event.getPeerAddressType(),
                     event.getPeerAddress(),
                     connection_params
                 );
@@ -363,7 +363,7 @@ private:
         }
     }
 
-    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent_t &event)
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
     {
         if (!event.isConnected()) {
             printf("Stopped advertising early due to timeout parameter\r\n");

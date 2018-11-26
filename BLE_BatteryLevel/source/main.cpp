@@ -65,7 +65,7 @@ private:
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 

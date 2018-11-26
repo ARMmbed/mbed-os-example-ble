@@ -21,6 +21,12 @@
 
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
+/** @deprecated This demo is deprecated and no replacement is currently available.
+ */
+MBED_DEPRECATED_SINCE(
+   "mbed-os-5.11",
+   "This demo is deprecated and no replacement is currently available."
+)
 class BeaconDemo : ble::Gap::EventHandler {
 public:
     BeaconDemo(BLE &ble, events::EventQueue &event_queue) :
@@ -139,7 +145,7 @@ private:
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 

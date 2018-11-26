@@ -64,6 +64,13 @@ void print_error(ble_error_t error, const char* msg)
     printf("\r\n");
 }
 
+/** print device address to the terminal */
+void print_address(const Gap::Address_t &addr)
+{
+    printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
+           addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+}
+
 void print_mac_address()
 {
     /* Print out device MAC address to the console*/
@@ -72,13 +79,6 @@ void print_mac_address()
     BLE::Instance().gap().getAddress(&addr_type, address);
     printf("DEVICE MAC ADDRESS: ");
     print_address(address);
-}
-
-/** print device address to the terminal */
-void print_address(const Gap::Address_t &addr)
-{
-    printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
-           addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 }
 
 const char* phy_to_string(Gap::Phy_t phy) {

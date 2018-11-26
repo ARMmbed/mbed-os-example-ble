@@ -252,7 +252,6 @@ private:
             } else {
                 /* we can use larger PDUs */
                 adv_parameters.setUseLegacyPDU(false);
-                adv_parameters.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
                 /* we can have multiple sets - create a new advertising set with our parameters */
                 error = _ble.gap().createAdvertisingSet(
@@ -274,6 +273,8 @@ private:
 
             adv_data_builder.setFlags();
 
+
+            /* set different name to each set */
             MBED_ASSERT(i < 9);
             sprintf(DEVICE_NAME, "Advertiser %d", i);
             error = adv_data_builder.setName(DEVICE_NAME);

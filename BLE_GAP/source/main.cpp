@@ -420,8 +420,6 @@ private:
         ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
 
         /* parse the advertising payload, looking for a discoverable device */
-             * byte [2..N] The value. N is equal to byte0 - 1 */
-            const uint8_t record_length = event.getAdvertisingData()[i];
         while (adv_data.hasNext()) {
             ble::AdvertisingDataParser::element_t field = adv_data.next();
 

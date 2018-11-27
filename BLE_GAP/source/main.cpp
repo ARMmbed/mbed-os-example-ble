@@ -597,11 +597,11 @@ private:
     {
         /* measure time from mode start, may have been stopped by timeout */
         uint16_t duration_ms = _demo_duration.read_ms();
-        uint16_t duration_ts = ble::scan_duration_t(ble::millisecond_t(duration_ms)).value();
 
         if (_is_in_scanning_mode) {
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
+            uint16_t duration_ts = ble::scan_interval_t(ble::millisecond_t(duration_ms)).value();
             uint16_t interval_ts = scanning_params[_set_index].interval.value();
             uint16_t window_ts = scanning_params[_set_index].window.value();
             /* this is how long we scanned for in timeslots */
@@ -628,9 +628,10 @@ private:
 
             /* convert ms into timeslots for accurate calculation as internally
              * all durations are in timeslots (0.625ms) */
+            uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
             uint16_t interval_ts = advertising_params[_set_index].interval.value();
             /* this is how many times we advertised */
-            uint16_t events =( duration_ts / interval_ts) * number_of_active_sets;
+            uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
 
             printf("We have advertised for %dms with an interval of %d timeslots\r\n",
                    duration_ms, interval_ts);

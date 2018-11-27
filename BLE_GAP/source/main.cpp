@@ -75,12 +75,12 @@ static const DemoAdvParams_t advertising_params[] = {
 /** the entries in this array are used to configure our scanning
  *  parameters for each of the modes we use in our demo */
 static const DemoScanParam_t scanning_params[] = {
-/*                      interval                  window                 duration active */
-/*                      0.625ms                  0.625ms                     10ms        */
-    {   ble::scan_interval_t(4),   ble::scan_window_t(4), ble::scan_duration_t(0), false },
-    { ble::scan_interval_t(160), ble::scan_window_t(100), ble::scan_duration_t(3), false },
-    { ble::scan_interval_t(160),  ble::scan_window_t(40), ble::scan_duration_t(0), true  },
-    { ble::scan_interval_t(500),  ble::scan_window_t(10), ble::scan_duration_t(0), false }
+/*                      interval                  window                   duration  active */
+/*                      0.625ms                  0.625ms                       10ms         */
+    {   ble::scan_interval_t(4),   ble::scan_window_t(4),   ble::scan_duration_t(0), false },
+    { ble::scan_interval_t(160), ble::scan_window_t(100), ble::scan_duration_t(300), false },
+    { ble::scan_interval_t(160),  ble::scan_window_t(40),   ble::scan_duration_t(0), true  },
+    { ble::scan_interval_t(500),  ble::scan_window_t(10),   ble::scan_duration_t(0), false }
 };
 
 /* get number of items in our arrays */
@@ -154,7 +154,7 @@ private:
 
         ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
         if (error) {
-            print_error(error, "INFO: GAP::setPreferedPhys failed");
+            print_error(error, "GAP::setPreferedPhys failed");
         }
 
         /* all calls are serialised on the user thread through the event queue */

@@ -17,6 +17,8 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
+#include "gap/Gap.h"
+#include "gap/AdvertisingDataParser.h"
 #include "demo.h"
 
 /** This example demonstrates all the basic setup required
@@ -274,9 +276,9 @@ private:
             adv_data_builder.setFlags();
 
 
-            /* set different name to each set */
+            /* set different name for each set */
             MBED_ASSERT(i < 9);
-            sprintf(DEVICE_NAME, "Advertiser %d", i);
+            sprintf(DEVICE_NAME, "Advertiser %d", i%10);
             error = adv_data_builder.setName(DEVICE_NAME);
 
             if (error) {
@@ -415,22 +417,18 @@ private:
             return;
         }
 
+        ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
+
         /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; i < event.getAdvertisingData().size(); ++i) {
-            /* The advertising payload is a collection of key/value records where
-             * byte 0: length of the record excluding this byte
-             * byte 1: The key, it is the type of the data
              * byte [2..N] The value. N is equal to byte0 - 1 */
             const uint8_t record_length = event.getAdvertisingData()[i];
-            if (record_length == 0) {
-                continue;
-            }
-            const uint8_t type = event.getAdvertisingData()[i + 1];
-            const uint8_t *value = event.getAdvertisingData().data() + i + 2;
+        while (adv_data.hasNext()) {
+            ble::AdvertisingDataParser::element_t field = adv_data.next();
 
             /* connect to a discoverable device */
-            if ((type == GapAdvertisingData::FLAGS)
-                && (*value & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+            if (field.type == ble::adv_data_type_t::FLAGS &&
+                field.value.size() == 1 &&
+                (field.value[0] & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
 
                 /* abort timeout as the mode will end on disconnection */
                 _event_queue.cancel(_on_duration_end_id);
@@ -465,9 +463,8 @@ private:
                 _is_connecting = true;
 
                 return;
-            }
 
-            i += record_length;
+            }
         }
     }
 

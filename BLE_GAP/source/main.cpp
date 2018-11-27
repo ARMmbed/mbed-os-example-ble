@@ -47,7 +47,7 @@ static const uint8_t ADV_SET_NUMBER       = 2;
 
 static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 1000;
 
-static char DEVICE_NAME[] = "Advertiser 1";
+static char DEVICE_NAME[] = "Advertiser x";
 
 typedef struct {
     ble::advertising_type_t adv_type;
@@ -354,8 +354,7 @@ private:
                interval.value(), window.value(), duration.value());
     }
 
-    /** After a set duration this cycles to the next demo mode
-     *  unless a connection happened first */
+    /** Finish the mode by shutting down advertising or scanning and move to the next mode. */
     void end_demo_mode()
     {
         ble_error_t error;
@@ -371,8 +370,11 @@ private:
                 return;
             }
         } else {
+            /* go through all the created advertising sets to shut them down and remove them */
             for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+                /* check if the set has been sucesfully created */
                 if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
+                    /* if it's still active, stop it */
                     if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
                         error = _ble.gap().stopAdvertising(_adv_handles[i]);
 
@@ -381,17 +383,21 @@ private:
                             return;
                         }
                     }
-                    error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
+                    /* you cannot destroy or create the legacy advertising set,
+                     * it's always available, others may be removed when no longer needed */
+                    if (_adv_handles[i] != ble::LEGACY_ADVERTISING_HANDLE) {
+                        error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
 
-                    if (error) {
-                        print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-                        return;
+                        if (error) {
+                            print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+                            return;
+                        }
                     }
                 }
             }
         }
 
-        /* alloted time has elapsed, move to next demo mode */
+        /* alloted time has elapsed or be connected, move to next demo mode */
         _event_queue.call(this, &GapDemo::next_demo_mode);
     }
 
@@ -557,7 +563,7 @@ private:
 
 private:
 
-    /** clean up after last run, cycle to the next mode and launch it */
+    /** Clean up internal state after last run, cycle to the next mode and launch it */
     void next_demo_mode()
     {
         /* reset the demo ready for the next mode */
@@ -597,7 +603,7 @@ private:
             uint16_t rx_ms = ble::scan_interval_t(rx_ts).valueInMs();
 
             printf("We have scanned for %dms with an interval of %d"
-                    " timeslot and a window of %d timeslots\r\n",
+                    " timeslots and a window of %d timeslots\r\n",
                     duration_ms, interval_ts, window_ts);
 
             printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
@@ -619,8 +625,7 @@ private:
             /* this is how many times we advertised */
             uint16_t events =( duration_ts / interval_ts) * number_of_active_sets;
 
-            printf("We have advertised for %dms"
-                   " with an interval of %d timeslots\r\n",
+            printf("We have advertised for %dms with an interval of %d timeslots\r\n",
                    duration_ms, interval_ts);
 
             if (number_of_active_sets > 1) {

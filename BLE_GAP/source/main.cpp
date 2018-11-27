@@ -437,9 +437,16 @@ private:
 
                 printf("We found a connectable device\r\n");
 
+                ble_error_t error = _ble.gap().stopScan();
+
+                if (error) {
+                    print_error(error, "Error caused by Gap::stopScan");
+                    return;
+                }
+
                 const ble::ConnectionParameters connection_params;
 
-                ble_error_t error = _ble.gap().connect(
+                error = _ble.gap().connect(
                     event.getPeerAddressType(),
                     event.getPeerAddress(),
                     connection_params

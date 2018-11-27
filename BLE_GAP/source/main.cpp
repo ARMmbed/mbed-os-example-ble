@@ -496,12 +496,16 @@ private:
             /* cancel the connect timeout since we connected */
             _event_queue.cancel(_on_duration_end_id);
 
+            /* we have to specify the disconnect call because of ambiguous overloads */
+            typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+            disconnect_call_t disconnect_call = &Gap::disconnect;
+
             _event_queue.call_in(
                 CONNECTION_DURATION,
                 &_ble.gap(),
-                &Gap::disconnect,
+                disconnect_call,
                 event.getConnectionHandle(),
-                Gap::REMOTE_USER_TERMINATED_CONNECTION
+                ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
             );
         } else {
             printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);

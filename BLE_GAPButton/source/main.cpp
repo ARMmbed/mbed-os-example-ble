@@ -31,11 +31,11 @@ public:
     GapButtonDemo(BLE& ble, events::EventQueue& event_queue) :
         _ble(ble),
         _event_queue(event_queue),
+        _led1(LED1, 0),
         /* We can arbiturarily choose the GAPButton service UUID to be 0xAA00
          * as long as it does not overlap with the UUIDs defined here:
          * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
         _button_uuid(0xAA00),
-        _led1(LED1, 0),
         _button(BLE_BUTTON_PIN_NAME),
         _adv_data_builder(_adv_buffer) { }
 
@@ -91,7 +91,7 @@ private:
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 

@@ -17,7 +17,7 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "ble/Gap.h"
+#include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
 #include "demo.h"
 
@@ -31,6 +31,7 @@ public:
         _ble(ble),
         _event_queue(event_queue),
         _led1(LED1, 1),
+        _connected(false),
         _hr_uuid(GattService::UUID_HEART_RATE_SERVICE),
         _hr_counter(100),
         _hr_service(ble, _hr_counter, HeartRateService::LOCATION_FINGER),
@@ -64,7 +65,7 @@ private:
         /* Create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::ADV_CONNECTABLE_UNDIRECTED,
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
@@ -106,7 +107,7 @@ private:
     }
 
     void update_sensor_value() {
-        if (_ble.gap().getState().connected) {
+        if (_connected) {
             // Do blocking calls or whatever is necessary for sensor polling.
             // In our case, we simply update the HRM measurement.
             _hr_counter++;
@@ -129,12 +130,21 @@ private:
 
     void onDisconnection(const ble::DisconnectionEvent&) {
         _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        _connected = false;
+    }
+
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event) {
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            _connected = true;
+        }
     }
 
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
     DigitalOut _led1;
+
+    bool _connected;
 
     UUID _hr_uuid;
 
@@ -153,7 +163,7 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
 int main()
 {
     BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
+    ble.onEventsToProcess(schedule_ble_events);
 
     HeartrateDemo demo(ble, event_queue);
     demo.start();

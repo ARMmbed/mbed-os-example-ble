@@ -99,7 +99,7 @@ public:
         _event_queue(event_queue),
         _led1(LED1, 0),
         _set_index(0),
-        _is_in_scanning_mode(false),
+        _is_in_scanning_mode(true),
         _is_connecting(false),
         _on_duration_end_id(0),
         _scan_count(0) {
@@ -414,6 +414,10 @@ private:
 
         /* don't bother with analysing scan result if we're already connecting */
         if (_is_connecting) {
+            return;
+        }
+
+        if (event.getRssi() < -65) {
             return;
         }
 

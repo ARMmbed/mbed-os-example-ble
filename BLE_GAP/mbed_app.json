@@ -11,6 +11,32 @@
         "DISCO_L475VG_IOT01A": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "MCU_NRF52832" : {
+            "target.extra_labels_add": [
+                "SOFTDEVICE_NONE",
+                "CORDIO",
+                "CORDIO_LL",
+                "NORDIC_CORDIO"
+            ],
+            "target.extra_labels_remove": [
+                "NORDIC_SOFTDEVICE",
+                "SOFTDEVICE_COMMON",
+                "SOFTDEVICE_S140_FULL"
+            ]
+        },
+        "MCU_NRF52840" : {
+            "target.extra_labels_add": [
+                "SOFTDEVICE_NONE",
+                "CORDIO",
+                "CORDIO_LL",
+                "NORDIC_CORDIO"
+            ],
+            "target.extra_labels_remove": [
+                "NORDIC_SOFTDEVICE",
+                "SOFTDEVICE_COMMON",
+                "SOFTDEVICE_S132_FULL"
+            ]
         }
     }
 }

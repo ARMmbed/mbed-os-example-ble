@@ -12,7 +12,7 @@
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
-        "MCU_NRF52832" : {
+        "MCU_NRF52840" : {
             "target.extra_labels_add": [
                 "SOFTDEVICE_NONE",
                 "CORDIO",
@@ -25,7 +25,7 @@
                 "SOFTDEVICE_S140_FULL"
             ]
         },
-        "MCU_NRF52840" : {
+        "MCU_NRF52_DK" : {
             "target.extra_labels_add": [
                 "SOFTDEVICE_NONE",
                 "CORDIO",

@@ -22,81 +22,135 @@
 
 DigitalOut led1(LED1, 1);
 
-const static char     DEVICE_NAME[]        = "Therm";
-static const uint16_t uuid16_list[]        = {GattService::UUID_HEALTH_THERMOMETER_SERVICE};
+const static char DEVICE_NAME[] = "Therm";
 
-static float                     currentTemperature   = 39.6;
-static HealthThermometerService *thermometerServicePtr;
+static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
-static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
+class BatteryDemo : ble::Gap::EventHandler {
+public:
+    BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
+        _ble(ble),
+        _event_queue(event_queue),
+        _thermometer_uuid(GattService::UUID_HEALTH_THERMOMETER_SERVICE),
+        _current_temperature(39.6),
+        _thermometer_service(NULL),
+        _adv_data_builder(_adv_buffer) { }
 
-/* Restart Advertising on disconnection*/
-void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *)
-{
-    BLE::Instance().gap().startAdvertising();
-}
+    void start() {
+        _ble.gap().setEventHandler(this);
 
-void updateSensorValue(void) {
-    /* Do blocking calls or whatever is necessary for sensor polling.
-       In our case, we simply update the Temperature measurement. */
-    currentTemperature = (currentTemperature + 0.1 > 43.0) ? 39.6 : currentTemperature + 0.1;
-    thermometerServicePtr->updateTemperature(currentTemperature);
-}
+        _ble.init(this, &BatteryDemo::on_init_complete);
 
-void periodicCallback(void)
-{
-    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+        _event_queue.call_every(500, this, &BatteryDemo::blink);
+        _event_queue.call_every(1000, this, &BatteryDemo::update_sensor_value);
 
-    if (BLE::Instance().gap().getState().connected) {
-        eventQueue.call(updateSensorValue);
-    }
-}
-
-void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
-{
-    BLE&        ble   = params->ble;
-    ble_error_t error = params->error;
-
-    if (error != BLE_ERROR_NONE) {
-        onBleInitError(ble, error);
-        return;
+        _event_queue.dispatch_forever();
     }
 
-    if (ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
-        return;
+private:
+    /** Callback triggered when the ble initialization process has finished */
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
+        if (params->error != BLE_ERROR_NONE) {
+            print_error(params->error, "Ble initialization failed.");
+            return;
+        }
+
+        print_mac_address();
+
+        /* Setup primary service. */
+        _thermometer_service = new HealthThermometerService(_ble, _current_temperature, HealthThermometerService::LOCATION_EAR);
+
+        start_advertising();
     }
 
-    ble.gap().onDisconnection(disconnectionCallback);
+    void start_advertising() {
+        /* Create advertising parameters and payload */
 
-    /* Setup primary service. */
-    thermometerServicePtr = new HealthThermometerService(ble, currentTemperature, HealthThermometerService::LOCATION_EAR);
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(1000))
+        );
 
-    /* setup advertising */
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::THERMOMETER_EAR);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* 1000ms */
-    ble.gap().startAdvertising();
+        _adv_data_builder.setFlags();
+        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_thermometer_uuid, 1));
+        _adv_data_builder.setAppearance(ble::adv_data_appearance_t::THERMOMETER_EAR);
+        _adv_data_builder.setName(DEVICE_NAME);
 
-    printMacAddress();
-}
+        /* Setup advertising */
 
-void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    BLE &ble = BLE::Instance();
-    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingParameters() failed");
+            return;
+        }
+
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+            return;
+        }
+
+        /* Start advertising */
+
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            print_error(error, "_ble.gap().startAdvertising() failed");
+            return;
+        }
+    }
+
+    void update_sensor_value() {
+        if (_ble.gap().getState().connected) {
+            _current_temperature = (_current_temperature + 0.1 > 43.0) ? 39.6 : _current_temperature + 0.1;
+            _thermometer_service->updateTemperature(_current_temperature);
+        }
+    }
+
+    void blink(void) {
+        led1 = !led1;
+    }
+
+private:
+    /* Event handler */
+
+    void onDisconnection(const ble::DisconnectionEvent&) {
+        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+    }
+
+private:
+    BLE &_ble;
+    events::EventQueue &_event_queue;
+
+    UUID _thermometer_uuid;
+
+    uint8_t _current_temperature;
+    HealthThermometerService *_thermometer_service;
+
+    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
+};
+
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.call_every(500, periodicCallback);
-
     BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
-    ble.init(bleInitComplete);
+    ble.onEventsToProcess(schedule_ble_events);
 
-    eventQueue.dispatch_forever();
+    BatteryDemo demo(ble, event_queue);
+    demo.start();
 
     return 0;
 }

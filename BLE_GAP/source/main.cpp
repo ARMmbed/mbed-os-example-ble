@@ -457,6 +457,8 @@ private:
                 );
                 connection_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
+                _ble.gap().stopScan();
+
                 error = _ble.gap().connect(
                     event.getPeerAddressType(),
                     event.getPeerAddress(),

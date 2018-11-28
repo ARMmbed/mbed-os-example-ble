@@ -102,7 +102,8 @@ public:
         _is_in_scanning_mode(true),
         _is_connecting(false),
         _on_duration_end_id(0),
-        _scan_count(0) {
+        _scan_count(0),
+        _blink_event(0) {
         for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
             _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
         }
@@ -134,7 +135,7 @@ public:
         }
 
         /* to show we're running we'll blink every 500ms */
-        _event_queue.call_every(500, this, &GapDemo::blink);
+        _blink_event = _event_queue.call_every(500, this, &GapDemo::blink);
 
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
@@ -605,6 +606,7 @@ private:
         }
 
         _ble.shutdown();
+        _event_queue.cancel(_blink_event);
         _event_queue.break_dispatch();
     }
 
@@ -691,6 +693,8 @@ private:
     /* Measure performance of our advertising/scanning */
     Timer               _demo_duration;
     size_t              _scan_count;
+
+    int                 _blink_event;
 
     ble::advertising_handle_t _adv_handles[ADV_SET_NUMBER];
 };

@@ -162,6 +162,13 @@ private:
     }
 
 private:
+    /* Event handler */
+
+    void onDisconnectionComplete(const ble::DisconnectionEvent&) {
+        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+    }
+
+private:
     BLE                &_ble;
     events::EventQueue &_event_queue;
 

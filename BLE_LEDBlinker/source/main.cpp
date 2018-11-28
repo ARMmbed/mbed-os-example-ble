@@ -130,7 +130,7 @@ private:
 private:
     /* Event handler */
 
-    void onDisconnection(const ble::DisconnectionEvent&) {
+    void onDisconnectionComplete(const ble::DisconnectionEvent&) {
         _ble.gap().startScan();
         _is_connecting = false;
     }

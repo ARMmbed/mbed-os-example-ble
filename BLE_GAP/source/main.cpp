@@ -514,7 +514,7 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it calls next_demo_mode() to progress the demo */
-    virtual void onDisconnection(const ble::DisconnectionEvent &event) {
+    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event) {
         printf("Disconnected\r\n");
 
         /* we have successfully disconnected ending the demo, move to next mode */

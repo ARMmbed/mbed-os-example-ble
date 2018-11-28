@@ -506,21 +506,21 @@ private:
             /* cancel the connect timeout since we connected */
             _event_queue.cancel(_on_duration_end_id);
 
-            /* we have to specify the disconnect call because of ambiguous overloads */
-            typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-            disconnect_call_t disconnect_call = &Gap::disconnect;
-
             _event_queue.call_in(
                 CONNECTION_DURATION,
-                &_ble.gap(),
-                disconnect_call,
-                event.getConnectionHandle(),
-                ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+                this,
+                &GapDemo::do_disconnect,
+                event.getConnectionHandle()
             );
         } else {
             printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
             _event_queue.call(this, &GapDemo::end_demo_mode);
         }
+    }
+
+    void do_disconnect(ble::connection_handle_t handle) {
+        printf("Disconnecting\r\n");
+        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
     }
 
     /** This is called by Gap to notify the application we disconnected,

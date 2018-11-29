@@ -687,11 +687,11 @@ private:
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */
         uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
-        uint16_t interval_ts = advertising_params[_set_index].min_interval.value();
+        uint16_t interval_ts = advertising_params[_set_index].max_interval.value();
         /* this is how many times we advertised */
         uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
 
-        printf("We have advertised for %dms with an interval of %d timeslots\r\n",
+        printf("We have advertised for %dms with an interval of at least %d timeslots\r\n",
             duration_ms, interval_ts);
 
         if (number_of_active_sets > 1) {

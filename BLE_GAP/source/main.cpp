@@ -405,39 +405,41 @@ private:
         while (adv_data.hasNext()) {
             ble::AdvertisingDataParser::element_t field = adv_data.next();
 
-            /* connect to a discoverable device */
-            if (field.type == ble::adv_data_type_t::FLAGS &&
-                field.value.size() == 1 &&
-                (field.value[0] & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
-
-                /* abort timeout as the mode will end on disconnection */
-                _event_queue.cancel(_on_duration_end_id);
-
-                printf("We found a connectable device\r\n");
-
-                ble::ConnectionParameters connection_params;
-
-                ble_error_t error = _ble.gap().connect(
-                    event.getPeerAddressType(),
-                    event.getPeerAddress(),
-                    connection_params
-                );
-
-                if (error) {
-                    print_error(error, "Error caused by Gap::connect");
-                    /* since no connection will be attempted end the mode */
-                    _event_queue.call(this, &GapDemo::end_demo_mode);
-                    return;
-                }
-
-                /* we may have already scan events waiting
-                 * to be processed so we need to remember
-                 * that we are already connecting and ignore them */
-                _is_connecting = true;
-
-                return;
-
+            /* skip non discoverable device */
+            if (field.type != ble::adv_data_type_t::FLAGS ||
+                field.value.size() != 1 ||
+                !(field.value[0] & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+                continue;
             }
+
+            /* connect to a discoverable device */
+
+            /* abort timeout as the mode will end on disconnection */
+            _event_queue.cancel(_on_duration_end_id);
+
+            printf("We found a connectable device\r\n");
+
+            ble::ConnectionParameters connection_params;
+
+            ble_error_t error = _ble.gap().connect(
+                event.getPeerAddressType(),
+                event.getPeerAddress(),
+                connection_params
+            );
+
+            if (error) {
+                print_error(error, "Error caused by Gap::connect");
+                /* since no connection will be attempted end the mode */
+                _event_queue.call(this, &GapDemo::end_demo_mode);
+                return;
+            }
+
+            /* we may have already scan events waiting
+             * to be processed so we need to remember
+             * that we are already connecting and ignore them */
+            _is_connecting = true;
+
+            return;
         }
     }
 

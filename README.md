@@ -29,7 +29,6 @@ Targets for BLE
 The following targets have been tested and work with these examples:
 
 * Nordic:
-	* NRF51_DK
 	* NRF52_DK
 
 * Boards with an ST shield plugged in:
@@ -40,6 +39,11 @@ The following targets have been tested and work with these examples:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+    
+The following board is no longer supported:
+	* NRF51_DK
+    
+You may use the deprecated examples located in "deprecated" folder in each of the examples.
 
 ### Using ST Nucleo shield on other targets
 

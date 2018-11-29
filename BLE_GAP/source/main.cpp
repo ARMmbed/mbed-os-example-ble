@@ -156,11 +156,13 @@ private:
         print_mac_address();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+        if (_ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY)) {
+            ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
-        ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
-        if (error) {
-            print_error(error, "GAP::setPreferedPhys failed");
+            ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
+            if (error) {
+                print_error(error, "GAP::setPreferedPhys failed");
+            }
         }
 
         /* all calls are serialised on the user thread through the event queue */

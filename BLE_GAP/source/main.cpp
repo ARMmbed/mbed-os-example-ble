@@ -399,11 +399,11 @@ private:
             return;
         }
 
-        ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
+        ble::AdvertisingDataParser adv_parser(event.getAdvertisingData());
 
         /* parse the advertising payload, looking for a discoverable device */
-        while (adv_data.hasNext()) {
-            ble::AdvertisingDataParser::element_t field = adv_data.next();
+        while (adv_parser.hasNext()) {
+            ble::AdvertisingDataParser::element_t field = adv_parser.next();
 
             /* skip non discoverable device */
             if (field.type != ble::adv_data_type_t::FLAGS ||

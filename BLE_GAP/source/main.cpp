@@ -207,7 +207,6 @@ private:
             interval,
             interval
         );
-        adv_parameters.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
         /* this is the memory backing for the payload */
         uint8_t adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
@@ -334,7 +333,6 @@ private:
 
         /* set the scanning parameters according to currently selected set */
         ble::ScanParameters params(ble::phy_t::LE_1M, interval, window, active);
-        params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
         ble_error_t error = _ble.gap().setScanParameters(params);
 
@@ -461,7 +459,6 @@ private:
                     ble::slave_latency_t(0),
                     ble::supervision_timeout_t(100)
                 );
-                connection_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
                 error = _ble.gap().connect(
                     event.getPeerAddressType(),

@@ -130,7 +130,6 @@ public:
         _ble.gap().setEventHandler(this);
 
         ble_error_t error = _ble.init(this, &GapDemo::on_init_complete);
-
         if (error) {
             print_error(error, "Error returned by BLE::init");
             return;
@@ -155,10 +154,10 @@ private:
         print_mac_address();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        if (_ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY)) {
+        if (is_2m_phy_supported()) {
             ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
-            ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
+            ble_error_t error = _ble.gap().setPreferredPhys(/* tx */&phys, /* rx */&phys);
             if (error) {
                 print_error(error, "GAP::setPreferedPhys failed");
             }
@@ -251,7 +250,7 @@ private:
             adv_params.type.value(),
             adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
 
-        if (_ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING)) {
+        if (is_extended_advertising_supported()) {
             advertise_extended();
         }
     }
@@ -394,10 +393,23 @@ private:
         _event_queue.call(this, &GapDemo::next_demo_mode);
     }
 
-    void do_disconnect(ble::connection_handle_t handle) {
+    /** Execute the disconnection */
+    void do_disconnect(ble::connection_handle_t handle)
+    {
         printf("Disconnecting\r\n");
         _ble.gap().disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
     }
+
+    bool is_2m_phy_supported()
+    {
+        return _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY);
+    }
+
+    bool is_extended_advertising_supported()
+    {
+        return _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING);
+    }
+
 
 private:
     /* Gap::EventHandler */

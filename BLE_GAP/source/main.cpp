@@ -98,6 +98,7 @@ class GapDemo : private mbed::NonCopyable<GapDemo>, public ble::Gap::EventHandle
 public:
     GapDemo(BLE& ble, events::EventQueue& event_queue) :
         _ble(ble),
+        _gap(ble.gap()),
         _event_queue(event_queue),
         _led1(LED1, 0),
         _set_index(0),
@@ -127,7 +128,7 @@ public:
         }
 
         /* handle gap events */
-        _ble.gap().setEventHandler(this);
+        _gap.setEventHandler(this);
 
         ble_error_t error = _ble.init(this, &GapDemo::on_init_complete);
         if (error) {
@@ -157,7 +158,7 @@ private:
         if (is_2m_phy_supported()) {
             ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
-            ble_error_t error = _ble.gap().setPreferredPhys(/* tx */&phys, /* rx */&phys);
+            ble_error_t error = _gap.setPreferredPhys(/* tx */&phys, /* rx */&phys);
             if (error) {
                 print_error(error, "GAP::setPreferedPhys failed");
             }
@@ -213,7 +214,7 @@ private:
          * on Bluetooth 4 and Bluetooth 5 system. It is created at startup and
          * its lifecycle is managed by the system.
          */
-        ble_error_t error = _ble.gap().setAdvertisingParameters(
+        ble_error_t error = _gap.setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
             ble::AdvertisingParameters(
                 adv_params.type,
@@ -229,7 +230,7 @@ private:
         /* Set payload for the set */
         /* Use the simple builder to construct the payload; it fails at runtime
          * if there is not enough space left in the buffer */
-        error = _ble.gap().setAdvertisingPayload(
+        error = _gap.setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
             ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
                 .setFlags()
@@ -242,7 +243,7 @@ private:
         }
 
         /* Start advertising the set */
-        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        error = _gap.startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
         if (error) {
             print_error(error, "Gap::startAdvertising() failed");
             return;
@@ -266,7 +267,7 @@ private:
 
         /* how many sets */
         uint8_t max_adv_set = std::min(
-            _ble.gap().getMaxAdvertisingSetNumber(),
+            _gap.getMaxAdvertisingSetNumber(),
             (uint8_t) size(_adv_handles)
         );
 
@@ -277,7 +278,7 @@ private:
 
         /* how much payload in a set */
         uint16_t max_adv_size = std::min(
-            (uint16_t) _ble.gap().getMaxAdvertisingDataLength(),
+            (uint16_t) _gap.getMaxAdvertisingDataLength(),
             MAX_ADVERTISING_PAYLOAD_SIZE
         );
 
@@ -285,7 +286,7 @@ private:
         for (uint8_t i = 0; i < (max_adv_set - 1); ++i) {
             /* create the advertising set with its parameter */
             /* this time we do not use legacy PDUs */
-            ble_error_t error = _ble.gap().createAdvertisingSet(
+            ble_error_t error = _gap.createAdvertisingSet(
                 &_adv_handles[i],
                 ble::AdvertisingParameters(
                     adv_params.type,
@@ -322,7 +323,7 @@ private:
             }
 
             /* Set payload for the set */
-            error = _ble.gap().setAdvertisingPayload(
+            error = _gap.setAdvertisingPayload(
                 _adv_handles[i],
                 adv_data_builder.getAdvertisingData()
             );
@@ -332,7 +333,7 @@ private:
             }
 
             /* Start advertising the set */
-            error = _ble.gap().startAdvertising(_adv_handles[i]);
+            error = _gap.startAdvertising(_adv_handles[i]);
             if (error) {
                 print_error(error, "Gap::startAdvertising() failed");
                 return;
@@ -356,7 +357,7 @@ private:
          * If the scanning process is active, the local device sends scan requests
          * to discovered peer to get additional data.
          */
-        ble_error_t error = _ble.gap().setScanParameters(
+        ble_error_t error = _gap.setScanParameters(
             ble::ScanParameters(
                 ble::phy_t::LE_1M,   // scan on the 1M PHY
                 scan_params.interval,
@@ -371,7 +372,7 @@ private:
 
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
-        error = _ble.gap().startScan(
+        error = _gap.startScan(
             ble::duplicates_filter_t::DISABLE,
             scan_params.duration
         );
@@ -401,17 +402,17 @@ private:
     void do_disconnect(ble::connection_handle_t handle)
     {
         printf("Disconnecting\r\n");
-        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+        _gap.disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
     }
 
     bool is_2m_phy_supported()
     {
-        return _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY);
+        return _gap.isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY);
     }
 
     bool is_extended_advertising_supported()
     {
-        return _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING);
+        return _gap.isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING);
     }
 
 
@@ -453,7 +454,7 @@ private:
             _event_queue.cancel(_on_duration_end_id);
 
             printf("We found a connectable device\r\n");
-            ble_error_t error = _ble.gap().connect(
+            ble_error_t error = _gap.connect(
                 event.getPeerAddressType(),
                 event.getPeerAddress(),
                 ble::ConnectionParameters() // use the default connection parameters
@@ -599,7 +600,7 @@ private:
     void end_scanning_mode()
     {
         print_scanning_performance();
-        ble_error_t error = _ble.gap().stopScan();
+        ble_error_t error = _gap.stopScan();
 
         if (error) {
             print_error(error, "Error caused by Gap::stopScan");
@@ -610,7 +611,7 @@ private:
     {
         print_advertising_performance();
 
-        _ble.gap().stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        _gap.stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (is_extended_advertising_supported()) {
             end_extended_advertising();
@@ -627,15 +628,15 @@ private:
             }
 
             /* if it's still active, stop it */
-            if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
-                ble_error_t error = _ble.gap().stopAdvertising(_adv_handles[i]);
+            if (_gap.isAdvertisingActive(_adv_handles[i])) {
+                ble_error_t error = _gap.stopAdvertising(_adv_handles[i]);
                 if (error) {
                     print_error(error, "Error caused by Gap::stopAdvertising");
                     continue;
                 }
             }
 
-            ble_error_t error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
+            ble_error_t error = _gap.destroyAdvertisingSet(_adv_handles[i]);
             if (error) {
                 print_error(error, "Error caused by Gap::destroyAdvertisingSet");
                 continue;
@@ -677,7 +678,7 @@ private:
 
         for (uint8_t i = 0; i < size(_adv_handles); ++i) {
             if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
-                if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                if (_gap.isAdvertisingActive(_adv_handles[i])) {
                     number_of_active_sets++;
                 }
             }
@@ -714,6 +715,7 @@ private:
 
 private:
     BLE                &_ble;
+    ble::Gap           &_gap;
     events::EventQueue &_event_queue;
     DigitalOut          _led1;
 

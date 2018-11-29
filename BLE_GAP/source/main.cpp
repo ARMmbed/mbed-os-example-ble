@@ -284,7 +284,7 @@ private:
             error = adv_data_builder.setName(DEVICE_NAME);
 
             if (error) {
-                print_error(error, "Gap::setName() failed");
+                print_error(error, "AdvertisingDataBuilder::setName() failed");
                 return;
             }
 

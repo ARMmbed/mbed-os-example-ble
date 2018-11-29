@@ -270,6 +270,11 @@ private:
             (uint8_t) size(_adv_handles)
         );
 
+        /* one advertising set is reserved for legacy advertising */
+        if (max_adv_set < 2) {
+            return;
+        }
+
         /* how much payload in a set */
         uint16_t max_adv_size = std::min(
             (uint16_t) _ble.gap().getMaxAdvertisingDataLength(),
@@ -309,7 +314,7 @@ private:
             /* set different name for each set */
             MBED_ASSERT(i < 9);
             char device_name[] = "Advertiser x";
-            sprintf(device_name, "Advertiser %d", i%10);
+            snprintf(device_name, size(device_name), "Advertiser %d", i%10);
             error = adv_data_builder.setName(device_name);
             if (error) {
                 print_error(error, "AdvertisingDataBuilder::setName() failed");

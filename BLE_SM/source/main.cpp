@@ -39,7 +39,11 @@
  *  progress.
  */
 
-static const uint8_t DEVICE_NAME[] = "SM_device";
+static const char DEVICE_NAME[] = "SM_device";
+
+/* we have to specify the disconnect call because of ambiguous overloads */
+typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+const static disconnect_call_t disconnect_call = &Gap::disconnect;
 
 /* for demonstration purposes we will store the peer device address
  * of the device that connects to us in the first demonstration
@@ -94,11 +98,6 @@ public:
         /* handle gap events */
         _ble.gap().setEventHandler(this);
 
-        /* handle timeouts, for example when connection attempts fail */
-        _ble.gap().onTimeout(
-            makeFunctionPointer(this, &SMDevice::on_timeout)
-        );
-
         error = _ble.init(this, &SMDevice::on_init_complete);
 
         if (error) {
@@ -109,51 +108,6 @@ public:
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
     };
-
-    /* event handler functions */
-
-    /** Respond to a pairing request. This will be called by the stack
-     * when a pairing request arrives and expects the application to
-     * call acceptPairingRequest or cancelPairingRequest */
-    virtual void pairingRequest(
-        ble::connection_handle_t connectionHandle
-    ) {
-        printf("Pairing requested - authorising\r\n");
-        _ble.securityManager().acceptPairingRequest(connectionHandle);
-    }
-
-    /** Inform the application of a successful pairing. Terminate the demonstration. */
-    virtual void pairingResult(
-        ble::connection_handle_t connectionHandle,
-        SecurityManager::SecurityCompletionStatus_t result
-    ) {
-        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
-            printf("Pairing successful\r\n");
-        } else {
-            printf("Pairing failed\r\n");
-        }
-    }
-
-    /** Inform the application of change in encryption status. This will be
-     * communicated through the serial port */
-    virtual void linkEncryptionResult(
-        ble::connection_handle_t connectionHandle,
-        ble::link_encryption_t result
-    ) {
-        if (result == ble::link_encryption_t::ENCRYPTED) {
-            printf("Link ENCRYPTED\r\n");
-        } else if (result == ble::link_encryption_t::ENCRYPTED_WITH_MITM) {
-            printf("Link ENCRYPTED_WITH_MITM\r\n");
-        } else if (result == ble::link_encryption_t::NOT_ENCRYPTED) {
-            printf("Link NOT_ENCRYPTED\r\n");
-        }
-
-        /* disconnect in 2 s */
-        _event_queue.call_in(
-            2000, &_ble.gap(),
-            &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
-        );
-    }
 
 private:
     /** Override to start chosen activity when initialisation completes */
@@ -222,31 +176,17 @@ private:
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
 
+        /* gap events also handled by this class */
+        _ble.gap().setEventHandler(this);
+
         /* print device address */
         Gap::AddressType_t addr_type;
         Gap::Address_t addr;
         _ble.gap().getAddress(&addr_type, addr);
-        printf("Device address: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
-               addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+        print_address(addr);
 
         /* start test in 500 ms */
         _event_queue.call_in(500, this, &SMDevice::start);
-    };
-
-    /** This is called by Gap to notify the application we disconnected,
-     *  in our case it ends the demonstration. */
-    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &) {
-    {
-        printf("Diconnected\r\n");
-        _event_queue.break_dispatch();
-    };
-
-    /** End demonstration unexpectedly. Called if timeout is reached during advertising,
-     * scanning or connection initiation */
-    void on_timeout(const Gap::TimeoutSource_t source)
-    {
-        printf("Unexpected timeout - aborting\r\n");
-        _event_queue.break_dispatch();
     };
 
     /** Schedule processing of events from the BLE in the event queue. */
@@ -260,6 +200,75 @@ private:
     {
         _led1 = !_led1;
     };
+
+private:
+    /* Event handler */
+
+    /** Respond to a pairing request. This will be called by the stack
+     * when a pairing request arrives and expects the application to
+     * call acceptPairingRequest or cancelPairingRequest */
+    virtual void pairingRequest(
+        ble::connection_handle_t connectionHandle
+    ) {
+        printf("Pairing requested - authorising\r\n");
+        _ble.securityManager().acceptPairingRequest(connectionHandle);
+    }
+
+    /** Inform the application of a successful pairing. Terminate the demonstration. */
+    virtual void pairingResult(
+        ble::connection_handle_t connectionHandle,
+        SecurityManager::SecurityCompletionStatus_t result
+    ) {
+        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
+            printf("Pairing successful\r\n");
+        } else {
+            printf("Pairing failed\r\n");
+        }
+    }
+
+    /** Inform the application of change in encryption status. This will be
+     * communicated through the serial port */
+    virtual void linkEncryptionResult(
+        ble::connection_handle_t connectionHandle,
+        ble::link_encryption_t result
+    ) {
+        if (result == ble::link_encryption_t::ENCRYPTED) {
+            printf("Link ENCRYPTED\r\n");
+        } else if (result == ble::link_encryption_t::ENCRYPTED_WITH_MITM) {
+            printf("Link ENCRYPTED_WITH_MITM\r\n");
+        } else if (result == ble::link_encryption_t::NOT_ENCRYPTED) {
+            printf("Link NOT_ENCRYPTED\r\n");
+        }
+
+        /* disconnect in 2 s */
+        _event_queue.call_in(
+            2000,
+            &_ble.gap(),
+            disconnect_call,
+            _handle,
+            ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+        );
+    }
+
+    /** This is called by Gap to notify the application we disconnected,
+     *  in our case it ends the demonstration. */
+    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &)
+    {
+        printf("Diconnected\r\n");
+        _event_queue.break_dispatch();
+    };
+
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &)
+    {
+        printf("Advertising timed out - aborting\r\n");
+        _event_queue.break_dispatch();
+    }
+
+    virtual void onScanTimeout(const ble::ScanTimeoutEvent &)
+    {
+        printf("Scan timed out - aborting\r\n");
+        _event_queue.break_dispatch();
+    }
 
 private:
     DigitalOut _led1;
@@ -282,39 +291,45 @@ public:
     virtual void start()
     {
         /* Set up and start advertising */
-
-        ble_error_t error;
-        GapAdvertisingData advertising_data;
-
-        /* add advertising flags */
-        advertising_data.addFlags(GapAdvertisingData::LE_GENERAL_DISCOVERABLE
-                                  | GapAdvertisingData::BREDR_NOT_SUPPORTED);
-
-        /* add device name */
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            DEVICE_NAME,
-            sizeof(DEVICE_NAME)
+        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+        /* use the helper to build the payload */
+        ble::AdvertisingDataBuilder adv_data_builder(
+            adv_buffer
         );
 
-        error = _ble.gap().setAdvertisingPayload(advertising_data);
+        adv_data_builder.setFlags();
+        adv_data_builder.setName(DEVICE_NAME);
+
+        /* Set payload for the set */
+        ble_error_t error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_data_builder.getAdvertisingData()
+        );
 
         if (error) {
-            printf("Error during Gap::setAdvertisingPayload\r\n");
+            print_error(error, "Gap::setAdvertisingPayload() failed");
+            _event_queue.break_dispatch();
             return;
         }
 
-        /* advertise to everyone */
-        _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-        /* how many milliseconds between advertisements, lower interval
-         * increases the chances of being seen at the cost of more power */
-        _ble.gap().setAdvertisingInterval(20);
-        _ble.gap().setAdvertisingTimeout(0);
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED
+        );
 
-        error = _ble.gap().startAdvertising();
+        error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
 
         if (error) {
-            printf("Error during Gap::startAdvertising.\r\n");
+            print_error(error, "Gap::setAdvertisingParameters() failed");
+            return;
+        }
+
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            print_error(error, "Gap::startAdvertising() failed");
             return;
         }
 
@@ -335,7 +350,7 @@ public:
 
         /* remember the device that connects to us now so we can connect to it
          * during the next demonstration */
-        memcpy(_peer_address, connection_event->peerAddr, sizeof(_peer_address));
+        memcpy(_peer_address, event.getPeerAddress().data(), sizeof(_peer_address));
 
         printf("Connected to peer: ");
         print_address(event.getPeerAddress().data());
@@ -367,44 +382,69 @@ public:
 
     virtual void start()
     {
-        /* start scanning and attach a callback that will handle advertisements
-         * and scan requests responses */
-        ble_error_t error = _ble.gap().startScan(this, &SMDeviceCentral::on_scan);
+        ble::ScanParameters params;
+        ble_error_t error = _ble.gap().setScanParameters(params);
+
+        if (error) {
+            print_error(error, "Error in Gap::startScan %d\r\n");
+            return;
+        }
+
+        /* start scanning, results will be handled by onAdvertisingReport */
+        error = _ble.gap().startScan();
+
+        if (error) {
+            print_error(error, "Error in Gap::startScan %d\r\n");
+            return;
+        }
 
         printf("Please advertise\r\n");
 
-        printf("Scanning for: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
-               _peer_address[5], _peer_address[4], _peer_address[3],
-               _peer_address[2], _peer_address[1], _peer_address[0]);
-
-        if (error) {
-            printf("Error during Gap::startScan %d\r\n", error);
-            return;
-        }
+        printf("Scanning for: ");
+        print_address(_peer_address);
     }
 
+private:
+    /* Gap::EventHandler */
+
     /** Look at scan payload to find a peer device and connect to it */
-    void on_scan(const Gap::AdvertisementCallbackParams_t *params)
+    virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
     {
         /* don't bother with analysing scan result if we're already connecting */
         if (_is_connecting) {
             return;
         }
 
-        /* connect to the same device that connected to us */
-        if (memcmp(params->peerAddr, _peer_address, sizeof(_peer_address)) == 0) {
-
-            ble_error_t error = _ble.gap().connect(
-                params->peerAddr, params->peerAddrType,
-                NULL, NULL
-            );
+        /* parse the advertising payload, looking for a discoverable device */
+        if (memcmp(event.getPeerAddress().data(), _peer_address, sizeof(_peer_address)) == 0) {
+            ble_error_t error = _ble.gap().stopScan();
 
             if (error) {
-                printf("Error during Gap::connect %d\r\n", error);
+                print_error(error, "Error caused by Gap::stopScan");
                 return;
             }
 
-            printf("Connecting... ");
+            ble::ConnectionParameters connection_params(
+                ble::phy_t::LE_1M,
+                ble::scan_interval_t(50),
+                ble::scan_window_t(50),
+                ble::conn_interval_t(50),
+                ble::conn_interval_t(100),
+                ble::slave_latency_t(0),
+                ble::supervision_timeout_t(100)
+            );
+            connection_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
+
+            error = _ble.gap().connect(
+                event.getPeerAddressType(),
+                event.getPeerAddress(),
+                connection_params
+            );
+
+            if (error) {
+                print_error(error, "Error caused by Gap::connect");
+                return;
+            }
 
             /* we may have already scan events waiting
              * to be processed so we need to remember
@@ -413,28 +453,36 @@ public:
 
             return;
         }
-    };
+    }
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately request pairing */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        ble_error_t error;
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            /* store the handle for future Security Manager requests */
+            _handle = event.getConnectionHandle();
 
-        /* store the handle for future Security Manager requests */
-        _handle = connection_event->handle;
+            printf("Connected\r\n");
 
-        /* in this example the local device is the master so we request pairing */
-        error = _ble.securityManager().requestPairing(_handle);
+            /* in this example the local device is the master so we request pairing */
+            ble_error_t error = _ble.securityManager().requestPairing(_handle);
 
-        printf("Connected\r\n");
+             if (error) {
+                 printf("Error during SM::requestPairing %d\r\n", error);
+                 return;
+             }
 
-        if (error) {
-            printf("Error during SM::requestPairing %d\r\n", error);
-            return;
+            /* upon pairing success the application will disconnect */
         }
 
-        /* upon pairing success the application will disconnect */
+        /* failed to connect - restart scan */
+        ble_error_t error = _ble.gap().startScan();
+
+        if (error) {
+            print_error(error, "Error in Gap::startScan %d\r\n");
+            return;
+        }
     };
 };
 

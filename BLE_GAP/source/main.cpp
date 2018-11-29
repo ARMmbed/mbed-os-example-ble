@@ -406,6 +406,11 @@ private:
         _event_queue.call(this, &GapDemo::next_demo_mode);
     }
 
+    void do_disconnect(ble::connection_handle_t handle) {
+        printf("Disconnecting\r\n");
+        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+    }
+
 private:
     /* Gap::EventHandler */
 
@@ -517,11 +522,6 @@ private:
             printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
             _event_queue.call(this, &GapDemo::end_demo_mode);
         }
-    }
-
-    void do_disconnect(ble::connection_handle_t handle) {
-        printf("Disconnecting\r\n");
-        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
     }
 
     /** This is called by Gap to notify the application we disconnected,

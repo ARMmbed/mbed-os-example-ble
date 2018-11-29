@@ -156,7 +156,7 @@ private:
         print_mac_address();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        Gap::PhySet_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
+        ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
         ble_error_t error = _ble.gap().setPreferredPhys(&phys, &phys);
         if (error) {
@@ -496,9 +496,9 @@ private:
      */
     virtual void onReadPhy(
         ble_error_t error,
-        Gap::Handle_t connectionHandle,
-        Gap::Phy_t txPhy,
-        Gap::Phy_t rxPhy
+        ble::connection_handle_t connectionHandle,
+        ble::phy_t txPhy,
+        ble::phy_t rxPhy
     ) {
         if (error) {
             printf(
@@ -521,9 +521,9 @@ private:
      */
     virtual void onPhyUpdateComplete(
         ble_error_t error,
-        Gap::Handle_t connectionHandle,
-        Gap::Phy_t txPhy,
-        Gap::Phy_t rxPhy
+        ble::connection_handle_t connectionHandle,
+        ble::phy_t txPhy,
+        ble::phy_t rxPhy
     ) {
         if (error) {
             printf(
@@ -556,7 +556,7 @@ private:
 
         /* switch between advertising and scanning when we go
          * through all the params in the array */
-        if (_set_index >= (_is_in_scanning_mode? size(scanning_params) : size(advertising_params))) {
+        if (_set_index >= (_is_in_scanning_mode ? size(scanning_params) : size(advertising_params))) {
             _set_index = 0;
             _is_in_scanning_mode = !_is_in_scanning_mode;
         }

@@ -85,9 +85,12 @@ static const DemoScanParam_t scanning_params[] = {
     { ble::scan_interval_t(500),  ble::scan_window_t(10),   ble::scan_duration_t(0), false }
 };
 
-/* get number of items in our arrays */
-static const size_t SCAN_PARAM_SET_MAX = sizeof(scanning_params) / sizeof(DemoScanParam_t);
-static const size_t ADV_PARAM_SET_MAX = sizeof(advertising_params) / sizeof(DemoAdvParams_t);
+/* helper that gets the number of items in arrays */
+template<class T, size_t N>
+size_t size(const T (&)[N])
+{
+    return N;
+}
 
 /** Demonstrate advertising, scanning and connecting
  */
@@ -553,7 +556,7 @@ private:
 
         /* switch between advertising and scanning when we go
          * through all the params in the array */
-        if (_set_index >= (_is_in_scanning_mode? SCAN_PARAM_SET_MAX : ADV_PARAM_SET_MAX)) {
+        if (_set_index >= (_is_in_scanning_mode? size(scanning_params) : size(advertising_params))) {
             _set_index = 0;
             _is_in_scanning_mode = !_is_in_scanning_mode;
         }

@@ -228,6 +228,7 @@ private:
 
         /* Set payload for the set */
         /* Use the simple builder to construct the payload; it fails at runtime
+         * if there is not enough space left in the buffer */
         error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
             ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
@@ -276,7 +277,6 @@ private:
         );
 
         /* create and start all requested (and possible) advertising sets */
-        /* Note: one advertising is reserved for legacy advertising (max_adv_set - 1) */
         for (uint8_t i = 0; i < (max_adv_set - 1); ++i) {
             /* create the advertising set with its parameter */
             /* this time we do not use legacy PDUs */
@@ -327,9 +327,7 @@ private:
             }
 
             /* Start advertising the set */
-            error = _ble.gap().startAdvertising(
-                _adv_handles[i]
-            );
+            error = _ble.gap().startAdvertising(_adv_handles[i]);
             if (error) {
                 print_error(error, "Gap::startAdvertising() failed");
                 return;
@@ -466,7 +464,6 @@ private:
              * to be processed so we need to remember
              * that we are already connecting and ignore them */
             _is_connecting = true;
-
             return;
         }
     }

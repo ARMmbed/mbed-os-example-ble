@@ -418,13 +418,10 @@ private:
             _event_queue.cancel(_on_duration_end_id);
 
             printf("We found a connectable device\r\n");
-
-            ble::ConnectionParameters connection_params;
-
             ble_error_t error = _ble.gap().connect(
                 event.getPeerAddressType(),
                 event.getPeerAddress(),
-                connection_params
+                ble::ConnectionParameters() // use the default connection parameters
             );
 
             if (error) {

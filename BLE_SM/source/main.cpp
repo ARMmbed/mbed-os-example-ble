@@ -53,7 +53,8 @@ static BLEProtocol::AddressBytes_t peer_address;
  *  your application is interested in.
  */
 class SMDevice : private mbed::NonCopyable<SMDevice>,
-                 public SecurityManager::EventHandler
+                 public SecurityManager::EventHandler,
+                 public ble::Gap::EventHandler
 {
 public:
     SMDevice(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address) :
@@ -89,6 +90,9 @@ public:
         _ble.onEventsToProcess(
             makeFunctionPointer(this, &SMDevice::schedule_ble_events)
         );
+
+        /* handle gap events */
+        _ble.gap().setEventHandler(this);
 
         /* handle timeouts, for example when connection attempts fail */
         _ble.gap().onTimeout(
@@ -225,21 +229,13 @@ private:
         printf("Device address: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
                addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 
-        /* when scanning we want to connect to a peer device so we need to
-         * attach callbacks that are used by Gap to notify us of events */
-        _ble.gap().onConnection(this, &SMDevice::on_connect);
-        _ble.gap().onDisconnection(this, &SMDevice::on_disconnect);
-
         /* start test in 500 ms */
         _event_queue.call_in(500, this, &SMDevice::start);
     };
 
-    /** This is called by Gap to notify the application we connected */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event) = 0;
-
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it ends the demonstration. */
-    void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
+    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &) {
     {
         printf("Diconnected\r\n");
         _event_queue.break_dispatch();
@@ -333,7 +329,7 @@ public:
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately requests a change in link security */
-    virtual void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
         ble_error_t error;
 
@@ -341,12 +337,10 @@ public:
          * during the next demonstration */
         memcpy(_peer_address, connection_event->peerAddr, sizeof(_peer_address));
 
-        printf("Connected to: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
-                _peer_address[5], _peer_address[4], _peer_address[3],
-                _peer_address[2], _peer_address[1], _peer_address[0]);
+        printf("Connected to peer: ");
+        print_address(event.getPeerAddress().data());
 
-        /* store the handle for future Security Manager requests */
-        _handle = connection_event->handle;
+        _handle = event.getConnectionHandle();
 
         /* Request a change in link security. This will be done
          * indirectly by asking the master of the connection to

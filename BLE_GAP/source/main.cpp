@@ -227,6 +227,7 @@ private:
         }
 
         /* Set payload for the set */
+        /* Use the simple builder to construct the payload; it fails at runtime
         error = _ble.gap().setAdvertisingPayload(
             ble::LEGACY_ADVERTISING_HANDLE,
             ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
@@ -509,7 +510,8 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it calls next_demo_mode() to progress the demo */
-    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event) {
+    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event)
+    {
         printf("Disconnected\r\n");
 
         /* we have successfully disconnected ending the demo, move to next mode */
@@ -605,30 +607,39 @@ private:
     void end_advertising_mode()
     {
         print_advertising_performance();
-        /* go through all the created advertising sets to shut them down and remove them */
+
+        _ble.gap().stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (is_extended_advertising_supported()) {
+            end_extended_advertising();
+        }
+    }
+
+    void end_extended_advertising()
+    {
+        /* iterate over the advertising handles */
         for (uint8_t i = 0; i < size(_adv_handles); ++i) {
             /* check if the set has been sucesfully created */
-            if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
-                /* if it's still active, stop it */
-                if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
-                    ble_error_t error = _ble.gap().stopAdvertising(_adv_handles[i]);
+            if (_adv_handles[i] == ble::INVALID_ADVERTISING_HANDLE) {
+                continue;
+            }
 
-                    if (error) {
-                        print_error(error, "Error caused by Gap::stopAdvertising");
-                        return;
-                    }
-                }
-                /* you cannot destroy or create the legacy advertising set,
-                 * it's always available, others may be removed when no longer needed */
-                if (_adv_handles[i] != ble::LEGACY_ADVERTISING_HANDLE) {
-                    ble_error_t error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
-
-                    if (error) {
-                        print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-                        return;
-                    }
+            /* if it's still active, stop it */
+            if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                ble_error_t error = _ble.gap().stopAdvertising(_adv_handles[i]);
+                if (error) {
+                    print_error(error, "Error caused by Gap::stopAdvertising");
+                    continue;
                 }
             }
+
+            ble_error_t error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
+            if (error) {
+                print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+                continue;
+            }
+
+            _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
         }
     }
 

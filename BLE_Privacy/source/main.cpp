@@ -42,7 +42,7 @@ static const char DEVICE_NAME[] = "Privacy";
 
 /* we have to specify the disconnect call because of ambiguous overloads */
 typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-disconnect_call_t disconnect_call = &Gap::disconnect;
+const static disconnect_call_t disconnect_call = &Gap::disconnect;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -140,6 +140,9 @@ public:
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
         _ble.securityManager().setSecurityManagerEventHandler(this);
+
+        /* gap events also handled by this class */
+        _ble.gap().setEventHandler(this);
 
         /* privacy */
 

@@ -20,6 +20,7 @@
 #include "SecurityManager.h"
 #include <algorithm>
 #include "demo.h"
+#include "ble/gap/AdvertisingDataParser.h"
 
 /** This example demonstrates privacy features in Gap. It shows how to use
  *  private addresses when advertising and connecting and how filtering ties
@@ -37,7 +38,11 @@
  *  turn on filtering based on stored IRKs.
  */
 
-static const uint8_t DEVICE_NAME[] = "Privacy";
+static const char DEVICE_NAME[] = "Privacy";
+
+/* we have to specify the disconnect call because of ambiguous overloads */
+typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+disconnect_call_t disconnect_call = &Gap::disconnect;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -46,7 +51,8 @@ static const uint8_t DEVICE_NAME[] = "Privacy";
  *  your application is interested in.
  */
 class PrivacyDevice : private mbed::NonCopyable<PrivacyDevice>,
-                      public SecurityManager::EventHandler
+                      public SecurityManager::EventHandler,
+                      public ble::Gap::EventHandler
 {
 public:
     PrivacyDevice(BLE &ble, events::EventQueue &event_queue) :
@@ -72,6 +78,9 @@ public:
             makeFunctionPointer(this, &PrivacyDevice::schedule_ble_events)
         );
 
+        /* handle gap events */
+        _ble.gap().setEventHandler(this);
+
         if (_ble.hasInitialized()) {
             /* ble instance already initialised, skip init and start activity */
             start();
@@ -94,27 +103,6 @@ public:
     /** Override to start chosen activity after initial bonding */
     virtual void start_after_bonding() = 0;
 
-    /* event handler functions */
-
-    /** Inform the application of pairing */
-    virtual void pairingResult(
-        ble::connection_handle_t connectionHandle,
-        SecurityManager::SecurityCompletionStatus_t result
-    ) {
-        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
-            printf("Pairing successful\r\n");
-            _bonded = true;
-        } else {
-            printf("Pairing failed\r\n");
-        }
-
-        /* disconnect in 2s */
-        _event_queue.call_in(
-            2000, &_ble.gap(),
-            &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
-        );
-    }
-
     /* callbacks */
 
     /** This is called when BLE interface is initialised and starts the demonstration */
@@ -131,12 +119,6 @@ public:
         /* for use by tools we print out own address and also use it
          * to seed RNG as the address is unique */
         print_local_address();
-
-        /* when scanning we want to connect to a peer device so we need to
-         * attach callbacks that are used by Gap to notify us of events */
-        _ble.gap().onConnection(this, &PrivacyDevice::on_connect);
-        _ble.gap().onDisconnection(this, &PrivacyDevice::on_disconnect);
-        _ble.gap().onTimeout(makeFunctionPointer(this, &PrivacyDevice::on_timeout));
 
         /* Privacy requires the security manager */
 
@@ -172,48 +154,6 @@ public:
         start();
     };
 
-    /** This is called by Gap to notify the application we connected */
-    void on_connect(const Gap::ConnectionCallbackParams_t *connection_event)
-    {
-        printf("Connected to peer: ");
-        print_address(connection_event->peerAddr);
-        printf("Peer random resolvable address: ");
-        print_address(connection_event->peerResolvableAddr);
-
-        _handle = connection_event->handle;
-
-        if (_bonded) {
-            /* disconnect in 2s */
-            _event_queue.call_in(
-                2000, &_ble.gap(),
-                &Gap::disconnect, _handle, Gap::REMOTE_USER_TERMINATED_CONNECTION
-            );
-        }
-    };
-
-    /** This is called by Gap to notify the application we disconnected */
-    void on_disconnect(const Gap::DisconnectionCallbackParams_t *event)
-    {
-        if (_bonded) {
-            /* we have connected to and bonded with the other device, from now
-             * on we will use the second start function and stay in the same role
-             * as peripheral or central */
-            printf("Disconnected.\r\n");
-            _event_queue.call_in(2000, this, &PrivacyDevice::start_after_bonding);
-        } else {
-            printf("Failed to bond.\r\n");
-            _event_queue.break_dispatch();
-        }
-    };
-
-    /** When scanning on advertising time runs out this is called */
-    void on_timeout(const Gap::TimeoutSource_t source)
-    {
-        /* if we failed to find the other device, abort so that we change roles */
-        printf("Haven't seen other device, switch modes.\r\n");
-        _event_queue.break_dispatch();
-    };
-
     /** Schedule processing of events from the BLE in the event queue. */
     void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
     {
@@ -241,6 +181,75 @@ public:
             uint8_t* random_data = addr;
             srand(*((unsigned int*)random_data));
         }
+    }
+
+private:
+    /* Event handler */
+
+    /** Inform the application of pairing */
+    virtual void pairingResult(
+        ble::connection_handle_t connectionHandle,
+        SecurityManager::SecurityCompletionStatus_t result
+    ) {
+        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
+            printf("Pairing successful\r\n");
+            _bonded = true;
+        } else {
+            printf("Pairing failed\r\n");
+        }
+
+        /* disconnect in 2s */
+        _event_queue.call_in(
+            2000,
+            &_ble.gap(),
+            disconnect_call,
+            connectionHandle,
+            ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+        );
+    }
+
+    /** This is called by Gap to notify the application we connected */
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    {
+        printf("Connected to peer: ");
+        print_address(event.getPeerAddress().data());
+        printf("Peer random resolvable address: ");
+        print_address(event.getPeerResolvablePrivateAddress().data());
+
+        _handle = event.getConnectionHandle();
+
+        if (_bonded) {
+            /* disconnect in 2s */
+            _event_queue.call_in(
+                2000,
+                &_ble.gap(),
+                disconnect_call,
+                _handle,
+                ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+            );
+        }
+    };
+
+    /** This is called by Gap to notify the application we disconnected */
+    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event)
+    {
+        if (_bonded) {
+            /* we have connected to and bonded with the other device, from now
+             * on we will use the second start function and stay in the same role
+             * as peripheral or central */
+            printf("Disconnected.\r\n");
+            _event_queue.call_in(2000, this, &PrivacyDevice::start_after_bonding);
+        } else {
+            printf("Failed to bond.\r\n");
+            _event_queue.break_dispatch();
+        }
+    };
+
+    virtual void onScanTimeout(const ble::ScanTimeoutEvent &)
+    {
+        /* if we failed to find the other device, abort so that we change roles */
+        printf("Haven't seen other device, switch modes.\r\n");
+        _event_queue.break_dispatch();
     }
 
 public:
@@ -297,19 +306,23 @@ public:
 private:
     bool set_advertising_data()
     {
-        GapAdvertisingData advertising_data;
-
-        /* add device name */
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            DEVICE_NAME,
-            sizeof(DEVICE_NAME)
+        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+        /* use the helper to build the payload */
+        ble::AdvertisingDataBuilder adv_data_builder(
+            adv_buffer
         );
 
-        ble_error_t error = _ble.gap().setAdvertisingPayload(advertising_data);
+        adv_data_builder.setFlags();
+        adv_data_builder.setName(DEVICE_NAME);
+
+        /* Set payload for the set */
+        ble_error_t error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_data_builder.getAdvertisingData()
+        );
 
         if (error) {
-            printf("Error during Gap::setAdvertisingPayload\r\n");
+            print_error(error, "Gap::setAdvertisingPayload() failed");
             _event_queue.break_dispatch();
             return false;
         }
@@ -319,25 +332,38 @@ private:
 
     bool start_advertising()
     {
-        _ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-        _ble.gap().setAdvertisingInterval(20);
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED
+        );
+
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
+
+        if (error) {
+            print_error(error, "Gap::setAdvertisingParameters() failed");
+            return false;
+        }
 
         if (_bonded) {
             /* if we bonded it means we have found the other device, from now on
              * wait at each step until completion */
-            _ble.gap().setAdvertisingTimeout(0);
+            error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
         } else {
             /* since we have two boards which might start running this example at the same time
              * we randomise the interval of advertising to have them meet when one is advertising
              * and the other one is scanning (we use their random address as source of randomness) */
-            const uint16_t random_interval = 1 + rand() % 5;
-            _ble.gap().setAdvertisingTimeout(random_interval);
+            ble::millisecond_t random_duration_ms((1 + rand() % 5) * 1000);
+            ble::adv_duration_t random_duration(random_duration_ms);
+            error = _ble.gap().startAdvertising(
+                ble::LEGACY_ADVERTISING_HANDLE,
+                random_duration
+            );
         }
 
-        ble_error_t error = _ble.gap().startAdvertising();
-
         if (error) {
-            printf("Error during Gap::startAdvertising.\r\n");
+            print_error(error, "Gap::startAdvertising() failed");
             _event_queue.break_dispatch();
             return false;
         }
@@ -382,74 +408,30 @@ public:
         start_scanning();
     }
 
-    /* callbacks */
-
-    /** Look at scan payload to find a peer device and connect to it */
-    void on_scan(const Gap::AdvertisementCallbackParams_t *params)
-    {
-        /* don't bother with analysing scan result if we're already connecting */
-        if (_is_connecting) {
-            return;
-        }
-
-        /* parse the advertising payload, looking for a discoverable device */
-        for (uint8_t i = 0; (i + 2) < params->advertisingDataLen; ++i) {
-            /* The advertising payload is a collection of key/value records where
-             * byte 0: length of the record excluding this byte
-             * byte 1: The key, it is the type of the data
-             * byte [2..N] The value. N is equal to byte0 - 1 */
-            const uint8_t max_record_length = params->advertisingDataLen - i;
-            const uint8_t record_length = std::min(params->advertisingData[i],
-                                                   max_record_length);
-            const uint8_t type = params->advertisingData[i + 1];
-            const uint8_t *value = params->advertisingData + i + 2;
-
-            if (record_length < 2) {
-                /* malformed record */
-            } else if (type == GapAdvertisingData::COMPLETE_LOCAL_NAME) {
-                /* connect based on the name of the device */
-                if (memcmp((const char*)DEVICE_NAME, (const char*)value, record_length - 1) == 0) {
-                    _ble.gap().stopScan();
-
-                    ble_error_t error = _ble.gap().connect(
-                        params->peerAddr, params->peerAddrType,
-                        NULL, NULL
-                    );
-
-                    if (error) {
-                        printf("Error during Gap::connect %d\r\n", error);
-                        return;
-                    }
-
-                    /* we may have already scan events waiting
-                     * to be processed so we need to remember
-                     * that we are already connecting and ignore them */
-                    _is_connecting = true;
-
-                    return;
-                }
-            }
-
-            i += record_length;
-        }
-    };
-
     /* helper functions */
 private:
     bool start_scanning() {
-        if (_bonded) {
-            /* if we bonded it means we have found the other device, from now on
-             * wait at each step until completion */
-            _ble.gap().setScanParams(4, 4, 0 /*timeout*/);
-        } else {
-            /* otherwise only scan for a limited time before changing roles again
-             * if we fail to find the other device */
-            _ble.gap().setScanParams(4, 4, 4/*timeout*/);
-        }
+        ble_error_t error;
+        ble::ScanParameters scan_params;
+        _ble.gap().setScanParameters(scan_params);
 
         _is_connecting = false;
 
-        ble_error_t error = _ble.gap().startScan(this, &PrivacyCentral::on_scan);
+        if (_bonded) {
+            /* if we bonded it means we have found the other device, from now on
+             * wait at each step until completion */
+            error = _ble.gap().startScan(
+                ble::duplicates_filter_t::DISABLE,
+                ble::scan_duration_t(0)
+            );
+        } else {
+            /* otherwise only scan for a limited time before changing roles again
+             * if we fail to find the other device */
+            error = _ble.gap().startScan(
+                ble::duplicates_filter_t::DISABLE,
+                ble::scan_duration_t(ble::millisecond_t(4000))
+            );
+        }
 
         if (error) {
             printf("Error during Gap::startScan %d\r\n", error);
@@ -460,6 +442,61 @@ private:
         printf("Scanning...\r\n");
 
         return true;
+    }
+
+private:
+    /* Event handler */
+
+    /** Look at scan payload to find a peer device and connect to it */
+    virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
+    {
+        /* don't bother with analysing scan result if we're already connecting */
+        if (_is_connecting) {
+            return;
+        }
+
+        ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
+
+        /* parse the advertising payload, looking for a discoverable device */
+        while (adv_data.hasNext()) {
+            ble::AdvertisingDataParser::element_t field = adv_data.next();
+
+            /* connect to a known device by name */
+            if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
+                field.value.size() == sizeof(DEVICE_NAME) &&
+                (memcmp(field.value.data(), DEVICE_NAME, sizeof(DEVICE_NAME)) == 0)) {
+
+                printf("We found a connectable device\r\n");
+
+                ble_error_t error = _ble.gap().stopScan();
+
+                if (error) {
+                    print_error(error, "Error caused by Gap::stopScan");
+                    return;
+                }
+
+                const ble::ConnectionParameters connection_params;
+
+                error = _ble.gap().connect(
+                    event.getPeerAddressType(),
+                    event.getPeerAddress(),
+                    connection_params
+                );
+
+                if (error) {
+                    print_error(error, "Error caused by Gap::connect");
+                    return;
+                }
+
+                /* we may have already scan events waiting
+                 * to be processed so we need to remember
+                 * that we are already connecting and ignore them */
+                _is_connecting = true;
+
+                return;
+
+            }
+        }
     }
 
 private:

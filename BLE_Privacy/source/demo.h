@@ -65,7 +65,7 @@ void print_error(ble_error_t error, const char* msg)
 }
 
 /** print device address to the terminal */
-void print_address(const Gap::Address_t &addr)
+void print_address(const uint8_t *addr)
 {
     printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
            addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);

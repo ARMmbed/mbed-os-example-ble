@@ -450,15 +450,7 @@ private:
                     return;
                 }
 
-                ble::ConnectionParameters connection_params(
-                    ble::phy_t::LE_1M,
-                    ble::scan_interval_t(50),
-                    ble::scan_window_t(50),
-                    ble::conn_interval_t(50),
-                    ble::conn_interval_t(100),
-                    ble::slave_latency_t(0),
-                    ble::supervision_timeout_t(100)
-                );
+                ble::ConnectionParameters connection_params;
 
                 error = _ble.gap().connect(
                     event.getPeerAddressType(),

@@ -360,44 +360,10 @@ private:
     /** Finish the mode by shutting down advertising or scanning and move to the next mode. */
     void end_demo_mode()
     {
-        ble_error_t error;
-
-        print_performance();
-
-        /* stop scanning and advertising */
         if (_is_in_scanning_mode) {
-            error = _ble.gap().stopScan();
-
-            if (error) {
-                print_error(error, "Error caused by Gap::stopScan");
-                return;
-            }
+            end_scanning_mode();
         } else {
-            /* go through all the created advertising sets to shut them down and remove them */
-            for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
-                /* check if the set has been sucesfully created */
-                if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
-                    /* if it's still active, stop it */
-                    if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
-                        error = _ble.gap().stopAdvertising(_adv_handles[i]);
-
-                        if (error) {
-                            print_error(error, "Error caused by Gap::stopAdvertising");
-                            return;
-                        }
-                    }
-                    /* you cannot destroy or create the legacy advertising set,
-                     * it's always available, others may be removed when no longer needed */
-                    if (_adv_handles[i] != ble::LEGACY_ADVERTISING_HANDLE) {
-                        error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
-
-                        if (error) {
-                            print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-                            return;
-                        }
-                    }
-                }
-            }
+            end_advertising_mode();
         }
 
         /* alloted time has elapsed or be connected, move to next demo mode */
@@ -597,63 +563,105 @@ private:
         _event_queue.break_dispatch();
     }
 
+    /** Finish the mode by shutting down advertising or scanning and move to the next mode. */
+    void end_scanning_mode()
+    {
+        print_scanning_performance();
+        ble_error_t error = _ble.gap().stopScan();
+
+        if (error) {
+            print_error(error, "Error caused by Gap::stopScan");
+        }
+    }
+
+    void end_advertising_mode()
+    {
+        print_advertising_performance();
+        /* go through all the created advertising sets to shut them down and remove them */
+        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+            /* check if the set has been sucesfully created */
+            if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
+                /* if it's still active, stop it */
+                if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                    ble_error_t error = _ble.gap().stopAdvertising(_adv_handles[i]);
+
+                    if (error) {
+                        print_error(error, "Error caused by Gap::stopAdvertising");
+                        return;
+                    }
+                }
+                /* you cannot destroy or create the legacy advertising set,
+                 * it's always available, others may be removed when no longer needed */
+                if (_adv_handles[i] != ble::LEGACY_ADVERTISING_HANDLE) {
+                    ble_error_t error = _ble.gap().destroyAdvertisingSet(_adv_handles[i]);
+
+                    if (error) {
+                        print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     /** print some information about our radio activity */
-    void print_performance()
+    void print_scanning_performance()
     {
         /* measure time from mode start, may have been stopped by timeout */
         uint16_t duration_ms = _demo_duration.read_ms();
 
-        if (_is_in_scanning_mode) {
-            /* convert ms into timeslots for accurate calculation as internally
-             * all durations are in timeslots (0.625ms) */
-            uint16_t duration_ts = ble::scan_interval_t(ble::millisecond_t(duration_ms)).value();
-            uint16_t interval_ts = scanning_params[_set_index].interval.value();
-            uint16_t window_ts = scanning_params[_set_index].window.value();
-            /* this is how long we scanned for in timeslots */
-            uint16_t rx_ts = (duration_ts / interval_ts) * window_ts;
-            /* convert to milliseconds */
-            uint16_t rx_ms = ble::scan_interval_t(rx_ts).valueInMs();
+        /* convert ms into timeslots for accurate calculation as internally
+         * all durations are in timeslots (0.625ms) */
+        uint16_t duration_ts = ble::scan_interval_t(ble::millisecond_t(duration_ms)).value();
+        uint16_t interval_ts = scanning_params[_set_index].interval.value();
+        uint16_t window_ts = scanning_params[_set_index].window.value();
+        /* this is how long we scanned for in timeslots */
+        uint16_t rx_ts = (duration_ts / interval_ts) * window_ts;
+        /* convert to milliseconds */
+        uint16_t rx_ms = ble::scan_interval_t(rx_ts).valueInMs();
 
-            printf("We have scanned for %dms with an interval of %d"
-                    " timeslots and a window of %d timeslots\r\n",
-                    duration_ms, interval_ts, window_ts);
+        printf("We have scanned for %dms with an interval of %d"
+               " timeslots and a window of %d timeslots\r\n",
+            duration_ms, interval_ts, window_ts);
 
-            printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
+        printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
+    }
 
-        } else /* advertising */ {
-            uint8_t number_of_active_sets = 0;
+    /** print some information about our radio activity */
+    void print_advertising_performance()
+    {
+        /* measure time from mode start, may have been stopped by timeout */
+        uint16_t duration_ms = _demo_duration.read_ms();
+        uint8_t number_of_active_sets = 0;
 
-            for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
-                if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
-                    if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
-                        number_of_active_sets++;
-                    }
+        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+            if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
+                if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
+                    number_of_active_sets++;
                 }
             }
+        }
 
-            /* convert ms into timeslots for accurate calculation as internally
-             * all durations are in timeslots (0.625ms) */
-            uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
-            uint16_t interval_ts = advertising_params[_set_index].interval.value();
-            /* this is how many times we advertised */
-            uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
+        /* convert ms into timeslots for accurate calculation as internally
+         * all durations are in timeslots (0.625ms) */
+        uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
+        uint16_t interval_ts = advertising_params[_set_index].interval.value();
+        /* this is how many times we advertised */
+        uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
 
-            printf("We have advertised for %dms with an interval of %d timeslots\r\n",
-                   duration_ms, interval_ts);
+        printf("We have advertised for %dms with an interval of %d timeslots\r\n",
+            duration_ms, interval_ts);
 
-            if (number_of_active_sets > 1) {
-                printf("We had %d active advertising sets\r\n",
-                       number_of_active_sets);
-            }
+        if (number_of_active_sets > 1) {
+            printf("We had %d active advertising sets\r\n", number_of_active_sets);
+        }
 
-            /* non-scannable and non-connectable advertising
-             * skips rx events saving on power consumption */
-            if (advertising_params[_set_index].adv_type
-                == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
-                printf("We created at least %d tx events\r\n", events);
-            } else {
-                printf("We created at least %d tx and rx events\r\n", events);
-            }
+        /* non-scannable and non-connectable advertising
+         * skips rx events saving on power consumption */
+        if (advertising_params[_set_index].adv_type == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
+            printf("We created at least %d tx events\r\n", events);
+        } else {
+            printf("We created at least %d tx and rx events\r\n", events);
         }
     }
 

@@ -321,25 +321,23 @@ private:
     /** Set up and start scanning */
     void scan()
     {
-        /* scanning happens repeatedly, interval is the number of milliseconds
-         * between each cycle of scanning */
-        ble::scan_interval_t interval = scanning_params[_set_index].interval;
+        const DemoScanParam_t &scan_params = scanning_params[_set_index];
 
-        /* number of milliseconds we scan for each time we enter
-         * the scanning cycle after the interval set above */
-        ble::scan_window_t window = scanning_params[_set_index].window;
-
-        /* how long to repeat the cycles of scanning in seconds */
-        ble::scan_duration_t duration = scanning_params[_set_index].duration;
-
-        /* active scanning will send a scan request to any scanable devices that
-         * we see advertising */
-        bool active = scanning_params[_set_index].active;
-
-        /* set the scanning parameters according to currently selected set */
-        ble::ScanParameters params(ble::phy_t::LE_1M, interval, window, active);
-
-        ble_error_t error = _ble.gap().setScanParameters(params);
+        /*
+         * Scanning happens repeatedly and is defined by:
+         *  - The scan interval which is the time (in 0.625us) between each scan cycle.
+         *  - The scan window which is the scanning time (in 0.625us) during a cycle.
+         * If the scanning process is active, the local device sends scan requests
+         * to discovered peer to get additional data.
+         */
+        ble_error_t error = _ble.gap().setScanParameters(
+            ble::ScanParameters(
+                ble::phy_t::LE_1M,   // scan on the 1M PHY
+                scan_params.interval,
+                scan_params.window,
+                scan_params.active
+            )
+        );
 
         if (error) {
             print_error(error, "Error caused by Gap::setScanParameters");
@@ -350,7 +348,7 @@ private:
          * and scan requests responses */
         error = _ble.gap().startScan(
             ble::duplicates_filter_t::DISABLE,
-            duration
+            scan_params.duration
         );
 
         if (error) {
@@ -358,8 +356,8 @@ private:
             return;
         }
 
-        printf("Scanning started (interval: %dms, window: %dms, timeout: %ds).\r\n",
-               interval.value(), window.value(), duration.value());
+        printf("Scanning started (interval: %dms, window: %dms, timeout: %dms).\r\n",
+               scan_params.interval.valueInMs(), scan_params.window.valueInMs(), scan_params.duration.valueInMs());
     }
 
     /** Finish the mode by shutting down advertising or scanning and move to the next mode. */

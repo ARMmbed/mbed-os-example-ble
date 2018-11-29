@@ -107,7 +107,7 @@ public:
         _on_duration_end_id(0),
         _scan_count(0),
         _blink_event(0) {
-        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
             _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
         }
     }
@@ -217,8 +217,8 @@ private:
         /* how many sets */
         uint8_t max_adv_set = _ble.gap().getMaxAdvertisingSetNumber();
 
-        if (max_adv_set > ADV_SET_NUMBER) {
-            max_adv_set = ADV_SET_NUMBER;
+        if (max_adv_set > size(_adv_handles)) {
+            max_adv_set = size(_adv_handles);
         }
 
         /* how much payload in a set */
@@ -581,7 +581,7 @@ private:
     {
         print_advertising_performance();
         /* go through all the created advertising sets to shut them down and remove them */
-        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
             /* check if the set has been sucesfully created */
             if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
                 /* if it's still active, stop it */
@@ -637,7 +637,7 @@ private:
         uint16_t duration_ms = _demo_duration.read_ms();
         uint8_t number_of_active_sets = 0;
 
-        for (uint8_t i = 0; i < ADV_SET_NUMBER; ++i) {
+        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
             if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
                 if (_ble.gap().isAdvertisingActive(_adv_handles[i])) {
                     number_of_active_sets++;

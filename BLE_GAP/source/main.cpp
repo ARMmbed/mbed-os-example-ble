@@ -49,11 +49,10 @@ static const uint8_t ADV_SET_NUMBER       = 2;
 
 static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 1000;
 
-static char DEVICE_NAME[] = "Advertiser x";
-
 typedef struct {
-    ble::advertising_type_t adv_type;
-    ble::adv_interval_t interval;
+    ble::advertising_type_t type;
+    ble::adv_interval_t min_interval;
+    ble::adv_interval_t max_interval;
 } DemoAdvParams_t;
 
 typedef struct {
@@ -66,10 +65,10 @@ typedef struct {
 /** the entries in this array are used to configure our advertising
  *  parameters for each of the modes we use in our demo */
 static const DemoAdvParams_t advertising_params[] = {
-    /*            advertising type                                    interval          */
-    { ble::advertising_type_t::CONNECTABLE_UNDIRECTED,     ble::adv_interval_t(40)  },
-    { ble::advertising_type_t::SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100) },
-    { ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100) }
+/*    advertising type                                   | min interval - 0.625us  | max interval - 0.625us   */
+    { ble::advertising_type_t::CONNECTABLE_UNDIRECTED,      ble::adv_interval_t(40), ble::adv_interval_t(80)  },
+    { ble::advertising_type_t::SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100), ble::adv_interval_t(200) },
+    { ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100), ble::adv_interval_t(200) }
 };
 
 /* when we cycle through all our advertising modes we will move to scanning modes */
@@ -196,81 +195,102 @@ private:
     /** Set up and start advertising */
     void advertise()
     {
-        ble_error_t error;
+        const DemoAdvParams_t &adv_params = advertising_params[_set_index];
 
-        /* set the advertising parameters according to currently selected set,
-         * see @AdvertisingType_t for explanation of modes */
-        ble::advertising_type_t adv_type = advertising_params[_set_index].adv_type;
-
-        /* interval between advertisements, lower interval increases the chances
-         * of being seen at the cost of more power */
-        ble::adv_interval_t interval = advertising_params[_set_index].interval;
-
-        /* create advertising paramters based on these */
-        ble::AdvertisingParameters adv_parameters(
-            adv_type,
-            interval,
-            interval
+        /*
+         * Advertising parameters are mainly defined by an advertising type and
+         * and an interval between advertisements. lower interval increases the
+         * chances of being seen at the cost of more power.
+         * The Bluetooth controller may run concurrent operations with the radio;
+         * to help it, a minimum and maximum advertising interval should be
+         * provided.
+         *
+         * With Bluetooth 5; it is possible to advertise concurrently multiple
+         * payloads at different rate. The combination of payload and its associated
+         * parameters is named an advertising set. To refer to these advertising
+         * sets the Bluetooth system use an advertising set handle that needs to
+         * be created first.
+         * The only exception is the legacy advertising handle which is usable
+         * on Bluetooth 4 and Bluetooth 5 system. It is created at startup and
+         * its lifecycle is managed by the system.
+         */
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            ble::AdvertisingParameters(
+                adv_params.type,
+                adv_params.min_interval,
+                adv_params.max_interval
+            )
         );
+        if (error) {
+            print_error(error, "Gap::setAdvertisingParameters() failed");
+            return;
+        }
+
+        /* Set payload for the set */
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
+                .setFlags()
+                .setName("Legacy advertiser")
+                .getAdvertisingData()
+        );
+        if (error) {
+            print_error(error, "Gap::setAdvertisingPayload() failed");
+            return;
+        }
+
+        /* Start advertising the set */
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        if (error) {
+            print_error(error, "Gap::startAdvertising() failed");
+            return;
+        }
+
+        printf("Advertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
+            adv_params.type.value(),
+            adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
+
+        if (_ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING)) {
+            advertise_extended();
+        }
+    }
+
+    void advertise_extended()
+    {
+        const DemoAdvParams_t &adv_params = advertising_params[_set_index];
 
         /* this is the memory backing for the payload */
         uint8_t adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
 
         /* how many sets */
-        uint8_t max_adv_set = _ble.gap().getMaxAdvertisingSetNumber();
-
-        if (max_adv_set > size(_adv_handles)) {
-            max_adv_set = size(_adv_handles);
-        }
+        uint8_t max_adv_set = std::min(
+            _ble.gap().getMaxAdvertisingSetNumber(),
+            (uint8_t) size(_adv_handles)
+        );
 
         /* how much payload in a set */
-        uint8_t max_adv_size = _ble.gap().getMaxAdvertisingDataLength();
-
-        if (max_adv_size > MAX_ADVERTISING_PAYLOAD_SIZE) {
-            max_adv_size = MAX_ADVERTISING_PAYLOAD_SIZE;
-        }
+        uint16_t max_adv_size = std::min(
+            (uint16_t) _ble.gap().getMaxAdvertisingDataLength(),
+            MAX_ADVERTISING_PAYLOAD_SIZE
+        );
 
         /* create and start all requested (and possible) advertising sets */
-        for (uint8_t i = 0; i < max_adv_set; ++i) {
-
-            /* If controller is capable of only one advertising set then only
-             * legacy advertising can be used. Legacy advertising set is created
-             * at startup. Calling createAdvertisingSet() would fail as there
-             * aren't any free sets left. */
-            if (max_adv_set == 1) {
-
-                /* only one set will be used - the legacy set which doesn't require creating */
-                _adv_handles[i] = ble::LEGACY_ADVERTISING_HANDLE;
-
-                /* since the legacy set has been created at startup with default parameters
-                 * we have to apply our new parameters now */
-                error = _ble.gap().setAdvertisingParameters(
-                    _adv_handles[i],
-                    adv_parameters
-                );
-
-                if (error) {
-                    print_error(error, "Gap::setAdvertisingParameters() failed");
-                    return;
-                }
-
-                /* limit the size to what legacy advertising can handle */
-                max_adv_size = ble::LEGACY_ADVERTISING_MAX_SIZE;
-
-            } else {
-                /* we can use larger PDUs */
-                adv_parameters.setUseLegacyPDU(false);
-
-                /* we can have multiple sets - create a new advertising set with our parameters */
-                error = _ble.gap().createAdvertisingSet(
-                    &_adv_handles[i],
-                    adv_parameters
-                );
-
-                if (error) {
-                    print_error(error, "Gap::createAdvertisingSet() failed");
-                    return;
-                }
+        /* Note: one advertising is reserved for legacy advertising (max_adv_set - 1) */
+        for (uint8_t i = 0; i < (max_adv_set - 1); ++i) {
+            /* create the advertising set with its parameter */
+            /* this time we do not use legacy PDUs */
+            ble_error_t error = _ble.gap().createAdvertisingSet(
+                &_adv_handles[i],
+                ble::AdvertisingParameters(
+                    adv_params.type,
+                    adv_params.min_interval,
+                    adv_params.max_interval
+                ).setUseLegacyPDU(false)
+            );
+            if (error) {
+                print_error(error, "Gap::createAdvertisingSet() failed");
+                return;
             }
 
             /* use the helper to build the payload */
@@ -279,14 +299,18 @@ private:
                 max_adv_size
             );
 
-            adv_data_builder.setFlags();
-
+            /* set the flags */
+            error = adv_data_builder.setFlags();
+            if (error) {
+                print_error(error, "AdvertisingDataBuilder::setFlags() failed");
+                return;
+            }
 
             /* set different name for each set */
             MBED_ASSERT(i < 9);
-            sprintf(DEVICE_NAME, "Advertiser %d", i%10);
-            error = adv_data_builder.setName(DEVICE_NAME);
-
+            char device_name[] = "Advertiser x";
+            sprintf(device_name, "Advertiser %d", i%10);
+            error = adv_data_builder.setName(device_name);
             if (error) {
                 print_error(error, "AdvertisingDataBuilder::setName() failed");
                 return;
@@ -297,7 +321,6 @@ private:
                 _adv_handles[i],
                 adv_data_builder.getAdvertisingData()
             );
-
             if (error) {
                 print_error(error, "Gap::setAdvertisingPayload() failed");
                 return;
@@ -306,15 +329,15 @@ private:
             /* Start advertising the set */
             error = _ble.gap().startAdvertising(
                 _adv_handles[i]
-             );
-
+            );
             if (error) {
                 print_error(error, "Gap::startAdvertising() failed");
                 return;
             }
 
-            printf("Advertising started (type: 0x%x, interval: %dms)\r\n",
-                   adv_type.value(), interval.valueInMs() );
+            printf("Advertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
+                adv_params.type.value(),
+                adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
         }
     }
 
@@ -338,7 +361,6 @@ private:
                 scan_params.active
             )
         );
-
         if (error) {
             print_error(error, "Error caused by Gap::setScanParameters");
             return;
@@ -350,7 +372,6 @@ private:
             ble::duplicates_filter_t::DISABLE,
             scan_params.duration
         );
-
         if (error) {
             print_error(error, "Error caused by Gap::startScan");
             return;
@@ -421,7 +442,6 @@ private:
                 event.getPeerAddress(),
                 ble::ConnectionParameters() // use the default connection parameters
             );
-
             if (error) {
                 print_error(error, "Error caused by Gap::connect");
                 /* since no connection will be attempted end the mode */
@@ -641,7 +661,7 @@ private:
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */
         uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
-        uint16_t interval_ts = advertising_params[_set_index].interval.value();
+        uint16_t interval_ts = advertising_params[_set_index].min_interval.value();
         /* this is how many times we advertised */
         uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
 
@@ -654,7 +674,7 @@ private:
 
         /* non-scannable and non-connectable advertising
          * skips rx events saving on power consumption */
-        if (advertising_params[_set_index].adv_type == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
+        if (advertising_params[_set_index].type == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
             printf("We created at least %d tx events\r\n", events);
         } else {
             printf("We created at least %d tx and rx events\r\n", events);

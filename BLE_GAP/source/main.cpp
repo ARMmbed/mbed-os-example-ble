@@ -394,6 +394,7 @@ private:
             return;
         }
 
+        /* only look at events from devices at a close range */
         if (event.getRssi() < -65) {
             return;
         }
@@ -414,16 +415,9 @@ private:
 
                 printf("We found a connectable device\r\n");
 
-                ble_error_t error = _ble.gap().stopScan();
-
-                if (error) {
-                    print_error(error, "Error caused by Gap::stopScan");
-                    return;
-                }
-
                 ble::ConnectionParameters connection_params;
 
-                error = _ble.gap().connect(
+                ble_error_t error = _ble.gap().connect(
                     event.getPeerAddressType(),
                     event.getPeerAddress(),
                     connection_params

@@ -1,35 +1,26 @@
 {
-    "config": {
-        "ble_button_pin_name": {
-            "help": "The pin name used as button in this application",
-            "macro_name": "BLE_BUTTON_PIN_NAME",
-            "required": true
-        }
-    },
     "target_overrides": {
-        "NRF51_DK": {
-            "ble_button_pin_name": "BUTTON1"
-        },
-        "NRF52_DK": {
-            "ble_button_pin_name": "BUTTON1"
-        },
-        "MTB_UBLOX_NINA_B1": {
-            "ble_button_pin_name": "BUTTON1"
-        },        
         "K64F": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "ble_button_pin_name": "SW2"
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
         "NUCLEO_F401RE": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "ble_button_pin_name": "USER_BUTTON"
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
         "DISCO_L475VG_IOT01A": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "ble_button_pin_name": "USER_BUTTON"
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
+        },
+        "NRF52_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
         }
     }
 }

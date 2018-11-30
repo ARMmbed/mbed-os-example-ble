@@ -31,3 +31,20 @@ build/
 yotta_modules/
 yotta_targets/
 .DS_Store
+
+# clion
+.idea/ 
+cmake-build-*/
+CMakeLists.txt
+
+# exporters 
+GettingStarted.html
+
+# mbed build system
+.mbed
+mbed-os/
+mbed_settings.py
+mbed_config.h
+*.pyc
+TARGET_CORDIO_BLUENRG/
+

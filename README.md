@@ -15,11 +15,13 @@ To build these examples, you need to have a computer with software installed as 
 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
-* A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
 * A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
 * A supported target, such as the [NUCLEO-F401RE](http://www.st.com/en/evaluation-tools/nucleo-f401re.html), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
 
+This target is currently not supported as the examples use Cordio link layer which doesn't have an implementation for it yet:
+* A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
+You may still use the deprecated examples for this target. The deprecated examples are located in the "deprecated" folder in each of the examples.
 
 The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
@@ -29,7 +31,6 @@ Targets for BLE
 The following targets have been tested and work with these examples:
 
 * Nordic:
-	* NRF51_DK
 	* NRF52_DK
 
 * Boards with an ST shield plugged in:
@@ -40,6 +41,9 @@ The following targets have been tested and work with these examples:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+    
+The following board is currently not supported as it doesn't yet support the Cordio stack:
+	* NRF51_DK
 
 ### Using ST Nucleo shield on other targets
 

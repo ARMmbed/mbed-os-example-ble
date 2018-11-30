@@ -41,7 +41,6 @@ CMakeLists.txt
 GettingStarted.html
 
 # mbed build system
-.mbed
 mbed-os/
 mbed_settings.py
 mbed_config.h

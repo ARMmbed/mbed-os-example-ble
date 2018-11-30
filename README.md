@@ -21,7 +21,7 @@ In order to use BLE in mbed OS you need one of the following hardware combinatio
 
 This target is currently not supported as the examples use Cordio link layer which doesn't have an implementation for it yet:
 * A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
-You may still use the depracated examples for this target. The deprecated examples are located in the "deprecated" folder in each of the examples.
+You may still use the deprecated examples for this target. The deprecated examples are located in the "deprecated" folder in each of the examples.
 
 The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
@@ -42,7 +42,7 @@ The following targets have been tested and work with these examples:
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
     
-The following board is no longer supported:
+The following board is currently not supported as it doesn't yet support the Cordio:
 	* NRF51_DK
 
 ### Using ST Nucleo shield on other targets

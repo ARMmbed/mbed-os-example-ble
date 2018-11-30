@@ -19,7 +19,7 @@
 #include "ble/BLE.h"
 #include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 const static char DEVICE_NAME[] = "Heartrate";
 

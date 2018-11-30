@@ -19,7 +19,7 @@
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "ble/services/BatteryService.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 static DigitalOut led1(LED1, 1);
 

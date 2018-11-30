@@ -18,7 +18,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "LEDService.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 const static char DEVICE_NAME[] = "LED";
 

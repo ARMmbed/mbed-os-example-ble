@@ -18,7 +18,7 @@
 #include "mbed.h"
 #include "ble/BLE.h"
 #include "ble/services/HealthThermometerService.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 DigitalOut led1(LED1, 1);
 

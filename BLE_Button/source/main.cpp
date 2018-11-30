@@ -19,7 +19,7 @@
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "ButtonService.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 const static char DEVICE_NAME[] = "Button";
 

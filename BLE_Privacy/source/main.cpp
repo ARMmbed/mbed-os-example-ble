@@ -19,7 +19,7 @@
 #include "ble/BLE.h"
 #include "SecurityManager.h"
 #include <algorithm>
-#include "demo.h"
+#include "pretty_printer.h"
 #include "ble/gap/AdvertisingDataParser.h"
 
 /** This example demonstrates privacy features in Gap. It shows how to use

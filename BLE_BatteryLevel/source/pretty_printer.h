@@ -17,7 +17,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 
-void print_error(ble_error_t error, const char* msg)
+inline void print_error(ble_error_t error, const char* msg)
 {
     printf("%s: ", msg);
     switch(error) {
@@ -65,13 +65,13 @@ void print_error(ble_error_t error, const char* msg)
 }
 
 /** print device address to the terminal */
-void print_address(const Gap::Address_t &addr)
+inline void print_address(const Gap::Address_t &addr)
 {
     printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
            addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
 }
 
-void print_mac_address()
+inline void print_mac_address()
 {
     /* Print out device MAC address to the console*/
     Gap::AddressType_t addr_type;
@@ -81,7 +81,7 @@ void print_mac_address()
     print_address(address);
 }
 
-const char* phy_to_string(Gap::Phy_t phy) {
+inline const char* phy_to_string(Gap::Phy_t phy) {
     switch(phy.value()) {
         case Gap::Phy_t::LE_1M:
             return "LE 1M";

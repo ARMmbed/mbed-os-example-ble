@@ -21,7 +21,7 @@
 #include "ble/DiscoveredService.h"
 #include "ble/gap/Gap.h"
 #include "ble/gap/AdvertisingDataParser.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 const static char PEER_NAME[] = "LED";
 

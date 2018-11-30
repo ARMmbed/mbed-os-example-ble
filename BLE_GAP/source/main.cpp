@@ -19,7 +19,7 @@
 #include "ble/BLE.h"
 #include "gap/Gap.h"
 #include "gap/AdvertisingDataParser.h"
-#include "demo.h"
+#include "pretty_printer.h"
 
 /** This example demonstrates all the basic setup required
  *  to advertise, scan and connect to other devices.

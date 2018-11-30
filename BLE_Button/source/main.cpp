@@ -32,7 +32,7 @@ public:
         _ble(ble),
         _event_queue(event_queue),
         _led1(LED1, 1),
-        _button(BLE_BUTTON_PIN_NAME),
+        _button(BUTTON1),
         _button_service(NULL),
         _button_uuid(ButtonService::BUTTON_SERVICE_UUID),
         _adv_data_builder(_adv_buffer) { }

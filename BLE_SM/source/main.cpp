@@ -344,7 +344,7 @@ public:
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately requests a change in link security */
-    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    virtual void onConnectionComplete(const ble::DisconnectionCompleteEvent &event)
     {
         ble_error_t error;
 

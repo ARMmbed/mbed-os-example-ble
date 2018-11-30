@@ -42,7 +42,7 @@ The following targets have been tested and work with these examples:
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
     
-The following board is currently not supported as it doesn't yet support the Cordio:
+The following board is currently not supported as it doesn't yet support the Cordio stack:
 	* NRF51_DK
 
 ### Using ST Nucleo shield on other targets

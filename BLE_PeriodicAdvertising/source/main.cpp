@@ -264,7 +264,6 @@ private:
         }
 
         error = _gap.startScan(
-            ble::duplicates_filter_t::DISABLE,
             ble::scan_duration_t(ble::millisecond_t(SCAN_TIME))
         );
 
@@ -303,7 +302,7 @@ private:
                 return;
             }
 
-            ble::AdvertisingDataParser adv_parser(event.getAdvertisingData());
+            ble::AdvertisingDataParser adv_parser(event.getPayload());
 
             /* parse the advertising payload, looking for a discoverable device */
             while (adv_parser.hasNext()) {

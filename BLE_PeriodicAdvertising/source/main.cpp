@@ -33,7 +33,7 @@ events::EventQueue event_queue;
 static const char DEVICE_NAME[] = "Periodic";
 
 static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 50;
-static const uint8_t SCAN_TIME = 5;
+static const uint8_t SCAN_TIME = 5000;
 static const uint8_t CONNECTION_DURATION = 2;
 
 /** Demonstrate periodic advertising and scanning and syncing with the advertising
@@ -47,8 +47,7 @@ public:
         _event_queue(event_queue),
         _led1(LED1, 0),
         _is_scanner(false),
-        _is_connecting(false),
-        _is_syncing(false),
+        _is_connecting_or_syncing(false),
         _role_established(false),
         _battery_uuid(GattService::UUID_BATTERY_SERVICE),
         _battery_level(100),
@@ -251,8 +250,7 @@ private:
     /** Set up and start scanning */
     void scan()
     {
-        /* keep track of our state */
-        _is_connecting = false;
+        _is_connecting_or_syncing = false;
 
         ble_error_t error = _gap.setScanParameters(
             ble::ScanParameters()
@@ -271,10 +269,14 @@ private:
             print_error(error, "Error caused by Gap::startScan");
             return;
         }
+
+        printf("Scanning started\r\n");
     }
 
     void scan_periodic()
     {
+        _is_connecting_or_syncing = false;
+
         ble_error_t error = _gap.startScan();
 
         if (error) {
@@ -282,7 +284,7 @@ private:
             return;
         }
 
-        _is_syncing = false;
+        printf("Scanning for periodic advertising started\r\n");
     }
 
 private:
@@ -292,27 +294,37 @@ private:
     virtual void onAdvertisingReport(
         const ble::AdvertisingReportEvent &event
     ) {
-        if (_role_established) {
-            if (_is_syncing) {
-                return;
-            }
-        } else {
-            /* don't bother with analysing scan result if we're already connecting */
-            if (_is_connecting) {
-                return;
-            }
+        /* don't bother with analysing scan result if we're already connecting */
+        if (_is_connecting_or_syncing) {
+            return;
+        }
 
-            ble::AdvertisingDataParser adv_parser(event.getPayload());
+        ble::AdvertisingDataParser adv_parser(event.getPayload());
 
-            /* parse the advertising payload, looking for a discoverable device */
-            while (adv_parser.hasNext()) {
-                ble::AdvertisingDataParser::element_t field = adv_parser.next();
+        /* parse the advertising payload, looking for a discoverable device */
+        while (adv_parser.hasNext()) {
+            ble::AdvertisingDataParser::element_t field = adv_parser.next();
 
-                /* connect by name */
-                if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
-                    field.value.size() == sizeof(DEVICE_NAME) &&
-                    (memcmp(field.value.data(), DEVICE_NAME, sizeof(DEVICE_NAME)) == 0)) {
+            /* identify peer by name */
+            if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
+                field.value.size() == sizeof(DEVICE_NAME) &&
+                (memcmp(field.value.data(), DEVICE_NAME, sizeof(DEVICE_NAME)) == 0)) {
+                /* if we haven't established our roles connect, otherwise sync with advertising */
+                if (_role_established) {
+                    printf("We found the peer, syncing\r\n");
+                    ble_error_t error = _gap.createSync(
+                        event.getPeerAddressType(),
+                        event.getPeerAddress(),
+                        event.getSID(),
+                        2,
+                        ble::sync_timeout_t(ble::millisecond_t(500))
+                    );
 
+                    if (error) {
+                        print_error(error, "Error caused by Gap::createSync\r\n");
+                        return;
+                    }
+                } else {
                     printf("We found the peer, connecting\r\n");
 
                     ble_error_t error = _gap.connect(
@@ -325,13 +337,14 @@ private:
                         print_error(error, "Error caused by Gap::connect\r\n");
                         return;
                     }
-
-                    /* we may have already scan events waiting
-                     * to be processed so we need to remember
-                     * that we are already connecting and ignore them */
-                    _is_connecting = true;
-                    return;
                 }
+
+                /* we may have already scan events waiting to be processed
+                 * so we need to remember that we are already connecting
+                 * or syncing and ignore them */
+                _is_connecting_or_syncing = true;
+
+                return;
             }
         }
     }
@@ -455,8 +468,7 @@ private:
     DigitalOut _led1;
 
     bool _is_scanner;
-    bool _is_connecting;
-    bool _is_syncing;
+    bool _is_connecting_or_syncing;
     bool _role_established;
 
     UUID            _battery_uuid;

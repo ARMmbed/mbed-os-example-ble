@@ -180,7 +180,6 @@ private:
             _adv_handle/*,
             random_duration*/
         );
-        );
 
         if (error) {
             print_error(error, "Gap::startAdvertising() failed\r\n");

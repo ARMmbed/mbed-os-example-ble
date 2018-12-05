@@ -78,7 +78,7 @@ public:
 
         ble_error_t error = _ble.init(this, &PeriodicDemo::on_init_complete);
         if (error) {
-            print_error(error, "Error returned by BLE::init");
+            print_error(error, "Error returned by BLE::init\r\n");
             return;
         }
 
@@ -94,13 +94,13 @@ private:
     void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
         if (event->error) {
-            print_error(event->error, "Error during the initialisation");
+            print_error(event->error, "Error during the initialisation\r\n");
             return;
         }
 
         if (!_gap.isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING) ||
             !_gap.isFeatureSupported(ble::controller_supported_features_t::LE_PERIODIC_ADVERTISING)) {
-            printf("Periodic advertising not supported, cannot run example.");
+            printf("Periodic advertising not supported, cannot run example.\r\n");
             return;
         }
 
@@ -125,8 +125,10 @@ private:
             _is_scanner = !_is_scanner;
 
             if (_is_scanner) {
+                if (_adv_handle != ble::INVALID_ADVERTISING_HANDLE) _ble.gap().stopAdvertising(_adv_handle);
                 _event_queue.call(this, &PeriodicDemo::scan);
             } else {
+                _ble.gap().stopScan();
                 _event_queue.call(this, &PeriodicDemo::advertise);
             }
         }
@@ -135,20 +137,25 @@ private:
     /** Set up and start advertising */
     void advertise()
     {
+        ble_error_t error;
+
         ble::AdvertisingParameters adv_params;
         adv_params.setUseLegacyPDU(false);
 
-        /* create the advertising set with its parameter */
-        ble_error_t error = _gap.createAdvertisingSet(
-            &_adv_handle,
-            adv_params
-        );
+        /* create the advertising set with its parameter if we haven't yet */
+        if (_adv_handle == ble::INVALID_ADVERTISING_HANDLE) {
+            error = _gap.createAdvertisingSet(
+                &_adv_handle,
+                adv_params
+            );
 
-        if (error) {
-            print_error(error, "Gap::createAdvertisingSet() failed");
-            return;
+            if (error) {
+                print_error(error, "Gap::createAdvertisingSet() failed\r\n");
+                return;
+            }
         }
 
+        _adv_data_builder.clear();
         _adv_data_builder.setFlags();
         _adv_data_builder.setName(DEVICE_NAME);
 
@@ -159,7 +166,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Gap::setAdvertisingPayload() failed");
+            print_error(error, "Gap::setAdvertisingPayload() failed\r\n");
             return;
         }
 
@@ -170,12 +177,13 @@ private:
         ble::adv_duration_t random_duration(random_duration_ms);
 
         error = _ble.gap().startAdvertising(
-            _adv_handle,
-            random_duration
+            _adv_handle/*,
+            random_duration*/
+        );
         );
 
         if (error) {
-            print_error(error, "Gap::startAdvertising() failed");
+            print_error(error, "Gap::startAdvertising() failed\r\n");
             return;
         }
 
@@ -190,7 +198,7 @@ private:
         ble_error_t error = _gap.startAdvertising(_adv_handle);
 
         if (error) {
-            print_error(error, "Gap::startAdvertising() failed");
+            print_error(error, "Gap::startAdvertising() failed\r\n");
             return;
         }
 
@@ -201,7 +209,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Gap::setPeriodicAdvertisingParameters() failed");
+            print_error(error, "Gap::setPeriodicAdvertisingParameters() failed\r\n");
             return;
         }
 
@@ -211,7 +219,7 @@ private:
         error = _gap.startPeriodicAdvertising(_adv_handle);
 
         if (error) {
-            print_error(error, "Gap::startPeriodicAdvertising() failed");
+            print_error(error, "Gap::startPeriodicAdvertising() failed\r\n");
             return;
         }
 
@@ -230,7 +238,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "AdvertisingDataBuilder::setFlags() failed");
+            print_error(error, "AdvertisingDataBuilder::setFlags() failed\r\n");
             return;
         }
 
@@ -242,7 +250,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Gap::setPeriodicAdvertisingPayload() failed");
+            print_error(error, "Gap::setPeriodicAdvertisingPayload() failed\r\n");
             return;
         }
     }
@@ -257,7 +265,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Error caused by Gap::setScanParameters");
+            print_error(error, "Error caused by Gap::setScanParameters\r\n");
             return;
         }
 
@@ -266,7 +274,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "Error caused by Gap::startScan");
+            print_error(error, "Error caused by Gap::startScan\r\n");
             return;
         }
 
@@ -280,7 +288,7 @@ private:
         ble_error_t error = _gap.startScan();
 
         if (error) {
-            print_error(error, "Error caused by Gap::startScan");
+            print_error(error, "Error caused by Gap::startScan\r\n");
             return;
         }
 
@@ -408,7 +416,7 @@ private:
         if (event.getStatus() == BLE_ERROR_NONE) {
             printf("Synced with periodic advertising\r\n");
         } else {
-            _event_queue.call(this, &PeriodicDemo::scan_periodic);
+            _sync_handle = event.getSyncHandle();
         }
     }
 
@@ -440,6 +448,8 @@ private:
     virtual void onPeriodicAdvertisingSyncLoss(
        const ble::PeriodicAdvertisingSyncLoss &event
     ) {
+        printf("Sync to periodic advertising lost\r\n");
+        _sync_handle = ble::INVALID_ADVERTISING_HANDLE;
         _event_queue.call(this, &PeriodicDemo::scan_periodic);
     }
 

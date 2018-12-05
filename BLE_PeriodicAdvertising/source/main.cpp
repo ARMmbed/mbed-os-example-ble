@@ -314,8 +314,8 @@ private:
 
             /* identify peer by name */
             if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
-                field.value.size() == sizeof(DEVICE_NAME) &&
-                (memcmp(field.value.data(), DEVICE_NAME, sizeof(DEVICE_NAME)) == 0)) {
+                field.value.size() == strlen(DEVICE_NAME) &&
+                (memcmp(field.value.data(), DEVICE_NAME, field.value.size()) == 0)) {
                 /* if we haven't established our roles connect, otherwise sync with advertising */
                 if (_role_established) {
                     printf("We found the peer, syncing\r\n");
@@ -362,6 +362,7 @@ private:
         if (event.isConnected()) {
             printf("Stopped advertising due to connection\r\n");
         } else {
+            printf("Advertising ended\r\n");
             _event_queue.call(this, &PeriodicDemo::start_role);
         }
     }

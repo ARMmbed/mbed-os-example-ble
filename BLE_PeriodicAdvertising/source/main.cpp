@@ -33,7 +33,7 @@ events::EventQueue event_queue;
 static const char DEVICE_NAME[] = "Periodic";
 
 static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 50;
-static const uint8_t SCAN_TIME = 5000;
+static const uint16_t SCAN_TIME = 5000;
 static const uint8_t CONNECTION_DURATION = 2;
 
 /** Demonstrate periodic advertising and scanning and syncing with the advertising
@@ -179,7 +179,7 @@ private:
             return;
         }
 
-        printf("Advertising started\r\n");
+        printf("Advertising started for %dms\r\n", random_duration_ms);
     }
 
     void advertise_periodic()

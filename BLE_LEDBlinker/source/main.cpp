@@ -165,8 +165,8 @@ private:
 
             /* connect to a discoverable device */
             if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
-                field.value.size() == sizeof(PEER_NAME) &&
-                (memcmp(field.value.data(), PEER_NAME, sizeof(PEER_NAME)) == 0)) {
+                field.value.size() == strlen(PEER_NAME) &&
+                (memcmp(field.value.data(), PEER_NAME, field.value.size()) == 0)) {
 
                 printf("Adv from: ");
                 print_address(event.getPeerAddress().data());

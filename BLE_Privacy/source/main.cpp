@@ -462,8 +462,8 @@ private:
 
             /* connect to a known device by name */
             if (field.type == ble::adv_data_type_t::COMPLETE_LOCAL_NAME &&
-                field.value.size() == sizeof(DEVICE_NAME) &&
-                (memcmp(field.value.data(), DEVICE_NAME, sizeof(DEVICE_NAME)) == 0)) {
+                field.value.size() == strlen(DEVICE_NAME) &&
+                (memcmp(field.value.data(), DEVICE_NAME, field.value.size()) == 0)) {
 
                 printf("We found a connectable device\r\n");
 

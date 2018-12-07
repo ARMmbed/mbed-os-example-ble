@@ -22,10 +22,7 @@
 #include "pretty_printer.h"
 #include "BatteryService.h"
 
-/** This example demonstrates all the basic setup required
- *  to advertise, scan and connect to other devices.
- *
- *  It contains a single class that performs both scans and advertisements.
+/** This example demonstrates extended and periodic advertising
  */
 
 events::EventQueue event_queue;
@@ -125,10 +122,8 @@ private:
             _is_scanner = !_is_scanner;
 
             if (_is_scanner) {
-                if (_adv_handle != ble::INVALID_ADVERTISING_HANDLE) _ble.gap().stopAdvertising(_adv_handle);
                 _event_queue.call(this, &PeriodicDemo::scan);
             } else {
-                _ble.gap().stopScan();
                 _event_queue.call(this, &PeriodicDemo::advertise);
             }
         }
@@ -141,6 +136,7 @@ private:
 
         ble::AdvertisingParameters adv_params;
         adv_params.setUseLegacyPDU(false);
+        adv_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
 
         /* create the advertising set with its parameter if we haven't yet */
         if (_adv_handle == ble::INVALID_ADVERTISING_HANDLE) {
@@ -153,6 +149,8 @@ private:
                 print_error(error, "Gap::createAdvertisingSet() failed\r\n");
                 return;
             }
+        } else {
+            _gap.setAdvertisingParameters(_adv_handle, adv_params);
         }
 
         _adv_data_builder.clear();
@@ -173,12 +171,12 @@ private:
         /* since we have two boards which might start running this example at the same time
          * we randomise the interval of advertising to have them meet when one is advertising
          * and the other one is scanning (we use their random address as source of randomness) */
-        ble::millisecond_t random_duration_ms((1 + rand() % 5) * 1000);
+        ble::millisecond_t random_duration_ms((3 + rand() % 5) * 1000);
         ble::adv_duration_t random_duration(random_duration_ms);
 
         error = _ble.gap().startAdvertising(
-            _adv_handle/*,
-            random_duration*/
+            _adv_handle,
+            random_duration
         );
 
         if (error) {
@@ -259,18 +257,17 @@ private:
     {
         _is_connecting_or_syncing = false;
 
-        ble_error_t error = _gap.setScanParameters(
-            ble::ScanParameters()
-        );
+        ble::ScanParameters scan_params;
+        scan_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
+
+        ble_error_t error = _gap.setScanParameters(scan_params);
 
         if (error) {
             print_error(error, "Error caused by Gap::setScanParameters\r\n");
             return;
         }
 
-        error = _gap.startScan(
-            ble::scan_duration_t(ble::millisecond_t(SCAN_TIME))
-        );
+        error = _gap.startScan(ble::scan_duration_t(500));
 
         if (error) {
             print_error(error, "Error caused by Gap::startScan\r\n");
@@ -415,8 +412,9 @@ private:
     ) {
         if (event.getStatus() == BLE_ERROR_NONE) {
             printf("Synced with periodic advertising\r\n");
-        } else {
             _sync_handle = event.getSyncHandle();
+        } else {
+            printf("Synced with periodic advertising failed\r\n");
         }
     }
 

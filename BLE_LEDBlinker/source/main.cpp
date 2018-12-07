@@ -130,7 +130,7 @@ private:
 private:
     /* Event handler */
 
-    void onDisconnectionComplete(const ble::DisconnectionEvent&) {
+    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
         _ble.gap().startScan();
         _is_connecting = false;
     }
@@ -157,7 +157,7 @@ private:
             return;
         }
 
-        ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
+        ble::AdvertisingDataParser adv_data(event.getPayload());
 
         /* parse the advertising payload, looking for a discoverable device */
         while (adv_data.hasNext()) {

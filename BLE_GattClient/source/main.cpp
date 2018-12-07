@@ -154,18 +154,18 @@ private:
      * This function setup the connection handle to operate on then start the
      * discovery process.
      */
-    void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        _connection_handle = event.connectionHandle;
+        _connection_handle = event.getConnectionHandle();
         _event_queue->call(mbed::callback(this, &Self::start));
     }
 
     /**
      * Stop the discovery process and clean the instance.
      */
-    void onDisconnection(const ble::DisconnectionEvent &event)
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
     {
-        if (_client && event.connectionHandle == _connection_handle) {
+        if (_client && event.getConnectionHandle() == _connection_handle) {
             stop();
         }
     }

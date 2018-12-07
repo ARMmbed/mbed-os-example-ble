@@ -130,7 +130,7 @@ private:
 private:
     /* Event handler */
 
-    virtual void onDisconnection(const ble::DisconnectionEvent&) {
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
         _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
     }
 

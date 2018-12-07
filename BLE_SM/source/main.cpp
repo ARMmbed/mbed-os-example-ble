@@ -252,7 +252,7 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it ends the demonstration. */
-    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &)
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &)
     {
         printf("Diconnected\r\n");
         _event_queue.break_dispatch();

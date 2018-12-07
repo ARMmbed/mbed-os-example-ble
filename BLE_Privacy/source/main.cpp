@@ -234,7 +234,7 @@ private:
     };
 
     /** This is called by Gap to notify the application we disconnected */
-    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event)
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
     {
         if (_bonded) {
             /* we have connected to and bonded with the other device, from now
@@ -423,15 +423,11 @@ private:
         if (_bonded) {
             /* if we bonded it means we have found the other device, from now on
              * wait at each step until completion */
-            error = _ble.gap().startScan(
-                ble::duplicates_filter_t::DISABLE,
-                ble::scan_duration_t(0)
-            );
+            error = _ble.gap().startScan(ble::scan_duration_t::forever());
         } else {
             /* otherwise only scan for a limited time before changing roles again
              * if we fail to find the other device */
             error = _ble.gap().startScan(
-                ble::duplicates_filter_t::DISABLE,
                 ble::scan_duration_t(ble::millisecond_t(4000))
             );
         }
@@ -458,7 +454,7 @@ private:
             return;
         }
 
-        ble::AdvertisingDataParser adv_data(event.getAdvertisingData());
+        ble::AdvertisingDataParser adv_data(event.getPayload());
 
         /* parse the advertising payload, looking for a discoverable device */
         while (adv_data.hasNext()) {

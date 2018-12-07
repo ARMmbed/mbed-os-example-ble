@@ -372,10 +372,7 @@ private:
 
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
-        error = _gap.startScan(
-            ble::duplicates_filter_t::DISABLE,
-            scan_params.duration
-        );
+        error = _gap.startScan(scan_params.duration);
         if (error) {
             print_error(error, "Error caused by Gap::startScan");
             return;
@@ -435,7 +432,7 @@ private:
             return;
         }
 
-        ble::AdvertisingDataParser adv_parser(event.getAdvertisingData());
+        ble::AdvertisingDataParser adv_parser(event.getPayload());
 
         /* parse the advertising payload, looking for a discoverable device */
         while (adv_parser.hasNext()) {
@@ -513,7 +510,7 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it calls next_demo_mode() to progress the demo */
-    virtual void onDisconnectionComplete(const ble::DisconnectionEvent &event)
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
     {
         printf("Disconnected\r\n");
 

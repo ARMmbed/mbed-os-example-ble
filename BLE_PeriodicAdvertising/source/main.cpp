@@ -303,6 +303,11 @@ private:
             return;
         }
 
+        /* if we're looking for periodic advertising don't bother unless it's present */
+        if (_role_established && event.isPeriodicIntervalPresent()) {
+            return;
+        }
+
         ble::AdvertisingDataParser adv_parser(event.getPayload());
 
         /* parse the advertising payload, looking for a discoverable device */
@@ -317,6 +322,9 @@ private:
                 if (_role_established) {
                     printf("We found the peer, syncing\r\n");
                     _gap.stopScan();
+
+                    printf("We found the peer, syncing with SID %d %d\r\n", event.getSID());
+
                     ble_error_t error = _gap.createSync(
                         event.getPeerAddressType(),
                         event.getPeerAddress(),

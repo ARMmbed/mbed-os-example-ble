@@ -235,7 +235,7 @@ private:
         );
 
         if (error) {
-            print_error(error, "AdvertisingDataBuilder::setFlags() failed\r\n");
+            print_error(error, "AdvertisingDataBuilder::setServiceData() failed\r\n");
             return;
         }
 
@@ -316,6 +316,7 @@ private:
                 /* if we haven't established our roles connect, otherwise sync with advertising */
                 if (_role_established) {
                     printf("We found the peer, syncing\r\n");
+                    _gap.stopScan();
                     ble_error_t error = _gap.createSync(
                         event.getPeerAddressType(),
                         event.getPeerAddress(),
@@ -367,8 +368,10 @@ private:
     virtual void onScanTimeout(
         const ble::ScanTimeoutEvent&
     ) {
-        printf("Scanning ended, failed to find peer\r\n");
-        _event_queue.call(this, &PeriodicDemo::start_role);
+        if (!_is_connecting_or_syncing) {
+            printf("Scanning ended, failed to find peer\r\n");
+            _event_queue.call(this, &PeriodicDemo::start_role);
+        }
     }
 
     /** This is called by Gap to notify the application we connected */
@@ -376,6 +379,8 @@ private:
         const ble::ConnectionCompleteEvent &event
     ) {
         if (event.getStatus() == BLE_ERROR_NONE) {
+            printf("Connected to: ");
+            print_address(event.getPeerAddress().data());
             printf("Roles established\r\n");
             _role_established = true;
 
@@ -414,7 +419,7 @@ private:
             printf("Synced with periodic advertising\r\n");
             _sync_handle = event.getSyncHandle();
         } else {
-            printf("Synced with periodic advertising failed\r\n");
+            printf("Sync with periodic advertising failed\r\n");
         }
     }
 

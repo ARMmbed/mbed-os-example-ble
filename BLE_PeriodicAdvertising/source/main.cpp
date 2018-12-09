@@ -189,10 +189,21 @@ private:
 
     void advertise_periodic()
     {
+        ble::AdvertisingParameters adv_params;
+        adv_params.setType(ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED);
+        adv_params.setUseLegacyPDU(false);
+        adv_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
+
+        ble_error_t error = _gap.setAdvertisingParameters(_adv_handle, adv_params);
+
+        if (error) {
+            print_error(error, "Gap::setAdvertisingParameters() failed\r\n");
+            return;
+        }
 
         /* Start advertising the set as the advertising needs to be active
          * before we start periodic advertising */
-        ble_error_t error = _gap.startAdvertising(_adv_handle);
+        error = _gap.startAdvertising(_adv_handle);
 
         if (error) {
             print_error(error, "Gap::startAdvertising() failed\r\n");
@@ -304,7 +315,7 @@ private:
         }
 
         /* if we're looking for periodic advertising don't bother unless it's present */
-        if (_role_established && event.isPeriodicIntervalPresent()) {
+        if (_role_established && !event.isPeriodicIntervalPresent()) {
             return;
         }
 
@@ -320,10 +331,9 @@ private:
                 (memcmp(field.value.data(), DEVICE_NAME, field.value.size()) == 0)) {
                 /* if we haven't established our roles connect, otherwise sync with advertising */
                 if (_role_established) {
-                    printf("We found the peer, syncing\r\n");
-                    _gap.stopScan();
-
-                    printf("We found the peer, syncing with SID %d %d\r\n", event.getSID());
+                    printf("We found the peer, syncing with SID %d"
+                           "and periodic interval %dms\r\n",
+                           event.getSID(), event.getPeriodicInterval().valueInMs());
 
                     ble_error_t error = _gap.createSync(
                         event.getPeerAddressType(),
@@ -332,6 +342,8 @@ private:
                         2,
                         ble::sync_timeout_t(ble::millisecond_t(500))
                     );
+
+                    _is_connecting_or_syncing = true;
 
                     if (error) {
                         print_error(error, "Error caused by Gap::createSync\r\n");

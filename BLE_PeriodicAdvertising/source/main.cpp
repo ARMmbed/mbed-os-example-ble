@@ -343,8 +343,6 @@ private:
                         ble::sync_timeout_t(ble::millisecond_t(500))
                     );
 
-                    _is_connecting_or_syncing = true;
-
                     if (error) {
                         print_error(error, "Error caused by Gap::createSync\r\n");
                         return;
@@ -447,8 +445,6 @@ private:
     virtual void onPeriodicAdvertisingReport(
        const ble::PeriodicAdvertisingReportEvent &event
     ) {
-        event.getPayload();
-
         ble::AdvertisingDataParser adv_parser(event.getPayload());
 
         /* parse the advertising payload, looking for a battery level */

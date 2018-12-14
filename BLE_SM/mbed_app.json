@@ -1,15 +1,8 @@
 {
-    "config": {
-        "filesystem_support": {
-            "help": "Whether filesystem is supported on the target",
-            "value": 1
-        }
-    },
     "target_overrides": {
         "K64F": {
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "filesystem_support": 0
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
         "NUCLEO_F401RE": {
             "target.features_add": ["BLE"],
@@ -18,6 +11,16 @@
         "DISCO_L475VG_IOT01A": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
+        },
+        "NRF52_DK": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
         }
     }
 }

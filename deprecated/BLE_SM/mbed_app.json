@@ -1,0 +1,23 @@
+{
+    "config": {
+        "filesystem_support": {
+            "help": "Whether filesystem is supported on the target",
+            "value": 1
+        }
+    },
+    "target_overrides": {
+        "K64F": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
+            "filesystem_support": 0
+        },
+        "NUCLEO_F401RE": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+        }
+    }
+}

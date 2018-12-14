@@ -31,6 +31,7 @@ The following targets have been tested and work with these examples:
 * Nordic:
 	* NRF51_DK
 	* NRF52_DK
+	* NRF52840_DK
 
 * Boards with an ST shield plugged in:
 	* K64F
@@ -40,6 +41,21 @@ The following targets have been tested and work with these examples:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+	
+<span> Note: The Cordio Link layer is used for NRF52 platforms by default. To switch to using the Softdevice, remove these lines in mbed_app.json.
+Bluetooth 5 features are only supported by the Cordio implementation, and some examples (such as BLE_GAP) use these. If you're using the Softdevice you can use the deprecated examples in this case.
+	
+For NRF52_DK:
+```
+    "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+    "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
+```
+
+For NRF52840_DK:
+```
+    "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+    "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
+```
 
 ### Using ST Nucleo shield on other targets
 

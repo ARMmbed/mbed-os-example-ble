@@ -222,7 +222,7 @@ private:
         }
 
         /* we will put the battery level data in there and update it every second */
-        update_paylod();
+        update_payload();
 
         error = _gap.startPeriodicAdvertising(_adv_handle);
 
@@ -237,7 +237,7 @@ private:
         _event_queue.call_every(1000, this, &PeriodicDemo::update_sensor_value);
     }
 
-    void update_paylod()
+    void update_payload()
     {
         /* advertising payload will have the battery level which we will update */
         ble_error_t error = _adv_data_builder.setServiceData(
@@ -480,7 +480,7 @@ private:
         }
 
         _battery_service.updateBatteryLevel(_battery_level);
-        update_paylod();
+        update_payload();
     }
 
     /** Blink LED to show we're running */

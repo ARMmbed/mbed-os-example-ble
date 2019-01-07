@@ -136,7 +136,7 @@ private:
 
         ble::AdvertisingParameters adv_params;
         adv_params.setUseLegacyPDU(false);
-        adv_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
+        adv_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
         /* create the advertising set with its parameter if we haven't yet */
         if (_adv_handle == ble::INVALID_ADVERTISING_HANDLE) {
@@ -192,7 +192,7 @@ private:
         ble::AdvertisingParameters adv_params;
         adv_params.setType(ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED);
         adv_params.setUseLegacyPDU(false);
-        adv_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
+        adv_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
         ble_error_t error = _gap.setAdvertisingParameters(_adv_handle, adv_params);
 
@@ -269,7 +269,7 @@ private:
         _is_connecting_or_syncing = false;
 
         ble::ScanParameters scan_params;
-        scan_params.setOwnAddressType(ble::own_address_type_t::PUBLIC);
+        scan_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 
         ble_error_t error = _gap.setScanParameters(scan_params);
 

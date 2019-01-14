@@ -17,111 +17,157 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "ble/Gap.h"
+#include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
+#include "pretty_printer.h"
 
-DigitalOut led1(LED1, 1);
+const static char DEVICE_NAME[] = "Heartrate";
 
-const static char     DEVICE_NAME[] = "HRM";
-static const uint16_t uuid16_list[] = {GattService::UUID_HEART_RATE_SERVICE};
+static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
-static uint8_t hrmCounter = 100; // init HRM to 100bps
-static HeartRateService *hrServicePtr;
+class HeartrateDemo : ble::Gap::EventHandler {
+public:
+    HeartrateDemo(BLE &ble, events::EventQueue &event_queue) :
+        _ble(ble),
+        _event_queue(event_queue),
+        _led1(LED1, 1),
+        _connected(false),
+        _hr_uuid(GattService::UUID_HEART_RATE_SERVICE),
+        _hr_counter(100),
+        _hr_service(ble, _hr_counter, HeartRateService::LOCATION_FINGER),
+        _adv_data_builder(_adv_buffer) { }
 
-static EventQueue eventQueue(/* event count */ 16 * EVENTS_EVENT_SIZE);
+    void start() {
+        _ble.gap().setEventHandler(this);
 
-void disconnectionCallback(const Gap::DisconnectionCallbackParams_t *params)
-{
-    BLE::Instance().gap().startAdvertising(); // restart advertising
-}
+        _ble.init(this, &HeartrateDemo::on_init_complete);
 
-void updateSensorValue() {
-    // Do blocking calls or whatever is necessary for sensor polling.
-    // In our case, we simply update the HRM measurement.
-    hrmCounter++;
+        _event_queue.call_every(500, this, &HeartrateDemo::blink);
+        _event_queue.call_every(1000, this, &HeartrateDemo::update_sensor_value);
 
-    //  100 <= HRM bps <=175
-    if (hrmCounter == 175) {
-        hrmCounter = 100;
+        _event_queue.dispatch_forever();
     }
 
-    hrServicePtr->updateHeartRate(hrmCounter);
-}
+private:
+    /** Callback triggered when the ble initialization process has finished */
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
+        if (params->error != BLE_ERROR_NONE) {
+            printf("Ble initialization failed.");
+            return;
+        }
 
-void periodicCallback(void)
-{
-    led1 = !led1; /* Do blinky on LED1 while we're waiting for BLE events */
+        print_mac_address();
 
-    if (BLE::Instance().getGapState().connected) {
-        eventQueue.call(updateSensorValue);
-    }
-}
-
-void onBleInitError(BLE &ble, ble_error_t error)
-{
-    (void)ble;
-    (void)error;
-   /* Initialization error handling should go here */
-}
-
-void printMacAddress()
-{
-    /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
-    printf("DEVICE MAC ADDRESS: ");
-    for (int i = 5; i >= 1; i--){
-        printf("%02x:", address[i]);
-    }
-    printf("%02x\r\n", address[0]);
-}
-
-void bleInitComplete(BLE::InitializationCompleteCallbackContext *params)
-{
-    BLE&        ble   = params->ble;
-    ble_error_t error = params->error;
-
-    if (error != BLE_ERROR_NONE) {
-        onBleInitError(ble, error);
-        return;
+        start_advertising();
     }
 
-    if (ble.getInstanceID() != BLE::DEFAULT_INSTANCE) {
-        return;
+    void start_advertising() {
+        /* Create advertising parameters and payload */
+
+        ble::AdvertisingParameters adv_parameters(
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(1000))
+        );
+
+        _adv_data_builder.setFlags();
+        _adv_data_builder.setAppearance(ble::adv_data_appearance_t::GENERIC_HEART_RATE_SENSOR);
+        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_hr_uuid, 1));
+        _adv_data_builder.setName(DEVICE_NAME);
+
+        /* Setup advertising */
+
+        ble_error_t error = _ble.gap().setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            adv_parameters
+        );
+
+        if (error) {
+            printf("_ble.gap().setAdvertisingParameters() failed\r\n");
+            return;
+        }
+
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            printf("_ble.gap().setAdvertisingPayload() failed\r\n");
+            return;
+        }
+
+        /* Start advertising */
+
+        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
+        if (error) {
+            printf("_ble.gap().startAdvertising() failed\r\n");
+            return;
+        }
     }
 
-    ble.gap().onDisconnection(disconnectionCallback);
+    void update_sensor_value() {
+        if (_connected) {
+            // Do blocking calls or whatever is necessary for sensor polling.
+            // In our case, we simply update the HRM measurement.
+            _hr_counter++;
 
-    /* Setup primary service. */
-    hrServicePtr = new HeartRateService(ble, hrmCounter, HeartRateService::LOCATION_FINGER);
+            //  100 <= HRM bps <=175
+            if (_hr_counter == 175) {
+                _hr_counter = 100;
+            }
 
-    /* Setup advertising. */
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::BREDR_NOT_SUPPORTED | GapAdvertisingData::LE_GENERAL_DISCOVERABLE);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LIST_16BIT_SERVICE_IDS, (uint8_t *)uuid16_list, sizeof(uuid16_list));
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::GENERIC_HEART_RATE_SENSOR);
-    ble.gap().accumulateAdvertisingPayload(GapAdvertisingData::COMPLETE_LOCAL_NAME, (uint8_t *)DEVICE_NAME, sizeof(DEVICE_NAME));
-    ble.gap().setAdvertisingType(GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED);
-    ble.gap().setAdvertisingInterval(1000); /* 1000ms */
-    ble.gap().startAdvertising();
+            _hr_service.updateHeartRate(_hr_counter);
+        }
+    }
 
-    printMacAddress();
-}
+    void blink(void) {
+        _led1 = !_led1;
+    }
 
-void scheduleBleEventsProcessing(BLE::OnEventsToProcessCallbackContext* context) {
-    BLE &ble = BLE::Instance();
-    eventQueue.call(Callback<void()>(&ble, &BLE::processEvents));
+private:
+    /* Event handler */
+
+    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
+        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        _connected = false;
+    }
+
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event) {
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            _connected = true;
+        }
+    }
+
+private:
+    BLE &_ble;
+    events::EventQueue &_event_queue;
+    DigitalOut _led1;
+
+    bool _connected;
+
+    UUID _hr_uuid;
+
+    uint8_t _hr_counter;
+    HeartRateService _hr_service;
+
+    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
+};
+
+/** Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+    event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
 int main()
 {
-    eventQueue.call_every(500, periodicCallback);
-
     BLE &ble = BLE::Instance();
-    ble.onEventsToProcess(scheduleBleEventsProcessing);
-    ble.init(bleInitComplete);
+    ble.onEventsToProcess(schedule_ble_events);
 
-    eventQueue.dispatch_forever();
+    HeartrateDemo demo(ble, event_queue);
+    demo.start();
 
     return 0;
 }
+

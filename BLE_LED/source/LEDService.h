@@ -27,7 +27,8 @@ public:
     {
         GattCharacteristic *charTable[] = {&ledState};
         GattService         ledService(LED_SERVICE_UUID, charTable, sizeof(charTable) / sizeof(GattCharacteristic *));
-        ble.addService(ledService);
+
+        ble.gattServer().addService(ledService);
     }
 
     GattAttribute::Handle_t getValueHandle() const

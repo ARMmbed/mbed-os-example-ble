@@ -136,7 +136,7 @@ private:
     }
 
     void onConnectionComplete(const ble::ConnectionCompleteEvent& event) {
-        if (event.getOwnRole() == Gap::CENTRAL) {
+        if (event.getOwnRole() == ble::connection_role_t::CENTRAL) {
             _ble.gattClient().onServiceDiscoveryTermination(discovery_termination);
             _ble.gattClient().launchServiceDiscovery(
                 event.getConnectionHandle(),

@@ -132,7 +132,7 @@ private:
 
     UUID _thermometer_uuid;
 
-    uint8_t _current_temperature;
+    float _current_temperature;
     HealthThermometerService *_thermometer_service;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];

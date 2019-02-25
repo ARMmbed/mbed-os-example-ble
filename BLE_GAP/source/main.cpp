@@ -568,6 +568,24 @@ private:
         }
     }
 
+    /**
+     * Implementation of Gap::EventHandler::onDataLengthChange
+     */
+    virtual void onDataLengthChange(
+        ble::connection_handle_t connectionHandle,
+        uint16_t txSize,
+        uint16_t rxSize
+    ) {
+        printf(
+            "Data length changed on the connection %d.\r\n"
+            "Maximum sizes for over the air packets are:\r\n"
+            "%d octets for transmit and %d octets for receive.\r\n",
+            connectionHandle,
+            txSize,
+            rxSize
+        );
+    }
+
 private:
 
     /** Clean up internal state after last run, cycle to the next mode and launch it */

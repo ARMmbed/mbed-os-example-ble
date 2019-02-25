@@ -43,7 +43,8 @@
  * indications and notification until the connection end.
  */
 class GattClientProcess : private mbed::NonCopyable<GattClientProcess>,
-                          public ble::Gap::EventHandler {
+                          public ble::Gap::EventHandler,
+                          public GattClient::EventHandler {
 
     // Internal typedef to this class type.
     // It is used as a shorthand to pass member function as callbacks.
@@ -118,6 +119,13 @@ public:
             return;
         }
 
+        // register as a handler for GattClient events
+        _client->setEventHandler(this);
+
+        // this might not result in a new value but if it does we will be informed through
+        // an call in the event handler we just registered
+        _client->negotiateAttMtu(_connection_handle);
+
         printf("Client process started: initiate service discovery.\r\n");
     }
 
@@ -168,6 +176,21 @@ private:
         if (_client && event.getConnectionHandle() == _connection_handle) {
             stop();
         }
+    }
+
+    /**
+     * Implementation of GattClient::EventHandler::onAttMtuChange event
+     */
+    virtual void onAttMtuChange(
+        ble::connection_handle_t connectionHandle,
+        uint16_t attMtuSize
+    ) {
+        printf(
+            "ATT_MTU changed on the connection %d to a new value of %d.\r\n",
+            connectionHandle,
+            attMtuSize
+            /* maximum size of an attribute written in a single operation is one less */
+        );
     }
 
 private:

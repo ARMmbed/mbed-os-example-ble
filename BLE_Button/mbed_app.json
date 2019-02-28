@@ -4,6 +4,11 @@
             "help": "The pin name used as button in this application",
             "macro_name": "BLE_BUTTON_PIN_NAME",
             "required": true
+        },
+        "ble_button_pin_pull": {
+            "help": "The BLE button may need a pull-up. Possible values are PullUp, PullDown, PullNone (default).",
+            "macro_name": "BLE_BUTTON_PIN_PULL",
+            "value": "PullNone"
         }
     },
     "target_overrides": {
@@ -25,6 +30,10 @@
             "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
             "ble_button_pin_name": "USER_BUTTON"
         },
+        "NUCLEO_WB55RG": {
+            "ble_button_pin_name": "USER_BUTTON",
+            "ble_button_pin_pull": "PullUp"
+        },
         "NRF52840_DK": {
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
@@ -39,6 +48,6 @@
         },
         "MTB_UBLOX_NINA_B1": {
             "ble_button_pin_name": "BUTTON1"
-        }            
+        }
     }
 }

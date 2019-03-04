@@ -23,26 +23,28 @@
 DigitalOut led1(LED1, 1);
 
 const static char DEVICE_NAME[] = "Therm";
+const float temperature_min = 39.6;
+const float temperature_max = 43.0;
 
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
-class BatteryDemo : ble::Gap::EventHandler {
+class ThermometerDemo : ble::Gap::EventHandler {
 public:
-    BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
+    ThermometerDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
         _event_queue(event_queue),
         _thermometer_uuid(GattService::UUID_HEALTH_THERMOMETER_SERVICE),
-        _current_temperature(39.6),
+        _current_temperature(temperature_min),
         _thermometer_service(NULL),
         _adv_data_builder(_adv_buffer) { }
 
     void start() {
         _ble.gap().setEventHandler(this);
 
-        _ble.init(this, &BatteryDemo::on_init_complete);
+        _ble.init(this, &ThermometerDemo::on_init_complete);
 
-        _event_queue.call_every(500, this, &BatteryDemo::blink);
-        _event_queue.call_every(1000, this, &BatteryDemo::update_sensor_value);
+        _event_queue.call_every(500, this, &ThermometerDemo::blink);
+        _event_queue.call_every(1000, this, &ThermometerDemo::update_sensor_value);
 
         _event_queue.dispatch_forever();
     }
@@ -110,7 +112,7 @@ private:
 
     void update_sensor_value() {
         if (_ble.gap().getState().connected) {
-            _current_temperature = (_current_temperature + 0.1 > 43.0) ? 39.6 : _current_temperature + 0.1;
+            _current_temperature = (_current_temperature + 0.1 > temperature_max) ? temperature_min : _current_temperature + 0.1;
             _thermometer_service->updateTemperature(_current_temperature);
         }
     }
@@ -149,7 +151,7 @@ int main()
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 
-    BatteryDemo demo(ble, event_queue);
+    ThermometerDemo demo(ble, event_queue);
     demo.start();
 
     return 0;

@@ -37,6 +37,7 @@ public:
          * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
         _button_uuid(0xAA00),
         _button(BLE_BUTTON_PIN_NAME),
+        _button_count(0),
         _adv_data_builder(_adv_buffer) { }
 
     ~GapButtonDemo()

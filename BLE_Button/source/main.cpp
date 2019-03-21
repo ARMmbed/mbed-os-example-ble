@@ -61,8 +61,8 @@ private:
 
         _button_service = new ButtonService(_ble, false /* initial value for button pressed */);
 
-        _button.fall(Callback<void()>(this, &BatteryDemo::button_pressed));
-        _button.rise(Callback<void()>(this, &BatteryDemo::button_released));
+        _button.fall(Callback<void()>(this, &ButtonDemo::button_pressed));
+        _button.rise(Callback<void()>(this, &ButtonDemo::button_released));
 
         start_advertising();
     }

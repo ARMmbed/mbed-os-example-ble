@@ -26,9 +26,9 @@ const static char DEVICE_NAME[] = "Button";
 static EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
 
-class BatteryDemo : ble::Gap::EventHandler {
+class ButtonDemo : ble::Gap::EventHandler {
 public:
-    BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
+    ButtonDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
         _event_queue(event_queue),
         _led1(LED1, 1),
@@ -40,9 +40,9 @@ public:
     void start() {
         _ble.gap().setEventHandler(this);
 
-        _ble.init(this, &BatteryDemo::on_init_complete);
+        _ble.init(this, &ButtonDemo::on_init_complete);
 
-        _event_queue.call_every(500, this, &BatteryDemo::blink);
+        _event_queue.call_every(500, this, &ButtonDemo::blink);
 
         _event_queue.dispatch_forever();
     }
@@ -158,7 +158,7 @@ int main()
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 
-    BatteryDemo demo(ble, event_queue);
+    ButtonDemo demo(ble, event_queue);
     demo.start();
 
     return 0;

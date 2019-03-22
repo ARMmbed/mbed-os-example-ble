@@ -128,20 +128,14 @@ private:
         printf("Ble instance initialized\r\n");
 
         Gap &gap = _ble_interface.gap();
-        ble_error_t error = gap.setAdvertisingPayload(make_advertising_data());
-        if (error) {
-            printf("Error %u during gap.setAdvertisingPayload\r\n", error);
-            return;
-        }
-
-        gap.setAdvertisingParams(make_advertising_params());
-
         gap.onConnection(this, &BLEProcess::when_connection);
         gap.onDisconnection(this, &BLEProcess::when_disconnection);
 
+        set_advertising_parameters();
+        set_advertising_data();
         start_advertising();
 
-       if (_post_init_cb) {
+        if (_post_init_cb) {
             _post_init_cb(_ble_interface, _event_queue);
         }
     }
@@ -159,7 +153,11 @@ private:
 
     void start_advertising(void)
     {
-        ble_error_t error = _ble_interface.gap().startAdvertising();
+        Gap &gap = _ble_interface.gap();
+
+        /* Start advertising the set */
+        ble_error_t error = gap.startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+
         if (error) {
             printf("Error %u during gap.startAdvertising.\r\n", error);
             return;
@@ -168,34 +166,39 @@ private:
         }
     }
 
-    static GapAdvertisingData make_advertising_data(void)
+    void set_advertising_parameters()
     {
-        static const uint8_t device_name[] = "GattServer";
-        GapAdvertisingData advertising_data;
+        Gap &gap = _ble_interface.gap();
 
-        // add advertising flags
-        advertising_data.addFlags(
-            GapAdvertisingData::LE_GENERAL_DISCOVERABLE |
-            GapAdvertisingData::BREDR_NOT_SUPPORTED
+        ble_error_t error = gap.setAdvertisingParameters(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            ble::AdvertisingParameters()
         );
 
-        // add device name
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            device_name,
-            sizeof(device_name)
-        );
-
-        return advertising_data;
+        if (error) {
+            printf("Gap::setAdvertisingParameters() failed with error %d", error);
+            return;
+        }
     }
 
-    static GapAdvertisingParams make_advertising_params(void)
+    void set_advertising_data()
     {
-        return GapAdvertisingParams(
-            /* type */ GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,
-            /* interval */ GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-            /* timeout */ 0
+        Gap &gap = _ble_interface.gap();
+
+        /* Use the simple builder to construct the payload; it fails at runtime
+         * if there is not enough space left in the buffer */
+        ble_error_t error = gap.setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
+                .setFlags()
+                .setName("GattServer")
+                .getAdvertisingData()
         );
+
+        if (error) {
+            printf("Gap::setAdvertisingPayload() failed with error %d", error);
+            return;
+        }
     }
 
     events::EventQueue &_event_queue;

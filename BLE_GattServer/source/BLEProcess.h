@@ -131,9 +131,17 @@ private:
         gap.onConnection(this, &BLEProcess::when_connection);
         gap.onDisconnection(this, &BLEProcess::when_disconnection);
 
-        set_advertising_parameters();
-        set_advertising_data();
-        start_advertising();
+        if (!set_advertising_parameters()) {
+            return;
+        }
+
+        if (!set_advertising_data()) {
+            return;
+        }
+
+        if (!start_advertising()) {
+            return;
+        }
 
         if (_post_init_cb) {
             _post_init_cb(_ble_interface, _event_queue);
@@ -151,7 +159,7 @@ private:
         start_advertising();
     }
 
-    void start_advertising(void)
+    bool start_advertising(void)
     {
         Gap &gap = _ble_interface.gap();
 
@@ -160,13 +168,14 @@ private:
 
         if (error) {
             printf("Error %u during gap.startAdvertising.\r\n", error);
-            return;
+            return false;
         } else {
             printf("Advertising started.\r\n");
+            return true;
         }
     }
 
-    void set_advertising_parameters()
+    bool set_advertising_parameters()
     {
         Gap &gap = _ble_interface.gap();
 
@@ -177,11 +186,13 @@ private:
 
         if (error) {
             printf("Gap::setAdvertisingParameters() failed with error %d", error);
-            return;
+            return false;
         }
+
+        return true;
     }
 
-    void set_advertising_data()
+    bool set_advertising_data()
     {
         Gap &gap = _ble_interface.gap();
 
@@ -197,8 +208,10 @@ private:
 
         if (error) {
             printf("Gap::setAdvertisingPayload() failed with error %d", error);
-            return;
+            return false;
         }
+
+        return true;
     }
 
     events::EventQueue &_event_queue;

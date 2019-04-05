@@ -75,13 +75,9 @@ private:
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
-        uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
-
-        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
-
-        adv_data_builder.setFlags();
-        adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
-        adv_data_builder.setName(DEVICE_NAME);
+        _adv_data_builder.setFlags();
+        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
+        _adv_data_builder.setName(DEVICE_NAME);
 
         /* Setup advertising */
 

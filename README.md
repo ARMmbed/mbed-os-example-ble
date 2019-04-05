@@ -40,12 +40,15 @@ The following targets have been tested and work with these examples:
 
 * STMicroelectronics:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
+	* NUCLEO_WB55RG
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 	
 <span> Note: The Cordio Link layer is used for NRF52 platforms by default. To switch to using the Softdevice, remove these lines in mbed_app.json.
 Bluetooth 5 features are only supported by the Cordio implementation, and some examples (such as BLE_GAP) use these. If you're using the Softdevice you can use the deprecated examples in this case.
-	
+
+For NUCLEO_WB55RG: the NUCLEO_WB55RG supports BLE CORDIO by default in mbed-os so there is no extra label in mbed_app.json.
+
 For NRF52_DK:
 ```
     "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
@@ -145,6 +148,7 @@ Known issues
 
 * [NUCLEO_F411RE]: Some BLE examples doesn't work with the X-NUCLEO BLE shield. See [#40](https://github.com/ARMmbed/mbed-os-example-ble/issues/40)
 * [NRF5] Impossible to debug or flash the examples with IAR: See [#39](https://github.com/ARMmbed/mbed-os-example-ble/issues/39)
+* [NUCLEO_WB55RG]: some examples are not working with default application described in examples readme. Better use [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone or try out [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation).
 
 ### License and contributions
 

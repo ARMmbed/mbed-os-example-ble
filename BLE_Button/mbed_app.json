@@ -39,6 +39,21 @@
         },
         "MTB_UBLOX_NINA_B1": {
             "ble_button_pin_name": "BUTTON1"
-        }            
+        },
+        "MTB_LAIRD_BL600": {
+            "ble_button_pin_name": "BUTTON1"
+        },
+        "MTB_LAIRD_BL652": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"],
+            "ble_button_pin_name": "BUTTON1"
+        },
+        "MTB_LAIRD_BL654": {
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
+            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"],
+            "ble_button_pin_name": "BUTTON1"
+        }        
     }
 }

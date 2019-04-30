@@ -1,2 +1,2 @@
 // This is internal file to run tests in internal Jenkins
-mbed-os-example-ble-tests.run_job()
+ble_ci.run_job()

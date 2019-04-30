@@ -36,8 +36,8 @@ public:
          * as long as it does not overlap with the UUIDs defined here:
          * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
         _button_uuid(0xAA00),
-        _button(BLE_BUTTON_PIN_NAME),
         _button_count(0),
+        _button(BLE_BUTTON_PIN_NAME, BLE_BUTTON_PIN_PULL),
         _adv_data_builder(_adv_buffer) { }
 
     ~GapButtonDemo()

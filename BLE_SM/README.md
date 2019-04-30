@@ -2,9 +2,11 @@
 
 Demonstration of possible usage of the Security Manager. Security Manager deals with pairing, authentication and encryption.
 
-The application demonstrates usage as a central and a peripheral. The central will connect to any connectable device present. Please have one ready and advertising. Application will attempt pairing. Please authorise your peer device to pair.
+The application demonstrates usage as a central and a peripheral.
 
-Upon success it will disconnect and start advertising to demonstrate usage as a peripheral. Please scan and connect using your peer device. Upon connection grant pairing if prompted. Upon success the application will disconnect. Observe the terminal to keep track of the sequence. 
+It will start advertising to demonstrate usage as a peripheral first. Please scan and connect using your peer device. Upon connection grant pairing if prompted. Upon success the application will disconnect.
+
+The application will switch to demonstrating the central role and will connect to the device that previously connected to it. Please have it ready and advertising. Observe the terminal to keep track of the sequence. 
 
 # Running the application
 

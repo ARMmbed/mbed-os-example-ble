@@ -33,7 +33,7 @@ public:
         _event_queue(event_queue),
         _sensor_event_id(0),
         _thermometer_uuid(GattService::UUID_HEALTH_THERMOMETER_SERVICE),
-        _current_temperature(39.6),
+        _current_temperature(39.6f),
         _thermometer_service(NULL),
         _adv_data_builder(_adv_buffer) { }
 
@@ -109,7 +109,7 @@ private:
     }
 
     void update_sensor_value() {
-        _current_temperature = (_current_temperature + 0.1 > 43.0) ? 39.6 : _current_temperature + 0.1;
+        _current_temperature = (_current_temperature + 0.1f > 43.0f) ? 39.6f : _current_temperature + 0.1f;
         _thermometer_service->updateTemperature(_current_temperature);
     }
 
@@ -139,7 +139,7 @@ private:
 
     UUID _thermometer_uuid;
 
-    uint8_t _current_temperature;
+    float _current_temperature;
     HealthThermometerService *_thermometer_service;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];

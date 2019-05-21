@@ -31,6 +31,7 @@ public:
     BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
         _event_queue(event_queue),
+        _sensor_event_id(0),
         _thermometer_uuid(GattService::UUID_HEALTH_THERMOMETER_SERVICE),
         _current_temperature(39.6),
         _thermometer_service(NULL),
@@ -42,7 +43,6 @@ public:
         _ble.init(this, &BatteryDemo::on_init_complete);
 
         _event_queue.call_every(500, this, &BatteryDemo::blink);
-        _event_queue.call_every(1000, this, &BatteryDemo::update_sensor_value);
 
         _event_queue.dispatch_forever();
     }
@@ -109,10 +109,8 @@ private:
     }
 
     void update_sensor_value() {
-        if (_ble.gap().getState().connected) {
-            _current_temperature = (_current_temperature + 0.1 > 43.0) ? 39.6 : _current_temperature + 0.1;
-            _thermometer_service->updateTemperature(_current_temperature);
-        }
+        _current_temperature = (_current_temperature + 0.1 > 43.0) ? 39.6 : _current_temperature + 0.1;
+        _thermometer_service->updateTemperature(_current_temperature);
     }
 
     void blink(void) {
@@ -122,13 +120,22 @@ private:
 private:
     /* Event handler */
 
-    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
+        _event_queue.cancel(_sensor_event_id);
         _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+    }
+
+    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event) {
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            _sensor_event_id = _event_queue.call_every(1000, this, &BatteryDemo::update_sensor_value);
+        }
     }
 
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
+
+    int _sensor_event_id;
 
     UUID _thermometer_uuid;
 

@@ -86,7 +86,7 @@ static const DemoScanParam_t scanning_params[] = {
 
 /* helper that gets the number of items in arrays */
 template<class T, size_t N>
-size_t size(const T (&)[N])
+size_t arraysize(const T (&)[N])
 {
     return N;
 }
@@ -107,7 +107,7 @@ public:
         _on_duration_end_id(0),
         _scan_count(0),
         _blink_event(0) {
-        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
+        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
             _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
         }
     }
@@ -268,7 +268,7 @@ private:
         /* how many sets */
         uint8_t max_adv_set = std::min(
             _gap.getMaxAdvertisingSetNumber(),
-            (uint8_t) size(_adv_handles)
+            (uint8_t) arraysize(_adv_handles)
         );
 
         /* one advertising set is reserved for legacy advertising */
@@ -315,7 +315,7 @@ private:
             /* set different name for each set */
             MBED_ASSERT(i < 9);
             char device_name[] = "Advertiser x";
-            snprintf(device_name, size(device_name), "Advertiser %d", i%10);
+            snprintf(device_name, arraysize(device_name), "Advertiser %d", i%10);
             error = adv_data_builder.setName(device_name);
             if (error) {
                 print_error(error, "AdvertisingDataBuilder::setName() failed");
@@ -583,7 +583,7 @@ private:
 
         /* switch between advertising and scanning when we go
          * through all the params in the array */
-        if (_set_index >= (_is_in_scanning_mode ? size(scanning_params) : size(advertising_params))) {
+        if (_set_index >= (_is_in_scanning_mode ? arraysize(scanning_params) : arraysize(advertising_params))) {
             _set_index = 0;
             _is_in_scanning_mode = !_is_in_scanning_mode;
         }
@@ -618,7 +618,7 @@ private:
     void end_extended_advertising()
     {
         /* iterate over the advertising handles */
-        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
+        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
             /* check if the set has been sucesfully created */
             if (_adv_handles[i] == ble::INVALID_ADVERTISING_HANDLE) {
                 continue;
@@ -673,7 +673,7 @@ private:
         uint16_t duration_ms = _demo_duration.read_ms();
         uint8_t number_of_active_sets = 0;
 
-        for (uint8_t i = 0; i < size(_adv_handles); ++i) {
+        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
             if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
                 if (_gap.isAdvertisingActive(_adv_handles[i])) {
                     number_of_active_sets++;

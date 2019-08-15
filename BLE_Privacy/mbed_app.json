@@ -13,14 +13,10 @@
             "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
         },
         "NRF52840_DK": {
-            "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
-            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
+            "target.features_add": ["BLE"]
         },
         "NRF52_DK": {
-            "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
-            "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
+            "target.features_add": ["BLE"]
         }
     }
 }

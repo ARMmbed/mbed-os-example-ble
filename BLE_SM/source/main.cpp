@@ -252,19 +252,22 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it ends the demonstration. */
-    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &)
+    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent & event)
     {
         printf("Diconnected\r\n");
         _event_queue.break_dispatch();
     };
 
-    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &)
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent & event)
     {
-        printf("Advertising timed out - aborting\r\n");
-        _event_queue.break_dispatch();
+    		// Advertising ended without a connection -- abort
+    		if(!event.isConnected()) {
+    			printf("Advertising timed out - aborting\r\n");
+			_event_queue.break_dispatch();
+    		}
     }
 
-    virtual void onScanTimeout(const ble::ScanTimeoutEvent &)
+    virtual void onScanTimeout(const ble::ScanTimeoutEvent & event)
     {
         printf("Scan timed out - aborting\r\n");
         _event_queue.break_dispatch();
@@ -346,7 +349,6 @@ public:
      *  in our case it immediately requests a change in link security */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        ble_error_t error;
 
         /* remember the device that connects to us now so we can connect to it
          * during the next demonstration */
@@ -357,7 +359,7 @@ public:
 
         _handle = event.getConnectionHandle();
 
-        _event_queue.call(this, &SMDevicePeripheral::set_link_security);
+        _event_queue.call(callback(this, &SMDevicePeripheral::set_link_security));
     }
 
     void set_link_security() {
@@ -459,35 +461,40 @@ private:
         }
     }
 
+    void requestPairing() {
+
+        /* in this example the local device is the master so we request pairing */
+        ble_error_t error = _ble.securityManager().requestPairing(_handle);
+
+         if (error) {
+             printf("Error during SM::requestPairing %d\r\n", error);
+             return;
+         }
+
+        /* upon pairing success the application will disconnect */
+
+		/* failed to connect - restart scan */
+		error = _ble.gap().startScan();
+
+		if (error) {
+			print_error(error, "Error in Gap::startScan %d\r\n");
+			return;
+		}
+	}
+
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately request pairing */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        if (event.getStatus() == BLE_ERROR_NONE) {
-            /* store the handle for future Security Manager requests */
-            _handle = event.getConnectionHandle();
+		if (event.getStatus() == BLE_ERROR_NONE) {
+			/* store the handle for future Security Manager requests */
+			_handle = event.getConnectionHandle();
 
-            printf("Connected\r\n");
+			printf("Connected\r\n");
 
-            /* in this example the local device is the master so we request pairing */
-            ble_error_t error = _ble.securityManager().requestPairing(_handle);
-
-             if (error) {
-                 printf("Error during SM::requestPairing %d\r\n", error);
-                 return;
-             }
-
-            /* upon pairing success the application will disconnect */
-        }
-
-        /* failed to connect - restart scan */
-        ble_error_t error = _ble.gap().startScan();
-
-        if (error) {
-            print_error(error, "Error in Gap::startScan %d\r\n");
-            return;
-        }
-    };
+			_event_queue.call(callback(this, &SMDeviceCentral::requestPairing));
+		}
+    }
 };
 
 

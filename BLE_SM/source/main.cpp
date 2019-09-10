@@ -357,12 +357,16 @@ public:
 
         _handle = event.getConnectionHandle();
 
+        _event_queue.call(this, &SMDevicePeripheral::set_link_security);
+    }
+
+    void set_link_security() {
         /* Request a change in link security. This will be done
          * indirectly by asking the master of the connection to
          * change it. Depending on circumstances different actions
          * may be taken by the master which will trigger events
          * which the applications should deal with. */
-        error = _ble.securityManager().setLinkSecurity(
+        ble_error_t error = _ble.securityManager().setLinkSecurity(
             _handle,
             SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
         );
@@ -371,7 +375,7 @@ public:
             printf("Error during SM::setLinkSecurity %d\r\n", error);
             return;
         }
-    };
+    }
 };
 
 /** A central device will scan, connect to a peer and request pairing. */

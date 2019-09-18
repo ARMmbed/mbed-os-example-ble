@@ -54,11 +54,11 @@ Building instructions for all mbed OS samples are in the [main readme](https://g
 
 1. Find your device; it should be named *Therm
 
-    ![](img/scan_result_ble_profile.png)
+    ![](img/scan_results_ble_profile.png)
 
     **figure 2.a** Scan results using ST BLE Profile 2.0.0
 
-    ![](img/scan_result.png)
+    ![](img/scan_results.png)
 
     **figure 2.b** Scan results using nRF Master Control Panel 4.0.5
 

@@ -44,6 +44,10 @@
         },
         "MTB_UBLOX_NINA_B1": {
             "ble_button_pin_name": "BUTTON1"
-        }            
+        },
+        "EP_AGORA": {
+            "ble_button_pin_name": "PIN_NAME_PUSH_BUTTON",
+            "target.macros_add":   ["NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS=4"]
+        }
     }
 }

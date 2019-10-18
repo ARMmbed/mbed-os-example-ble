@@ -18,6 +18,7 @@ In order to use BLE in mbed OS you need one of the following hardware combinatio
 * A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
 * A supported target, such as the [NUCLEO-F401RE](http://www.st.com/en/evaluation-tools/nucleo-f401re.html), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
+* An Embedded Planet [Agora](https://os.mbed.com/platforms/agora-dev/) board
 
 This target is currently not supported as the examples use Cordio link layer which doesn't have an implementation for it yet:
 * A Nordic nRF51-based board such as [nrf51dk](https://www.nordicsemi.com/eng/Products/nRF51-DK) or [mkit](https://www.nordicsemi.com/eng/Products/Bluetooth-R-low-energy/nRF51822-mKIT).
@@ -42,6 +43,9 @@ The following targets have been tested and work with these examples:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
 	* NUCLEO_WB55RG
 
+* Embedded Planet:
+	* EP_AGORA
+
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 	
 <span> Note: The Cordio Link layer is used for NRF52 platforms by default. To switch to using the Softdevice, remove these lines in mbed_app.json.
@@ -55,7 +59,7 @@ For NRF52_DK:
     "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
 ```
 
-For NRF52840_DK:
+For NRF52840_DK or EP_AGORA:
 ```
     "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
     "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]

@@ -486,7 +486,7 @@ private:
         DiscoveredCharacteristicNode* new_node =
             new(std::nothrow) DiscoveredCharacteristicNode(*characteristic);
 
-        if (new_node == false) {
+        if (new_node == NULL) {
             printf("Error while allocating a new characteristic.\r\n");
             return false;
         }

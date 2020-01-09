@@ -1,5 +1,5 @@
 /* mbed Microcontroller Library
- * Copyright (c) 2006-2015 ARM Limited
+ * Copyright (c) 2006-2019 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,21 @@
 #define GATT_EXAMPLE_BLE_PROCESS_H_
 
 #include <stdint.h>
-#include <stdio.h>
+#include "pretty_printer.h"
 
-#include "events/EventQueue.h"
+#include <events/mbed_events.h>
 #include "platform/Callback.h"
 #include "platform/NonCopyable.h"
 
 #include "ble/BLE.h"
-#include "ble/Gap.h"
-#include "ble/GapAdvertisingParams.h"
-#include "ble/GapAdvertisingData.h"
+#include "gap/Gap.h"
+#include "gap/AdvertisingDataParser.h"
 #include "ble/FunctionPointerWithContext.h"
+
+
+static const char DEVICE_NAME[] = "GattClient";
+
+static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 50;
 
 /**
  * Handle initialization and shutdown of the BLE Instance.
@@ -36,7 +40,8 @@
  * Setup advertising payload and manage advertising state.
  * Delegate to GattClientProcess once the connection is established.
  */
-class BLEProcess : private mbed::NonCopyable<BLEProcess> {
+class BLEProcess : private mbed::NonCopyable<BLEProcess>, public ble::Gap::EventHandler
+{
 public:
     /**
      * Construct a BLEProcess from an event queue and a ble interface.
@@ -46,7 +51,11 @@ public:
     BLEProcess(events::EventQueue &event_queue, BLE &ble_interface) :
         _event_queue(event_queue),
         _ble_interface(ble_interface),
-        _post_init_cb() {
+        _gap(ble_interface.gap()),
+        _adv_data_builder(_adv_buffer),
+        _adv_handle(ble::INVALID_ADVERTISING_HANDLE),
+        _post_init_cb()
+    {
     }
 
     ~BLEProcess()
@@ -57,29 +66,37 @@ public:
     /**
      * Initialize the ble interface, configure it and start advertising.
      */
-    bool start()
+    void start()
     {
         printf("Ble process started.\r\n");
 
         if (_ble_interface.hasInitialized()) {
             printf("Error: the ble instance has already been initialized.\r\n");
-            return false;
+            return;
         }
 
+        /* handle gap events */
+        _gap.setEventHandler(this);
+
+        /* This will inform us off all events so we can schedule their handling
+         * using our event queue */
         _ble_interface.onEventsToProcess(
             makeFunctionPointer(this, &BLEProcess::schedule_ble_events)
         );
 
         ble_error_t error = _ble_interface.init(
-            this, &BLEProcess::when_init_complete
+            this, &BLEProcess::on_init_complete
         );
 
         if (error) {
-            printf("Error: %u returned by BLE::init.\r\n", error);
-            return false;
+            print_error(error, "Error returned by BLE::init.\r\n");
+            return;
         }
 
-        return true;
+        // Process the event queue.
+        _event_queue.dispatch_forever();
+
+        return;
     }
 
     /**
@@ -110,27 +127,17 @@ private:
      *
      * This function is invoked when the ble interface is initialized.
      */
-    void when_init_complete(BLE::InitializationCompleteCallbackContext *event)
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *event)
     {
         if (event->error) {
-            printf("Error %u during the initialization\r\n", event->error);
+            print_error(event->error, "Error during the initialisation\r\n");
             return;
         }
+
         printf("Ble instance initialized\r\n");
 
-        Gap &gap = _ble_interface.gap();
-        ble_error_t error = gap.setAdvertisingPayload(make_advertising_data());
-        if (error) {
-            printf("Error %u during gap.setAdvertisingPayload\r\n", error);
-            return;
-        }
-
-        gap.setAdvertisingParams(make_advertising_params());
-
-        gap.onConnection(this, &BLEProcess::when_connection);
-        gap.onDisconnection(this, &BLEProcess::when_disconnection);
-
-        start_advertising();
+        /* All calls are serialised on the user thread through the event queue */
+        _event_queue.call(this, &BLEProcess::start_advertising);
 
         if (_post_init_cb) {
             _post_init_cb(_ble_interface, _event_queue);
@@ -139,30 +146,29 @@ private:
 
     /**
      * Start the gatt client process when a connection event is received.
+     * This is called by Gap to notify the application we connected
      */
-    void when_connection(const Gap::ConnectionCallbackParams_t *connection_event)
-    {
-        printf("Connected.\r\n");
+    virtual void onConnectionComplete(
+        const ble::ConnectionCompleteEvent &event
+    ) {
+        if (event.getStatus() == BLE_ERROR_NONE) {
+            printf("Connected.\r\n");
+        } else {
+            printf("Failed to connect\r\n");
+            _event_queue.call(this, &BLEProcess::start_advertising);
+        }
     }
 
     /**
      * Stop the gatt client process when the device is disconnected then restart
      * advertising.
+     * This is called by Gap to notify the application we disconnected
      */
-    void when_disconnection(const Gap::DisconnectionCallbackParams_t *event)
-    {
+    virtual void onDisconnectionComplete(
+        const ble::DisconnectionCompleteEvent &event
+    ) {
         printf("Disconnected.\r\n");
-        start_advertising();
-    }
-
-    /**
-     * Setup the advertising parameters.
-     */
-    void setup_advertising()
-    {
-        Gap &gap = _ble_interface.gap();
-        gap.setAdvertisingPayload(make_advertising_data());
-        gap.setAdvertisingParams(make_advertising_params());
+        _event_queue.call(this, &BLEProcess::start_advertising);
     }
 
     /**
@@ -170,12 +176,45 @@ private:
      */
     void start_advertising()
     {
-        ble_error_t error = _ble_interface.gap().startAdvertising();
+        ble_error_t error;
+
+        ble::AdvertisingParameters adv_params(
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(500))
+        );
+
+        error = _gap.setAdvertisingParameters(_adv_handle, adv_params);
+
         if (error) {
-            printf("Error %u during gap.startAdvertising.\r\n", error);
-        } else {
-            printf("Advertising started.\r\n");
+            printf("_ble.gap().setAdvertisingParameters() failed\r\n");
+            return;
         }
+
+        _adv_data_builder.clear();
+        _adv_data_builder.setFlags(
+            ble::adv_data_flags_t::LE_GENERAL_DISCOVERABLE
+            | ble::adv_data_flags_t::BREDR_NOT_SUPPORTED
+        );
+        _adv_data_builder.setName(DEVICE_NAME);
+
+        /* Set payload for the set */
+        error = _gap.setAdvertisingPayload(
+            _adv_handle, _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            print_error(error, "Gap::setAdvertisingPayload() failed\r\n");
+            return;
+        }
+
+        error = _gap.startAdvertising(_adv_handle);
+
+        if (error) {
+            print_error(error, "Gap::startAdvertising() failed\r\n");
+            return;
+        }
+
+        printf("Advertising started.\r\n");
     }
 
     /**
@@ -186,44 +225,15 @@ private:
         _event_queue.call(mbed::callback(&event->ble, &BLE::processEvents));
     }
 
-    /**
-     * Build data advertised by the BLE interface.
-     */
-    static GapAdvertisingData make_advertising_data(void)
-    {
-        static const uint8_t device_name[] = "GattClient";
-        GapAdvertisingData advertising_data;
-
-        // add advertising flags
-        advertising_data.addFlags(
-            GapAdvertisingData::LE_GENERAL_DISCOVERABLE |
-            GapAdvertisingData::BREDR_NOT_SUPPORTED
-        );
-
-        // add device name
-        advertising_data.addData(
-            GapAdvertisingData::COMPLETE_LOCAL_NAME,
-            device_name,
-            sizeof(device_name)
-        );
-
-        return advertising_data;
-    }
-
-    /**
-     * Build advertising parameters used by the BLE interface.
-     */
-    static GapAdvertisingParams make_advertising_params(void)
-    {
-        return GapAdvertisingParams(
-            /* type */ GapAdvertisingParams::ADV_CONNECTABLE_UNDIRECTED,
-            /* interval */ GapAdvertisingParams::MSEC_TO_ADVERTISEMENT_DURATION_UNITS(500),
-            /* timeout */ 0
-        );
-    }
-
     events::EventQueue &_event_queue;
     BLE &_ble_interface;
+    ble::Gap &_gap;
+
+    uint8_t _adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
+    ble::AdvertisingDataBuilder _adv_data_builder;
+
+    ble::advertising_handle_t _adv_handle;
+
     mbed::Callback<void(BLE&, events::EventQueue&)> _post_init_cb;
 };
 

@@ -1,5 +1,5 @@
 /* mbed Microcontroller Library
- * Copyright (c) 2006-2014 ARM Limited
+ * Copyright (c) 2006-2019 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,6 @@ public:
         _ble.init(this, &BatteryDemo::on_init_complete);
 
         _event_queue.call_every(500, this, &BatteryDemo::blink);
-        _event_queue.call_every(1000, this, &BatteryDemo::update_sensor_value);
 
         _event_queue.dispatch_forever();
     }
@@ -106,14 +105,12 @@ private:
     }
 
     void update_sensor_value() {
-        if (_ble.gap().getState().connected) {
-            _battery_level++;
-            if (_battery_level > 100) {
-                _battery_level = 20;
-            }
-
-            _battery_service.updateBatteryLevel(_battery_level);
+        _battery_level++;
+        if (_battery_level > 100) {
+            _battery_level = 20;
         }
+
+        _battery_service.updateBatteryLevel(_battery_level);
     }
 
     void blink(void) {
@@ -125,7 +122,15 @@ private:
 
     void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
         _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+        event_queue.cancel(_update_sensor_event);
     }
+
+    void onConnectionComplete(const ble::ConnectionCompleteEvent&) {
+        _update_sensor_event = _event_queue.call_every(
+            1000, this, &BatteryDemo::update_sensor_value
+        );
+    }
+
 
 private:
     BLE &_ble;
@@ -135,6 +140,7 @@ private:
 
     uint8_t _battery_level;
     BatteryService _battery_service;
+    int _update_sensor_event;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;

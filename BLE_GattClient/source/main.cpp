@@ -1,6 +1,6 @@
 
 /* mbed Microcontroller Library
- * Copyright (c) 2006-2018 ARM Limited
+ * Copyright (c) 2006-2019 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,6 @@
 #include "events/EventQueue.h"
 #include "platform/NonCopyable.h"
 
-#include "ble/BLE.h"
-#include "ble/Gap.h"
-#include "ble/GattClient.h"
-#include "ble/GapAdvertisingParams.h"
-#include "ble/GapAdvertisingData.h"
 #include "ble/GattClient.h"
 #include "ble/DiscoveredService.h"
 #include "ble/DiscoveredCharacteristic.h"
@@ -595,9 +590,6 @@ int main() {
     // bind the event queue to the ble interface, initialize the interface
     // and start advertising
     ble_process.start();
-
-    // Process the event queue.
-    event_queue.dispatch_forever();
 
     return 0;
 }

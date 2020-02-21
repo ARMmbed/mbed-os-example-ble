@@ -1,0 +1,22 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      - image: mbedos/mbed-os-env:stable
+    working_directory: ~
+    steps:
+      - checkout:
+          path: mbed-os-example-ble
+      - run: |
+          git clone https://github.com/ARMmbed/mbed-os.git
+          mkdir BUILD
+          cd mbed-os-example-ble
+          find . -name mbed-os.lib -delete
+          mbed deploy
+          for i in BLE_* ; do cd $i ; ln -s $PWD/../../mbed-os mbed-os ; ln -s $PWD/../../BUILD BUILD ; cd .. ; done
+          for i in BLE_* ; do cd $i ; mbed compile -t GCC_ARM -m NRF52840_DK || break ; cd .. ; done
+

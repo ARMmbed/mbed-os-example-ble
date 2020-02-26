@@ -15,8 +15,9 @@ jobs:
           git clone https://github.com/ARMmbed/mbed-os.git
           mkdir BUILD
           cd mbed-os-example-ble
-          find . -name mbed-os.lib -delete
-          mbed deploy
-          for i in BLE_* ; do cd $i ; ln -s $PWD/../../mbed-os mbed-os ; ln -s $PWD/../../BUILD BUILD ; cd .. ; done
+          find BLE* -name mbed-os.lib -exec mv {} . \;
+          mbed update .
+          for i in BLE_* ; do cd $i ; mbed deploy ; ln -s $PWD/../../mbed-os mbed-os ; ln -s $PWD/../../BUILD BUILD ; cd .. ; done
           for i in BLE_* ; do cd $i ; mbed compile -t GCC_ARM -m NRF52840_DK || break ; cd .. ; done
+          for i in BLE_* ; do cd $i ; mbed compile -t GCC_ARM -m DISCO_L475VG_IOT01A || break ; cd .. ; done
 

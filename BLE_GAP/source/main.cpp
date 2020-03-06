@@ -769,7 +769,7 @@ int main()
 
     while (1) {
         demo.run();
-        wait_ms(TIME_BETWEEN_MODES_MS);
+        thread_sleep_for(TIME_BETWEEN_MODES_MS);
         printf("\r\nStarting next GAP demo mode\r\n");
     };
 

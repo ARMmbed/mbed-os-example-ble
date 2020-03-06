@@ -61,8 +61,13 @@ inline void print_error(ble_error_t error, const char* msg)
             printf("BLE_ERROR_UNSPECIFIED: Unknown error");
             break;
         case BLE_ERROR_INTERNAL_STACK_FAILURE:
-            printf("BLE_ERROR_INTERNAL_STACK_FAILURE: internal stack faillure");
+            printf("BLE_ERROR_INTERNAL_STACK_FAILURE: internal stack failure");
             break;
+        case BLE_ERROR_NOT_FOUND:
+            printf("BLE_ERROR_NOT_FOUND");
+            break;
+        default:
+            printf("Unknown error");
     }
     printf("\r\n");
 }

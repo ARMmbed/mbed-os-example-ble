@@ -37,6 +37,7 @@ public:
          * https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx */
         _button_uuid(0xAA00),
         _button(BLE_BUTTON_PIN_NAME, BLE_BUTTON_PIN_PULL),
+        _button_count(0),
         _adv_data_builder(_adv_buffer) { }
 
     ~GapButtonDemo()
@@ -99,7 +100,9 @@ private:
         _adv_data_builder.setLocalServiceList(mbed::make_Span(&_button_uuid, 1));
         _adv_data_builder.setName(DEVICE_NAME);
 
-        update_button_payload();
+        if (!update_button_payload()) {
+            return; // Error already printed
+        }
 
         /* Setup advertising */
 
@@ -133,7 +136,7 @@ private:
         }
     }
 
-    void update_button_payload()
+    bool update_button_payload()
     {
         /* The Service Data data type consists of a service UUID with the data associated with that service. */
         ble_error_t error = _adv_data_builder.setServiceData(
@@ -143,7 +146,20 @@ private:
 
         if (error != BLE_ERROR_NONE) {
             print_error(error, "Updating payload failed");
+            return false;
         }
+
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+            return false;
+        }
+
+        return true;
     }
 
     void button_pressed_callback()
@@ -152,7 +168,7 @@ private:
 
         /* Calling BLE api in interrupt context may cause race conditions
            Using mbed-events to schedule calls to BLE api for safety */
-        _event_queue.call(Callback<void()>(this, &GapButtonDemo::update_button_payload));
+        _event_queue.call(Callback<bool()>(this, &GapButtonDemo::update_button_payload));
     }
 
     /** Blink LED to show we're running */

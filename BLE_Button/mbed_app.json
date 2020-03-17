@@ -36,7 +36,8 @@
         },
         "NRF52840_DK": {
             "target.features_add": ["BLE"],
-            "ble_button_pin_name": "BUTTON1"
+            "ble_button_pin_name": "BUTTON1",
+            "ble_button_pin_pull": "PullUp"
         },
         "NRF52_DK": {
             "target.features_add": ["BLE"],

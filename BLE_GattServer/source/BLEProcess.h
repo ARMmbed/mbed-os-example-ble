@@ -53,7 +53,7 @@ public:
         _ble_interface(ble_interface),
         _gap(ble_interface.gap()),
         _adv_data_builder(_adv_buffer),
-        _adv_handle(ble::INVALID_ADVERTISING_HANDLE),
+        _adv_handle(ble::LEGACY_ADVERTISING_HANDLE),
         _post_init_cb()
     {
     }

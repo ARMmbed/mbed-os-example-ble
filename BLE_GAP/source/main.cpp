@@ -253,7 +253,9 @@ private:
             adv_params.type.value(),
             adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
 
-        if (is_extended_advertising_supported()) {
+        // CONNECTABLE_UNDIRECTED is incompatible with non-legacy PDU of extended advertising
+        if (adv_params.type != ble::advertising_type_t::CONNECTABLE_UNDIRECTED
+            && is_extended_advertising_supported()) {
             advertise_extended();
         }
     }

@@ -258,10 +258,12 @@ private:
         _event_queue.break_dispatch();
     };
 
-    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &)
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
     {
-        printf("Advertising timed out - aborting\r\n");
-        _event_queue.break_dispatch();
+        if (!event.isConnected()) {
+            printf("Advertising timed out - aborting\r\n");
+            _event_queue.break_dispatch();
+        }
     }
 
     virtual void onScanTimeout(const ble::ScanTimeoutEvent &)

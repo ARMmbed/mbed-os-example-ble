@@ -15,8 +15,10 @@ The application will switch to demonstrating the central role and will connect t
 The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
 - [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
+NOTE: This second part of the example may not work on most Android devices that use random addresses.
 
 - [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
+NOTE: On iOS, if the existing bond info becomes invalid (e.g. the example is reflashed) it needs to be removed in system settings.
 
 Information about activity is printed over the serial connection - please have a client open. You may use:
 

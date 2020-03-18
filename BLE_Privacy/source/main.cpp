@@ -230,6 +230,16 @@ private:
                 _handle,
                 ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
             );
+        } else {
+            /* start bonding */
+            ble_error_t error = _ble.securityManager().setLinkSecurity(
+                _handle,
+                SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
+            );
+            if (error) {
+                printf("Failed to set link security\r\n");
+                _ble.gap().disconnect(_handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+            }
         }
     };
 
@@ -302,6 +312,7 @@ public:
     /** advertise and filter based on known devices */
     virtual void start_after_bonding()
     {
+        printf("start after bonding\r\n");
         Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
             Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
@@ -409,6 +420,7 @@ public:
 
     virtual void start_after_bonding()
     {
+        printf("start after bonding\r\n");
         Gap::CentralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
             Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FILTER

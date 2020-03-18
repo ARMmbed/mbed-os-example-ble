@@ -135,6 +135,7 @@ private:
         ble_error_t error;
 
         ble::AdvertisingParameters adv_params;
+        adv_params.setType(ble::advertising_type_t::CONNECTABLE_NON_SCANNABLE_UNDIRECTED);
         adv_params.setUseLegacyPDU(false);
         adv_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
 

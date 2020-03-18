@@ -255,6 +255,14 @@ private:
         _event_queue.break_dispatch();
     }
 
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
+    {
+        if (!event.isConnected()) {
+            printf("No device connected to us, switch modes.\r\n");
+            _event_queue.break_dispatch();
+        }
+    }
+
 public:
     static bool _seeded;
 

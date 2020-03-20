@@ -172,8 +172,8 @@ public:
     void print_local_address()
     {
         /* show what address we are using now */
-        Gap::AddressType_t addr_type;
-        Gap::Address_t addr;
+        BLEProtocol::AddressType_t addr_type;
+        BLEProtocol::AddressBytes_t addr;
         _ble.gap().getAddress(&addr_type, addr);
         printf("Device address: ");
         print_address(addr);

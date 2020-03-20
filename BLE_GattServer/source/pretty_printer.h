@@ -80,8 +80,8 @@ inline void print_address(const uint8_t *addr)
 inline void print_mac_address()
 {
     /* Print out device MAC address to the console*/
-    Gap::AddressType_t addr_type;
-    Gap::Address_t address;
+    BLEProtocol::AddressType_t addr_type;
+    BLEProtocol::AddressBytes_t address;
     BLE::Instance().gap().getAddress(&addr_type, address);
     printf("DEVICE MAC ADDRESS: ");
     print_address(address);

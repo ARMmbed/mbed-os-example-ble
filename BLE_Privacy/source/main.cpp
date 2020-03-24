@@ -172,8 +172,8 @@ public:
     void print_local_address()
     {
         /* show what address we are using now */
-        Gap::AddressType_t addr_type;
-        Gap::Address_t addr;
+        BLEProtocol::AddressType_t addr_type;
+        BLEProtocol::AddressBytes_t addr;
         _ble.gap().getAddress(&addr_type, addr);
         printf("Device address: ");
         print_address(addr);
@@ -230,6 +230,16 @@ private:
                 _handle,
                 ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
             );
+        } else {
+            /* start bonding */
+            ble_error_t error = _ble.securityManager().setLinkSecurity(
+                _handle,
+                SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
+            );
+            if (error) {
+                printf("Failed to set link security\r\n");
+                _ble.gap().disconnect(_handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+            }
         }
     };
 
@@ -253,6 +263,14 @@ private:
         /* if we failed to find the other device, abort so that we change roles */
         printf("Haven't seen other device, switch modes.\r\n");
         _event_queue.break_dispatch();
+    }
+
+    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
+    {
+        if (!event.isConnected()) {
+            printf("No device connected to us, switch modes.\r\n");
+            _event_queue.break_dispatch();
+        }
     }
 
 public:
@@ -294,6 +312,7 @@ public:
     /** advertise and filter based on known devices */
     virtual void start_after_bonding()
     {
+        printf("start after bonding\r\n");
         Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
             Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
@@ -401,6 +420,7 @@ public:
 
     virtual void start_after_bonding()
     {
+        printf("start after bonding\r\n");
         Gap::CentralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
             Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FILTER

@@ -81,13 +81,13 @@ inline void print_mac_address()
     print_address(address);
 }
 
-inline const char* phy_to_string(Gap::Phy_t phy) {
+inline const char* phy_to_string(ble::phy_t phy) {
     switch(phy.value()) {
-        case Gap::Phy_t::LE_1M:
+        case ble::phy_t::LE_1M:
             return "LE 1M";
-        case Gap::Phy_t::LE_2M:
+        case ble::phy_t::LE_2M:
             return "LE 2M";
-        case Gap::Phy_t::LE_CODED:
+        case ble::phy_t::LE_CODED:
             return "LE coded";
         default:
             return "invalid PHY";

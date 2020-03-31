@@ -57,7 +57,7 @@ void characteristic_discovery(const DiscoveredCharacteristic *characteristicP) {
     }
 }
 
-void discovery_termination(Gap::Handle_t connectionHandle) {
+void discovery_termination(ble::connection_handle_t connectionHandle) {
     printf("terminated SD for handle %u\r\n", connectionHandle);
     if (trigger_led_characteristic) {
         trigger_led_characteristic = false;

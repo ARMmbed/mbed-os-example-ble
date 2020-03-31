@@ -443,7 +443,7 @@ private:
             /* skip non discoverable device */
             if (field.type != ble::adv_data_type_t::FLAGS ||
                 field.value.size() != 1 ||
-                !(field.value[0] & GapAdvertisingData::LE_GENERAL_DISCOVERABLE)) {
+                !ble::adv_data_flags_t(field.value[0]).getGeneralDiscoverable()) {
                 continue;
             }
 

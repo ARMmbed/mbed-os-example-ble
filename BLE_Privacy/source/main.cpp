@@ -172,16 +172,16 @@ public:
     void print_local_address()
     {
         /* show what address we are using now */
-        BLEProtocol::AddressType_t addr_type;
-        BLEProtocol::AddressBytes_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
+        ble::own_address_type_t addr_type;
+        ble::address_t addr;
+        _ble.gap().getAddress(addr_type, addr);
         printf("Device address: ");
         print_address(addr);
 
         if (!_seeded) {
             _seeded = true;
             /* use the address as a seed */
-            uint8_t* random_data = addr;
+            uint8_t* random_data = addr.data();
             srand(*((unsigned int*)random_data));
         }
     }

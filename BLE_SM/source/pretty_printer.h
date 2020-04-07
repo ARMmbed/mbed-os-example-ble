@@ -65,7 +65,7 @@ inline void print_error(ble_error_t error, const char* msg)
 }
 
 /** print device address to the terminal */
-void print_address(const uint8_t *addr)
+void print_address(const ble::address_t &addr)
 {
     printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
            addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
@@ -74,9 +74,9 @@ void print_address(const uint8_t *addr)
 inline void print_mac_address()
 {
     /* Print out device MAC address to the console*/
-    BLEProtocol::AddressType_t addr_type;
-    BLEProtocol::AddressBytes_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
+    ble::own_address_type_t addr_type;
+    ble::address_t address;
+    BLE::Instance().gap().getAddress(addr_type, address);
     printf("DEVICE MAC ADDRESS: ");
     print_address(address);
 }

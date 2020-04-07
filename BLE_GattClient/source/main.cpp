@@ -250,7 +250,7 @@ private:
      *
      * @see GattClient::onServiceDiscoveryTermination
      */
-    void when_service_discovery_ends(Gap::Handle_t connection_handle)
+    void when_service_discovery_ends(ble::connection_handle_t connection_handle)
     {
         if (!_characteristics) {
             printf("No characteristics discovered, end of the process.\r\n");
@@ -565,7 +565,7 @@ private:
     }
 
     GattClient *_client;
-    Gap::Handle_t _connection_handle;
+    ble::connection_handle_t _connection_handle;
     DiscoveredCharacteristicNode *_characteristics;
     DiscoveredCharacteristicNode *_it;
     GattAttribute::Handle_t _descriptor_handle;

@@ -156,13 +156,13 @@ private:
             printf("Error enabling privacy\r\n");
         }
 
-        Gap::peripheral_privacy_configuration_t configuration_p = {
+        Gap::PeripheralPrivacyConfiguration_t configuration_p = {
             /* use_non_resolvable_random_address */ false,
-            Gap::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
+            Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
         };
         _ble.gap().setPeripheralPrivacyConfiguration(&configuration_p);
 
-        Gap::central_privay_configuration_t configuration_c = {
+        Gap::CentralPrivacyConfiguration_t configuration_c = {
             /* use_non_resolvable_random_address */ false,
             Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
         };

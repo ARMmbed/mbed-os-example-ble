@@ -299,9 +299,9 @@ public:
             return;
         }
 
-        ble::peripheral_privacy_configuration_t privacy_configuration = {
+        Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            ble::peripheral_privacy_configuration_t::PERFORM_PAIRING_PROCEDURE
+            Gap::PeripheralPrivacyConfiguration_t::PERFORM_PAIRING_PROCEDURE
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
@@ -313,9 +313,9 @@ public:
     virtual void start_after_bonding()
     {
         printf("start after bonding\r\n");
-        ble::peripheral_privacy_configuration_t privacy_configuration = {
+        Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            ble::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
+            Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
@@ -408,9 +408,9 @@ public:
      *  and scan requests responses */
     virtual void start()
     {
-        ble::central_privacy_configuration_t privacy_configuration = {
+        Gap::CentralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            ble::central_privacy_configuration_t::DO_NOT_RESOLVE
+            Gap::CentralPrivacyConfiguration_t::DO_NOT_RESOLVE
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
@@ -421,9 +421,9 @@ public:
     virtual void start_after_bonding()
     {
         printf("start after bonding\r\n");
-        ble::central_privacy_configuration_t privacy_configuration = {
+        Gap::CentralPrivacyConfiguration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            ble::central_privacy_configuration_t::RESOLVE_AND_FILTER
+            Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FILTER
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);

@@ -22,7 +22,7 @@ public:
     const static uint16_t LED_SERVICE_UUID              = 0xA000;
     const static uint16_t LED_STATE_CHARACTERISTIC_UUID = 0xA001;
 
-    LEDService(BLEDevice &_ble, bool initialValueForLEDCharacteristic) :
+    LEDService(BLE &_ble, bool initialValueForLEDCharacteristic) :
         ble(_ble), ledState(LED_STATE_CHARACTERISTIC_UUID, &initialValueForLEDCharacteristic)
     {
         GattCharacteristic *charTable[] = {&ledState};
@@ -37,7 +37,7 @@ public:
     }
 
 private:
-    BLEDevice                         &ble;
+    BLE                               &ble;
     ReadWriteGattCharacteristic<bool> ledState;
 };
 

@@ -48,7 +48,7 @@ const static disconnect_call_t disconnect_call = &Gap::disconnect;
 /* for demonstration purposes we will store the peer device address
  * of the device that connects to us in the first demonstration
  * so we can use its address to reconnect to it later */
-static BLEProtocol::AddressBytes_t peer_address;
+static ble::address_t peer_address;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -61,7 +61,7 @@ class SMDevice : private mbed::NonCopyable<SMDevice>,
                  public ble::Gap::EventHandler
 {
 public:
-    SMDevice(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address) :
+    SMDevice(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address) :
         _led1(LED1, 0),
         _ble(ble),
         _event_queue(event_queue),
@@ -156,13 +156,13 @@ private:
             printf("Error enabling privacy\r\n");
         }
 
-        Gap::PeripheralPrivacyConfiguration_t configuration_p = {
+        Gap::peripheral_privacy_configuration_t configuration_p = {
             /* use_non_resolvable_random_address */ false,
-            Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
+            Gap::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
         };
         _ble.gap().setPeripheralPrivacyConfiguration(&configuration_p);
 
-        Gap::CentralPrivacyConfiguration_t configuration_c = {
+        Gap::central_privay_configuration_t configuration_c = {
             /* use_non_resolvable_random_address */ false,
             Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
         };
@@ -180,10 +180,7 @@ private:
         _ble.gap().setEventHandler(this);
 
         /* print device address */
-        BLEProtocol::AddressType_t addr_type;
-        BLEProtocol::AddressBytes_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
-        print_address(addr);
+        print_mac_address();
 
         /* start test in 500 ms */
         _event_queue.call_in(500, this, &SMDevice::start);
@@ -278,7 +275,7 @@ private:
 protected:
     BLE &_ble;
     events::EventQueue &_event_queue;
-    BLEProtocol::AddressBytes_t &_peer_address;
+    ble::address_t &_peer_address;
     ble::connection_handle_t _handle;
     bool _is_connecting;
 };
@@ -287,7 +284,7 @@ protected:
  * a change in link security. */
 class SMDevicePeripheral : public SMDevice {
 public:
-    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address)
+    SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address)
         : SMDevice(ble, event_queue, peer_address) { }
 
     virtual void start()
@@ -352,7 +349,7 @@ public:
 
         /* remember the device that connects to us now so we can connect to it
          * during the next demonstration */
-        memcpy(_peer_address, event.getPeerAddress().data(), sizeof(_peer_address));
+        _peer_address = event.getPeerAddress();
 
         printf("Connected to peer: ");
         print_address(event.getPeerAddress().data());
@@ -379,7 +376,7 @@ public:
 /** A central device will scan, connect to a peer and request pairing. */
 class SMDeviceCentral : public SMDevice {
 public:
-    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue, BLEProtocol::AddressBytes_t &peer_address)
+    SMDeviceCentral(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address)
         : SMDevice(ble, event_queue, peer_address) { }
 
     virtual void start()
@@ -403,7 +400,7 @@ public:
         printf("Please advertise\r\n");
 
         printf("Scanning for: ");
-        print_address(_peer_address);
+        print_address(_peer_address.data());
     }
 
 private:
@@ -418,7 +415,7 @@ private:
         }
 
         /* parse the advertising payload, looking for a discoverable device */
-        if (memcmp(event.getPeerAddress().data(), _peer_address, sizeof(_peer_address)) == 0) {
+        if (event.getPeerAddress() == _peer_address) {
             ble_error_t error = _ble.gap().stopScan();
 
             if (error) {

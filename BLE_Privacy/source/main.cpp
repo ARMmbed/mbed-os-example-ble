@@ -172,16 +172,16 @@ public:
     void print_local_address()
     {
         /* show what address we are using now */
-        BLEProtocol::AddressType_t addr_type;
-        BLEProtocol::AddressBytes_t addr;
-        _ble.gap().getAddress(&addr_type, addr);
+        ble::own_address_type_t addr_type;
+        ble::address_t addr;
+        _ble.gap().getAddress(addr_type, addr);
         printf("Device address: ");
         print_address(addr);
 
         if (!_seeded) {
             _seeded = true;
             /* use the address as a seed */
-            uint8_t* random_data = addr;
+            uint8_t* random_data = addr.data();
             srand(*((unsigned int*)random_data));
         }
     }
@@ -299,9 +299,9 @@ public:
             return;
         }
 
-        Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
+        ble::peripheral_privacy_configuration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            Gap::PeripheralPrivacyConfiguration_t::PERFORM_PAIRING_PROCEDURE
+            ble::peripheral_privacy_configuration_t::PERFORM_PAIRING_PROCEDURE
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
@@ -313,9 +313,9 @@ public:
     virtual void start_after_bonding()
     {
         printf("start after bonding\r\n");
-        Gap::PeripheralPrivacyConfiguration_t privacy_configuration = {
+        ble::peripheral_privacy_configuration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            Gap::PeripheralPrivacyConfiguration_t::REJECT_NON_RESOLVED_ADDRESS
+            ble::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
         };
 
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
@@ -408,9 +408,9 @@ public:
      *  and scan requests responses */
     virtual void start()
     {
-        Gap::CentralPrivacyConfiguration_t privacy_configuration = {
+        ble::central_privacy_configuration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            Gap::CentralPrivacyConfiguration_t::DO_NOT_RESOLVE
+            ble::central_privacy_configuration_t::DO_NOT_RESOLVE
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
@@ -421,9 +421,9 @@ public:
     virtual void start_after_bonding()
     {
         printf("start after bonding\r\n");
-        Gap::CentralPrivacyConfiguration_t privacy_configuration = {
+        ble::central_privacy_configuration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
-            Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FILTER
+            ble::central_privacy_configuration_t::RESOLVE_AND_FILTER
         };
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);

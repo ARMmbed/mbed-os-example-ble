@@ -71,7 +71,7 @@ inline void print_error(ble_error_t error, const char* msg)
 }
 
 /** print device address to the terminal */
-inline void print_address(const uint8_t *addr)
+inline void print_address(const ble::address_t addr)
 {
     printf("%02x:%02x:%02x:%02x:%02x:%02x\r\n",
            addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
@@ -80,27 +80,27 @@ inline void print_address(const uint8_t *addr)
 inline void print_mac_address()
 {
     /* Print out device MAC address to the console*/
-    BLEProtocol::AddressType_t addr_type;
-    BLEProtocol::AddressBytes_t address;
-    BLE::Instance().gap().getAddress(&addr_type, address);
+    ble::own_address_type_t addr_type;
+    ble::address_t address;
+    BLE::Instance().gap().getAddress(addr_type, address);
     printf("DEVICE MAC ADDRESS: ");
     print_address(address);
 
     if (!seeded) {
         seeded = true;
         /* use the address as a seed */
-        uint8_t* random_data = address;
+        uint8_t* random_data = address.data();
         srand(*((unsigned int*)random_data));
     }
 }
 
-inline const char* phy_to_string(Gap::Phy_t phy) {
+inline const char* phy_to_string(ble::phy_t phy) {
     switch(phy.value()) {
-        case Gap::Phy_t::LE_1M:
+        case ble::phy_t::LE_1M:
             return "LE 1M";
-        case Gap::Phy_t::LE_2M:
+        case ble::phy_t::LE_2M:
             return "LE 2M";
-        case Gap::Phy_t::LE_CODED:
+        case ble::phy_t::LE_CODED:
             return "LE coded";
         default:
             return "invalid PHY";

@@ -24,4 +24,4 @@ Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-o
 
 Building instructions for all samples are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 
-Note: example currently doesn't use ST provided stack and instead uses a Cordio port for the ST.
+Note: this example is currently not supported on the BlueNRG-MS controller (include the DISCO_L475VG_IOT01A target).

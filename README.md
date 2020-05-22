@@ -100,13 +100,13 @@ __To build an example:__
 	```
 
 
-	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
+	**Tip:** If you don't have git installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
 
-1. Using a command-line tool, navigate to any of the example directories, like BLE_Beacon:
+1. Using a command-line tool, navigate to any of the example directories, like BLE_Button:
 
 	```
 	$ cd mbed-os-example-ble
-	$ cd BLE_Beacon
+	$ cd BLE_Button
 	```
 
 1. Update the source tree:
@@ -123,19 +123,7 @@ __To run the application on your board:__
 
 1. Connect your mbed board to your computer over USB. It appears as removable storage.
 
-1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```BUILD/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
-
-
-Exactly which executables are generated depends on the target that you have
-chosen. For Nordic Semiconductor targets, the following .hex files will be present:
-
- * `<module_name>.hex` is the one which can be flashed to the target.
- * `<module_name>.elf` is an ELF binary containing symbols (useful for debugging).
-
-**Note:** Depending on the build process, the file which has to be flashed on a Nordic target can also be named `<module_name>-combined.hex`. If `<module_name>-combined.hex` and `<module_name>.hex` are present in the build directory, flash `<module_name>-combined.hex.
-
-**Note:** On non Nordic targets, the file to flash can also be named `<module_name>.bin`. Refer to mbed-cli, mbed-os and your board vendor documentation for more informations.
-
+1. When you run the `mbed compile` command above, mbed cli creates a .bin or a .hex file (depending on your target) in ```BUILD/<target-name>/<toolchain>``` under the example's directory. Drag and drop the file to the removable storage.
 
 Known issues
 ============

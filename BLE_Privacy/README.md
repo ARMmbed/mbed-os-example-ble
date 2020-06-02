@@ -10,7 +10,7 @@ Subsequent connections will turn on filtering if the whitelist has been successf
 
 ## Disclaimer 
 
-This example is experimental and will evolve as more privacy features are supported in mbed-os BLE API. For example, resolvable addresses aren't available for all controllers so we advertise with random static addresses. The example focusses on the use of the whitelist during the scanning, advertising and connection processes.   
+This example is experimental and will evolve as more privacy features are supported in the Mbed OS BLE API. For example, resolvable addresses aren't available for all controllers so we advertise with random static addresses. The example focusses on the use of the whitelist during the scanning, advertising and connection processes.   
 
 # Running the application
 

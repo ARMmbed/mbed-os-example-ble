@@ -1,3 +1,4 @@
+![](./resources/official_armmbed_example_badge.png)
 # BLE Examples
 This repo contains a collection of BLE example applications based on
 mbed OS and built with [mbed-cli](https://github.com/ARMmbed/mbed-cli). Each example subdirectory contains a separate mbed-cli module meant for building an executable.

@@ -1,3 +1,4 @@
+![](./resources/official_armmbed_example_badge.png)
 # BLE Examples
 This repo contains a collection of BLE example applications based on
 mbed OS and built with [mbed-cli](https://github.com/ARMmbed/mbed-cli). Each example subdirectory contains a separate mbed-cli module meant for building an executable.
@@ -16,8 +17,10 @@ To build these examples, you need to have a computer with software installed as 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
 * A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
-* A supported target, such as the [NUCLEO-F401RE](http://www.st.com/en/evaluation-tools/nucleo-f401re.html), with a BLE shield or an external BLE peripheral, such as an [ST shield](http://www.st.com/web/catalog/tools/FM116/SC1075/PF260517).
-* A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](http://www.st.com/en/evaluation-tools/b-l475e-iot01a.html) board.
+* A supported target, such as the [NUCLEO-F401RE](https://os.mbed.com/platforms/ST-Nucleo-F401RE/), with a BLE shield or an external BLE peripheral, such as an [ST shield](https://os.mbed.com/components/X-NUCLEO-IDB04A1/).
+* A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](https://os.mbed.com/platforms/ST-Discovery-L475E-IOT01A/) board.
+* A [DISCO_L562QE (ref STM32L562E-DK)](https://os.mbed.com/platforms/ST-Discovery-L562QE/) board.
+* A [NUCLEO_WB55RG](https://os.mbed.com/platforms/ST-Nucleo-WB55RG/) board.
 * An Embedded Planet [Agora](https://os.mbed.com/platforms/agora-dev/) board
 
 This target is currently not supported as the examples use Cordio link layer which doesn't have an implementation for it yet:
@@ -39,32 +42,18 @@ The following targets have been tested and work with these examples:
 	* K64F
 	* NUCLEO_F401RE
 
-* STMicroelectronics:
+* ST boards with embedded BlueNrg module:
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
-	* NUCLEO_WB55RG
+	* DISCO_L562QE (ref STM32L562E-DK)
+
+* Board with wireless STM32WB microcontrollers:
+  * NUCLEO_WB55RG
 
 * Embedded Planet:
 	* EP_AGORA
 
 	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
 	
-<span> Note: The Cordio Link layer is used for NRF52 platforms by default. To switch to using the Softdevice, remove these lines in mbed_app.json.
-Bluetooth 5 features are only supported by the Cordio implementation, and some examples (such as BLE_GAP) use these. If you're using the Softdevice you can use the deprecated examples in this case.
-
-For NUCLEO_WB55RG: the NUCLEO_WB55RG supports BLE CORDIO by default in mbed-os so there is no extra label in mbed_app.json.
-
-For NRF52_DK:
-```
-    "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
-    "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S132_FULL", "NORDIC_SOFTDEVICE"]
-```
-
-For NRF52840_DK or EP_AGORA:
-```
-    "target.extra_labels_add": ["CORDIO", "CORDIO_LL", "SOFTDEVICE_NONE", "NORDIC_CORDIO"],
-    "target.extra_labels_remove": ["SOFTDEVICE_COMMON", "SOFTDEVICE_S140_FULL", "NORDIC_SOFTDEVICE"]
-```
-    
 The following board is currently not supported by non-deprecated examples as it doesn't yet support the Cordio stack:
 	* NRF51_DK
 
@@ -81,15 +70,17 @@ All these operations can be done in the file `mbed_app.json` present in every ex
 
 In the section `target_overrides` add a new object named after your target.
 In this object two fields are required:
+* `"target.components_add": ["BlueNRG_MS"]` Add the BlueNRG_MS component to the target.
 * `"target.features_add": ["BLE"]` Add the BLE feature to the target.
-* `"target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]`: Add the BLE implementation of the ST shield to the list of the application modules.
+* `"target.extra_labels_add": ["CORDIO"]`: Add the BLE implementation of the ST shield to the list of the application modules.
 
 As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
 
 ```json
         "NUCLEO_F411RE": {
+            "target.components_add": ["BlueNRG_MS"],
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"]
+            "target.extra_labels_add": ["CORDIO"]
         },
 ```
 
@@ -110,13 +101,13 @@ __To build an example:__
 	```
 
 
-	**Tip:** If you don't have GitHub installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
+	**Tip:** If you don't have git installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
 
-1. Using a command-line tool, navigate to any of the example directories, like BLE_Beacon:
+1. Using a command-line tool, navigate to any of the example directories, like BLE_Button:
 
 	```
 	$ cd mbed-os-example-ble
-	$ cd BLE_Beacon
+	$ cd BLE_Button
 	```
 
 1. Update the source tree:
@@ -133,19 +124,7 @@ __To run the application on your board:__
 
 1. Connect your mbed board to your computer over USB. It appears as removable storage.
 
-1. When you run the ``mbed compile`` command, as you did above, mbed cli creates a BIN or an HEX file in a ```BUILD/<target-name>/<toolchain>``` directory under the example's directory. Drag and drop the file to the removable storage.
-
-
-Exactly which executables are generated depends on the target that you have
-chosen. For Nordic Semiconductor targets, the following .hex files will be present:
-
- * `<module_name>.hex` is the one which can be flashed to the target.
- * `<module_name>.elf` is an ELF binary containing symbols (useful for debugging).
-
-**Note:** Depending on the build process, the file which has to be flashed on a Nordic target can also be named `<module_name>-combined.hex`. If `<module_name>-combined.hex` and `<module_name>.hex` are present in the build directory, flash `<module_name>-combined.hex.
-
-**Note:** On non Nordic targets, the file to flash can also be named `<module_name>.bin`. Refer to mbed-cli, mbed-os and your board vendor documentation for more informations.
-
+1. When you run the `mbed compile` command above, mbed cli creates a .bin or a .hex file (depending on your target) in ```BUILD/<target-name>/<toolchain>``` under the example's directory. Drag and drop the file to the removable storage.
 
 Known issues
 ============

@@ -2,6 +2,7 @@
     "config": {
         "ble_button_pin_name": {
             "help": "The pin name used as button in this application",
+            "value": "BUTTON1",
             "macro_name": "BLE_BUTTON_PIN_NAME",
             "required": true
         },
@@ -12,40 +13,27 @@
         }
     },
     "target_overrides": {
-        "NRF51_DK": {
-            "ble_button_pin_name": "BUTTON1"
-        },
         "K64F": {
+            "target.components_add": ["BlueNRG_MS"],
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
+            "target.extra_labels_add": ["CORDIO"],
             "ble_button_pin_name": "SW2"
         },
         "NUCLEO_F401RE": {
+            "target.components_add": ["BlueNRG_MS"],
             "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "ble_button_pin_name": "USER_BUTTON"
-        },
-        "DISCO_L475VG_IOT01A": {
-            "target.features_add": ["BLE"],
-            "target.extra_labels_add": ["CORDIO", "CORDIO_BLUENRG"],
-            "ble_button_pin_name": "USER_BUTTON"
+            "target.extra_labels_add": ["CORDIO"]
         },
         "NUCLEO_WB55RG": {
-            "ble_button_pin_name": "USER_BUTTON",
             "ble_button_pin_pull": "PullUp"
         },
         "NRF52840_DK": {
             "target.features_add": ["BLE"],
-            "ble_button_pin_name": "BUTTON1",
             "ble_button_pin_pull": "PullUp"
 
         },
         "NRF52_DK": {
-            "target.features_add": ["BLE"],
-            "ble_button_pin_name": "BUTTON1"
-        },
-        "MTB_UBLOX_NINA_B1": {
-            "ble_button_pin_name": "BUTTON1"
+            "target.features_add": ["BLE"]
         },
         "EP_AGORA": {
             "ble_button_pin_name": "PIN_NAME_PUSH_BUTTON",

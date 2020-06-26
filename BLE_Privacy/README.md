@@ -4,9 +4,13 @@ Demonstration of privacy features in Gap. It shows how to use private addresses 
 
 The application will start by repeatedly trying to connect to the same application running on another board. It will do this by advertising and scanning for random intervals waiting until the difference in intervals between the boards will make them meet when one is advertising and the other scanning.
 
-Two devices will be operating using random resolvable addresses. The application will connect to the peer and pair. It will attempt bonding and if possible create a whitelist based on the bond.
+Two devices will be operating using random static addresses. The application will connect to the peer and pair. It will attempt bonding and if possible create a whitelist based on the bond.
 
 Subsequent connections will turn on filtering if the whitelist has been successfully created.
+
+## Disclaimer 
+
+This example is experimental and will evolve as more privacy features are supported in the Mbed OS BLE API. For example, resolvable addresses aren't available for all controllers so we advertise with random static addresses. The example focusses on the use of the whitelist during the scanning, advertising and connection processes.   
 
 # Running the application
 

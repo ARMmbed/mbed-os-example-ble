@@ -63,6 +63,8 @@ inline void print_error(ble_error_t error, const char* msg)
         case BLE_ERROR_NOT_FOUND:
             printf("BLE_ERROR_NOT_FOUND");
             break;
+        default:
+            printf("Unknown error");
     }
     printf("\r\n");
 }

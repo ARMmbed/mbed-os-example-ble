@@ -349,7 +349,7 @@ private:
          *
          * @return BLE_ERROR_NONE in case of success or an appropriate error code.
          */
-        ble_error_t get(GattServer &server, T& dst) const
+        ble_error_t get(ble::GattServer &server, T& dst) const
         {
             uint16_t value_length = sizeof(dst);
             return server.read(getValueHandle(), &dst, &value_length);
@@ -364,7 +364,7 @@ private:
          * locally or forwarded to subscribed clients.
          */
         ble_error_t set(
-            GattServer &server, const uint8_t &value, bool local_only = false
+            ble::GattServer &server, const uint8_t &value, bool local_only = false
         ) const {
             return server.write(getValueHandle(), &value, sizeof(value), local_only);
         }
@@ -383,7 +383,7 @@ private:
     // demo service
     GattService _clock_service;
 
-    GattServer* _server;
+    ble::GattServer* _server;
     events::EventQueue *_event_queue;
 };
 

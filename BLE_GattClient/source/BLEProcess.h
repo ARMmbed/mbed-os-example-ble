@@ -25,9 +25,8 @@
 #include "platform/NonCopyable.h"
 
 #include "ble/BLE.h"
-#include "gap/Gap.h"
-#include "gap/AdvertisingDataParser.h"
-#include "ble/FunctionPointerWithContext.h"
+#include "ble/Gap.h"
+#include "ble/GattClient.h"
 
 
 static const char DEVICE_NAME[] = "GattClient";

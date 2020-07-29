@@ -17,6 +17,8 @@
 #ifndef __BLE_BUTTON_SERVICE_H__
 #define __BLE_BUTTON_SERVICE_H__
 
+#include "ble/GattServer.h"
+
 class ButtonService {
 public:
     const static uint16_t BUTTON_SERVICE_UUID              = 0xA000;

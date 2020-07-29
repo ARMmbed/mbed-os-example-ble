@@ -17,7 +17,7 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "ble/gap/Gap.h"
+#include "ble/Gap.h"
 #include "ble/services/HeartRateService.h"
 #include "pretty_printer.h"
 

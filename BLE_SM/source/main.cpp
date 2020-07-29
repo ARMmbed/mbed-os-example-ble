@@ -17,7 +17,8 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "SecurityManager.h"
+#include "ble/Gap.h"
+#include "ble/SecurityManager.h"
 #include "pretty_printer.h"
 
 #if MBED_CONF_APP_FILESYSTEM_SUPPORT
@@ -42,8 +43,8 @@
 static const char DEVICE_NAME[] = "SM_device";
 
 /* we have to specify the disconnect call because of ambiguous overloads */
-typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-const static disconnect_call_t disconnect_call = &Gap::disconnect;
+typedef ble_error_t (ble::Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+const static disconnect_call_t disconnect_call = &ble::Gap::disconnect;
 
 /* for demonstration purposes we will store the peer device address
  * of the device that connects to us in the first demonstration
@@ -57,7 +58,7 @@ static ble::address_t peer_address;
  *  your application is interested in.
  */
 class SMDevice : private mbed::NonCopyable<SMDevice>,
-                 public SecurityManager::EventHandler,
+                 public ble::SecurityManager::EventHandler,
                  public ble::Gap::EventHandler
 {
 public:
@@ -131,7 +132,7 @@ private:
         error = _ble.securityManager().init(
             true,
             false,
-            SecurityManager::IO_CAPS_NONE,
+            ble::SecurityManager::IO_CAPS_NONE,
             NULL,
             false,
             db_path
@@ -156,15 +157,15 @@ private:
             printf("Error enabling privacy\r\n");
         }
 
-        Gap::peripheral_privacy_configuration_t configuration_p = {
+	ble::Gap::peripheral_privacy_configuration_t configuration_p = {
             /* use_non_resolvable_random_address */ false,
-            Gap::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
+            ble::Gap::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
         };
         _ble.gap().setPeripheralPrivacyConfiguration(&configuration_p);
 
-        Gap::central_privay_configuration_t configuration_c = {
+	ble::Gap::central_privay_configuration_t configuration_c = {
             /* use_non_resolvable_random_address */ false,
-            Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
+            ble::Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
         };
         _ble.gap().setCentralPrivacyConfiguration(&configuration_c);
 
@@ -214,9 +215,9 @@ private:
     /** Inform the application of a successful pairing. Terminate the demonstration. */
     virtual void pairingResult(
         ble::connection_handle_t connectionHandle,
-        SecurityManager::SecurityCompletionStatus_t result
+        ble::SecurityManager::SecurityCompletionStatus_t result
     ) {
-        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
+        if (result == ble::SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
         } else {
             printf("Pairing failed\r\n");
@@ -363,7 +364,7 @@ public:
          * which the applications should deal with. */
         error = _ble.securityManager().setLinkSecurity(
             _handle,
-            SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
+            ble::SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
         );
 
         if (error) {

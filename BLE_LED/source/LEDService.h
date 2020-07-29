@@ -17,6 +17,8 @@
 #ifndef __BLE_LED_SERVICE_H__
 #define __BLE_LED_SERVICE_H__
 
+#include "ble/GattServer.h"
+
 class LEDService {
 public:
     const static uint16_t LED_SERVICE_UUID              = 0xA000;

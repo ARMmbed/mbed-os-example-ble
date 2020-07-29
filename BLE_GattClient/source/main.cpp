@@ -23,9 +23,6 @@
 #include "platform/NonCopyable.h"
 
 #include "ble/GattClient.h"
-#include "ble/DiscoveredService.h"
-#include "ble/DiscoveredCharacteristic.h"
-#include "ble/CharacteristicDescriptorDiscovery.h"
 
 #include "BLEProcess.h"
 
@@ -39,7 +36,7 @@
  */
 class GattClientProcess : private mbed::NonCopyable<GattClientProcess>,
                           public ble::Gap::EventHandler,
-                          public GattClient::EventHandler {
+                          public ble::GattClient::EventHandler {
 
     // Internal typedef to this class type.
     // It is used as a shorthand to pass member function as callbacks.
@@ -415,7 +412,7 @@ private:
             (properties.notify() << 0) | (properties.indicate() << 1);
 
         ble_error_t error = _client->write(
-            GattClient::GATT_OP_WRITE_REQ,
+            ble::GattClient::GATT_OP_WRITE_REQ,
             _connection_handle,
             _descriptor_handle,
             sizeof(cccd_value),
@@ -564,7 +561,7 @@ private:
         printf(" ]");
     }
 
-    GattClient *_client;
+    ble::GattClient *_client;
     ble::connection_handle_t _connection_handle;
     DiscoveredCharacteristicNode *_characteristics;
     DiscoveredCharacteristicNode *_it;

@@ -1,29 +1,38 @@
 # Copyright (c) 2020 ARM Limited. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
-# Mbed OS system root path - that probably needs to come from tools
-# TODO: @mbed-os-tools
-set(MBED_OS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/mbed-os CACHE INTERNAL "")
+# TODO: @mbed-os-tools MBED_ROOT and MBED_CONFIG_PATH should probably come from mbedtools
+set(MBED_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/mbed-os CACHE INTERNAL "")
+set(MBED_CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/.mbedbuild CACHE INTERNAL "")
+set(APP_TARGET BLE_Button)
 
-# Include standard Mbed definitions
-include(${MBED_OS_ROOT}/cmake/app.cmake)
+add_subdirectory(${MBED_ROOT})
 
-project(BLE_Button)
+add_executable(${APP_TARGET})
 
-# uncomment below to have a verbose build process
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+mbed_configure_app_target(${APP_TARGET})
 
-# Sources for main application
-target_sources(app
+mbed_set_mbed_target_linker_script(${APP_TARGET})
+
+project(${APP_TARGET})
+
+target_include_directories(${APP_TARGET}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/source
+)
+
+target_sources(${APP_TARGET}
     PRIVATE
         source/main.cpp
 )
 
-target_include_directories(mbed-os
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/source
-)
+target_link_libraries(${APP_TARGET} mbed-os)
 
-add_subdirectory(shields)
+mbed_generate_bin_hex(${APP_TARGET})
+
+option(VERBOSE_BUILD "Have a verbose build process")
+if(VERBOSE_BUILD)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+endif()

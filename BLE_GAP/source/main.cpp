@@ -18,7 +18,6 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
-#include "gap/AdvertisingDataParser.h"
 #include "pretty_printer.h"
 
 /** This example demonstrates all the basic setup required

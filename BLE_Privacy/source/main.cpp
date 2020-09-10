@@ -17,10 +17,10 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "SecurityManager.h"
+#include "ble/SecurityManager.h"
+#include "ble/Gap.h"
 #include <algorithm>
 #include "pretty_printer.h"
-#include "ble/gap/AdvertisingDataParser.h"
 
 /** This example demonstrates privacy features in Gap. It shows how to use
  *  private addresses when advertising and connecting and how filtering ties
@@ -41,8 +41,8 @@
 static const char DEVICE_NAME[] = "Privacy";
 
 /* we have to specify the disconnect call because of ambiguous overloads */
-typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-const static disconnect_call_t disconnect_call = &Gap::disconnect;
+typedef ble_error_t (ble::Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+const static disconnect_call_t disconnect_call = &ble::Gap::disconnect;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -51,7 +51,7 @@ const static disconnect_call_t disconnect_call = &Gap::disconnect;
  *  your application is interested in.
  */
 class PrivacyDevice : private mbed::NonCopyable<PrivacyDevice>,
-                      public SecurityManager::EventHandler,
+                      public ble::SecurityManager::EventHandler,
                       public ble::Gap::EventHandler
 {
 public:
@@ -125,7 +125,7 @@ public:
         error = _ble.securityManager().init(
             /* enableBonding */ true,
             /* requireMITM */ false,
-            /* iocaps */ SecurityManager::IO_CAPS_NONE,
+            /* iocaps */ ble::SecurityManager::IO_CAPS_NONE,
             /* passkey */ NULL,
             /* signing */ false,
             /* dbFilepath */ NULL
@@ -192,9 +192,9 @@ private:
     /** Inform the application of pairing */
     virtual void pairingResult(
         ble::connection_handle_t connectionHandle,
-        SecurityManager::SecurityCompletionStatus_t result
+        ble::SecurityManager::SecurityCompletionStatus_t result
     ) {
-        if (result == SecurityManager::SEC_STATUS_SUCCESS) {
+        if (result == ble::SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
             _bonded = true;
         } else {
@@ -234,7 +234,7 @@ private:
             /* start bonding */
             ble_error_t error = _ble.securityManager().setLinkSecurity(
                 _handle,
-                SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
+                ble::SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
             );
             if (error) {
                 printf("Failed to set link security\r\n");

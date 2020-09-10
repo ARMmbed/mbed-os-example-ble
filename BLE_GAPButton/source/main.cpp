@@ -18,6 +18,7 @@
 #include <mbed.h>
 #include "ble/BLE.h"
 #include "pretty_printer.h"
+#include "ble/Gap.h"
 
 static const char DEVICE_NAME[] = "GAPButton";
 

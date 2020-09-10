@@ -17,7 +17,7 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "gap/Gap.h"
+#include "ble/Gap.h"
 #include "gap/AdvertisingDataParser.h"
 #include "pretty_printer.h"
 

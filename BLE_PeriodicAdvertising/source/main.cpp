@@ -17,8 +17,7 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "gap/Gap.h"
-#include "gap/AdvertisingDataParser.h"
+#include "ble/Gap.h"
 #include "pretty_printer.h"
 #include "BatteryService.h"
 
@@ -404,8 +403,8 @@ private:
             _role_established = true;
 
             /* we have to specify the disconnect call because of ambiguous overloads */
-            typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-            const disconnect_call_t disconnect_call = &Gap::disconnect;
+            typedef ble_error_t (ble::Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
+            const disconnect_call_t disconnect_call = &ble::Gap::disconnect;
 
             if (_is_scanner) {
                 _event_queue.call_in(

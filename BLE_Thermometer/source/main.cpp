@@ -17,6 +17,8 @@
 #include <events/mbed_events.h>
 #include "mbed.h"
 #include "ble/BLE.h"
+#include "ble/Gap.h"
+#include "ble/GattServer.h"
 #include "ble/services/HealthThermometerService.h"
 #include "pretty_printer.h"
 

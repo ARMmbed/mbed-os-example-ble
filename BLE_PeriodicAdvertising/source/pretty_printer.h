@@ -16,6 +16,7 @@
 
 #include <mbed.h>
 #include "ble/BLE.h"
+#include "ble/Gap.h"
 
 /* for seeding random number generator */
 static bool seeded = false;

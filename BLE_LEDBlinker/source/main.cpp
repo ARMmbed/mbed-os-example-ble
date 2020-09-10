@@ -17,10 +17,9 @@
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
-#include "ble/DiscoveredCharacteristic.h"
-#include "ble/DiscoveredService.h"
-#include "ble/gap/Gap.h"
-#include "ble/gap/AdvertisingDataParser.h"
+#include "ble/Gap.h"
+#include "ble/GattClient.h"
+#include "ble/GattServer.h"
 #include "pretty_printer.h"
 
 const static char PEER_NAME[] = "LED";

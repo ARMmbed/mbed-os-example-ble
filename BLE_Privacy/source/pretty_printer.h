@@ -16,6 +16,7 @@
 
 #include <mbed.h>
 #include "ble/BLE.h"
+#include "ble/Gap.h"
 
 inline void print_error(ble_error_t error, const char* msg)
 {

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <platform/mbed_chrono.h>
 #include <events/mbed_events.h>
 #include <mbed.h>
 #include "ble/BLE.h"
@@ -40,9 +41,7 @@
 
 static const char DEVICE_NAME[] = "Privacy";
 
-/* we have to specify the disconnect call because of ambiguous overloads */
-typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-const static disconnect_call_t disconnect_call = &Gap::disconnect;
+using std::literals::chrono_literals::operator""ms;
 
 /** Base class for both peripheral and central. The same class that provides
  *  the logic for the application also implements the SecurityManagerEventHandler
@@ -63,14 +62,14 @@ public:
         _led1(LED1, 0) { };
 
     virtual ~PrivacyDevice() {
-        _ble.onEventsToProcess(NULL);
+        _ble.onEventsToProcess(nullptr);
     };
 
     /** Start BLE interface initialisation */
     void run()
     {
         /* to show we're running we'll blink every 500ms */
-        _event_queue.call_every(500, this, &PrivacyDevice::blink);
+        _event_queue.call_every(500ms, [this] { blink(); });
 
         /* this will inform us off all events so we can schedule their handling
          * using our event queue */
@@ -97,11 +96,8 @@ public:
         _event_queue.dispatch_forever();
     };
 
-    /** Override to start chosen activity when initialisation completes */
+    /** Override to start chosen activity when the system starts */
     virtual void start() = 0;
-
-    /** Override to start chosen activity after initial bonding */
-    virtual void start_after_bonding() = 0;
 
     /* callbacks */
 
@@ -126,9 +122,9 @@ public:
             /* enableBonding */ true,
             /* requireMITM */ false,
             /* iocaps */ SecurityManager::IO_CAPS_NONE,
-            /* passkey */ NULL,
+            /* passkey */ nullptr,
             /* signing */ false,
-            /* dbFilepath */ NULL
+            /* dbFilepath */ nullptr
         );
 
         if (error) {
@@ -147,24 +143,23 @@ public:
         /* privacy */
 
         error = _ble.gap().enablePrivacy(true);
-
         if (error) {
             printf("Error enabling privacy.\r\n");
             _event_queue.break_dispatch();
             return;
         }
 
-        start();
+        // continuation is in onPrivacyEnabled()
     };
 
     /** Schedule processing of events from the BLE in the event queue. */
     void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
     {
-        _event_queue.call(mbed::callback(&context->ble, &BLE::processEvents));
+        _event_queue.call([&ble_instance = context->ble] { ble_instance.processEvents(); });
     };
 
     /** Blink LED to show we're running */
-    void blink(void)
+    void blink()
     {
         _led1 = !_led1;
     };
@@ -190,10 +185,10 @@ private:
     /* Event handler */
 
     /** Inform the application of pairing */
-    virtual void pairingResult(
+    void pairingResult(
         ble::connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
-    ) {
+    ) override {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
             _bonded = true;
@@ -202,17 +197,13 @@ private:
         }
 
         /* disconnect in 2s */
-        _event_queue.call_in(
-            2000,
-            &_ble.gap(),
-            disconnect_call,
-            connectionHandle,
-            ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
-        );
+        _event_queue.call_in(2000ms, [this, connectionHandle] {
+            _ble.gap().disconnect(connectionHandle, ble::local_disconnection_reason_t::USER_TERMINATION);
+        });
     }
 
     /** This is called by Gap to notify the application we connected */
-    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    void onConnectionComplete(const ble::ConnectionCompleteEvent &event) override
     {
         printf("Connected to peer: ");
         print_address(event.getPeerAddress().data());
@@ -223,13 +214,9 @@ private:
 
         if (_bonded) {
             /* disconnect in 2s */
-            _event_queue.call_in(
-                2000,
-                &_ble.gap(),
-                disconnect_call,
-                _handle,
-                ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
-            );
+            _event_queue.call_in(2000ms, [this] {
+                _ble.gap().disconnect(_handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+            });
         } else {
             /* start bonding */
             ble_error_t error = _ble.securityManager().setLinkSecurity(
@@ -244,33 +231,38 @@ private:
     };
 
     /** This is called by Gap to notify the application we disconnected */
-    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
+    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event) override
     {
         if (_bonded) {
             /* we have connected to and bonded with the other device, from now
              * on we will use the second start function and stay in the same role
              * as peripheral or central */
             printf("Disconnected.\r\n");
-            _event_queue.call_in(2000, this, &PrivacyDevice::start_after_bonding);
+            _event_queue.call_in(2000ms, [this] { start(); });
         } else {
             printf("Failed to bond.\r\n");
             _event_queue.break_dispatch();
         }
     };
 
-    virtual void onScanTimeout(const ble::ScanTimeoutEvent &)
+    void onScanTimeout(const ble::ScanTimeoutEvent &) override
     {
         /* if we failed to find the other device, abort so that we change roles */
         printf("Haven't seen other device, switch modes.\r\n");
         _event_queue.break_dispatch();
     }
 
-    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
+    void onAdvertisingEnd(const ble::AdvertisingEndEvent &event) override
     {
         if (!event.isConnected()) {
             printf("No device connected to us, switch modes.\r\n");
             _event_queue.break_dispatch();
         }
+    }
+
+    void onPrivacyEnabled() override
+    {
+        start();
     }
 
 public:
@@ -293,7 +285,7 @@ public:
         : PrivacyDevice(ble, event_queue) { }
 
     /** Set up and start advertising accepting anyone */
-    virtual void start()
+    void start() override
     {
         if (!set_advertising_data()) {
             return;
@@ -304,24 +296,17 @@ public:
             ble::peripheral_privacy_configuration_t::PERFORM_PAIRING_PROCEDURE
         };
 
+        if (_bonded) {
+            /** advertise and filter based on known devices */
+            printf("start after bonding\r\n");
+            privacy_configuration.resolution_strategy =
+                ble::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS;
+        }
+
         _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
 
         start_advertising();
     };
-
-    /** advertise and filter based on known devices */
-    virtual void start_after_bonding()
-    {
-        printf("start after bonding\r\n");
-        ble::peripheral_privacy_configuration_t privacy_configuration = {
-            /* use_non_resolvable_random_address */ false,
-            ble::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
-        };
-
-        _ble.gap().setPeripheralPrivacyConfiguration(&privacy_configuration);
-
-        start_advertising();
-    }
 
     /* helper functions */
 
@@ -330,9 +315,7 @@ private:
     {
         uint8_t adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
         /* use the helper to build the payload */
-        ble::AdvertisingDataBuilder adv_data_builder(
-            adv_buffer
-        );
+        ble::AdvertisingDataBuilder adv_data_builder(adv_buffer);
 
         adv_data_builder.setFlags();
         adv_data_builder.setName(DEVICE_NAME);
@@ -406,25 +389,17 @@ public:
 
     /** start scanning and attach a callback that will handle advertisements
      *  and scan requests responses */
-    virtual void start()
+    void start() override
     {
         ble::central_privacy_configuration_t privacy_configuration = {
             /* use_non_resolvable_random_address */ false,
             ble::central_privacy_configuration_t::DO_NOT_RESOLVE
         };
-
-        _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
-
-        start_scanning();
-    }
-
-    virtual void start_after_bonding()
-    {
-        printf("start after bonding\r\n");
-        ble::central_privacy_configuration_t privacy_configuration = {
-            /* use_non_resolvable_random_address */ false,
-            ble::central_privacy_configuration_t::RESOLVE_AND_FILTER
-        };
+        if (_bonded) {
+            printf("start after bonding\r\n");
+            privacy_configuration.resolution_strategy =
+                ble::central_privacy_configuration_t::RESOLVE_AND_FILTER;
+        }
 
         _ble.gap().setCentralPrivacyConfiguration(&privacy_configuration);
 
@@ -467,7 +442,7 @@ private:
     /* Event handler */
 
     /** Look at scan payload to find a peer device and connect to it */
-    virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
+    void onAdvertisingReport(const ble::AdvertisingReportEvent &event) override
     {
         /* don't bother with analysing scan result if we're already connecting */
         if (_is_connecting) {
@@ -529,7 +504,7 @@ int main()
 {
     BLE& ble = BLE::Instance();
 
-    while(1) {
+    while(true) {
         {
             events::EventQueue queue;
             printf("\r\n * Device is a peripheral *\r\n\r\n");

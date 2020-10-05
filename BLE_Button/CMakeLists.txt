@@ -28,7 +28,13 @@ target_sources(${APP_TARGET}
         source/main.cpp
 )
 
-target_link_libraries(${APP_TARGET} mbed-os)
+target_link_libraries(${APP_TARGET}
+    mbed-os
+    mbed-os-events
+    mbed-os-ble
+    mbed-os-ble-cordio
+    mbed-os-ble-blue_nrg
+)
 
 mbed_generate_bin_hex(${APP_TARGET})
 

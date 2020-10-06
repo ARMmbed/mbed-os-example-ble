@@ -109,9 +109,10 @@ private:
     /**
      * Handler called when a notification or an indication has been sent.
      */
-    void when_data_sent(unsigned count)
+    void when_data_sent(GattDataSentCallbackParams params)
     {
-        printf("sent %u updates\r\n", count);
+        printf("notification/indication sent for handle %d, connection handle: %u\r\n",
+                params.handle, params.connHandle);
     }
 
     /**
@@ -167,9 +168,10 @@ private:
      *
      * @param handle Handle of the characteristic value affected by the change.
      */
-    void when_update_enabled(GattAttribute::Handle_t handle)
+    void when_update_enabled(GattUpdatesEnabledCallbackParams params)
     {
-        printf("update enabled on handle %d\r\n", handle);
+        printf("update enabled on handle %d, connection handle: %u\r\n",
+                params.handle, params.connHandle);
     }
 
     /**
@@ -178,9 +180,10 @@ private:
      *
      * @param handle Handle of the characteristic value affected by the change.
      */
-    void when_update_disabled(GattAttribute::Handle_t handle)
+    void when_update_disabled(GattUpdatesDisabledCallbackParams params)
     {
-        printf("update disabled on handle %d\r\n", handle);
+        printf("update disabled on handle %d, connection handle: %u\r\n",
+                params.handle, params.connHandle);
     }
 
     /**
@@ -189,9 +192,10 @@ private:
      * @param handle Handle of the characteristic value that has emitted the
      * indication.
      */
-    void when_confirmation_received(GattAttribute::Handle_t handle)
+    void when_confirmation_received(GattConfirmationReceivedCallbackParams params)
     {
-        printf("confirmation received on handle %d\r\n", handle);
+        printf("confirmation received on handle %d, connection handle: %u\r\n",
+                params.handle, params.connHandle);
     }
 
     /**

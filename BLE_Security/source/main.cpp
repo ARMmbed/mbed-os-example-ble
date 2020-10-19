@@ -25,6 +25,8 @@
 #include "HeapBlockDevice.h"
 #endif //MBED_CONF_APP_FILESYSTEM_SUPPORT
 
+using namespace std::literals::chrono_literals;
+
 /** This example demonstrates all the basic setup required
  *  for pairing and setting up link security both as a central and peripheral
  *
@@ -39,7 +41,7 @@
  *  progress.
  */
 
-static const char DEVICE_NAME[] = "SM_device";
+static const char DEVICE_NAME[] = "Security";
 
 /* we have to specify the disconnect call because of ambiguous overloads */
 typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
@@ -62,33 +64,25 @@ class SMDevice : private mbed::NonCopyable<SMDevice>,
 {
 public:
     SMDevice(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address) :
-        _led1(LED1, 0),
         _ble(ble),
         _event_queue(event_queue),
         _peer_address(peer_address),
         _handle(0),
-        _is_connecting(false) { };
+        _is_connecting(false)
+    {
+    }
 
     virtual ~SMDevice()
     {
         if (_ble.hasInitialized()) {
             _ble.shutdown();
         }
-    };
+        _ble.onEventsToProcess(NULL);
+    }
 
     /** Start BLE interface initialisation */
     void run()
     {
-        ble_error_t error;
-
-        /* to show we're running we'll blink every 500ms */
-        _event_queue.call_every(500, this, &SMDevice::blink);
-
-        if (_ble.hasInitialized()) {
-            printf("Ble instance already initialised.\r\n");
-            return;
-        }
-
         /* this will inform us off all events so we can schedule their handling
          * using our event queue */
         _ble.onEventsToProcess(
@@ -98,7 +92,7 @@ public:
         /* handle gap events */
         _ble.gap().setEventHandler(this);
 
-        error = _ble.init(this, &SMDevice::on_init_complete);
+        ble_error_t error = _ble.init(this, &SMDevice::on_init_complete);
 
         if (error) {
             printf("Error returned by BLE::init.\r\n");
@@ -107,7 +101,7 @@ public:
 
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
-    };
+    }
 
 private:
     /** Override to start chosen activity when initialisation completes */
@@ -129,12 +123,12 @@ private:
         /* If the security manager is required this needs to be called before any
          * calls to the Security manager happen. */
         error = _ble.securityManager().init(
-            true,
-            false,
-            SecurityManager::IO_CAPS_NONE,
-            NULL,
-            false,
-            db_path
+            /* enableBonding */ true,
+            /* requireMITM */ false,
+            /* iocaps */ SecurityManager::IO_CAPS_NONE,
+            /* passkey */ NULL,
+            /* signing */ false,
+            /* dbFilepath */ db_path
         );
 
         if (error) {
@@ -142,35 +136,16 @@ private:
             return;
         }
 
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
         error = _ble.securityManager().preserveBondingStateOnReset(true);
 
         if (error) {
             printf("Error during preserveBondingStateOnReset %d\r\n", error);
         }
-
-#if MBED_CONF_APP_FILESYSTEM_SUPPORT
-        /* Enable privacy so we can find the keys */
-        error = _ble.gap().enablePrivacy(true);
-
-        if (error) {
-            printf("Error enabling privacy\r\n");
-        }
-
-        Gap::peripheral_privacy_configuration_t configuration_p = {
-            /* use_non_resolvable_random_address */ false,
-            Gap::peripheral_privacy_configuration_t::REJECT_NON_RESOLVED_ADDRESS
-        };
-        _ble.gap().setPeripheralPrivacyConfiguration(&configuration_p);
-
-        Gap::central_privay_configuration_t configuration_c = {
-            /* use_non_resolvable_random_address */ false,
-            Gap::CentralPrivacyConfiguration_t::RESOLVE_AND_FORWARD
-        };
-        _ble.gap().setCentralPrivacyConfiguration(&configuration_c);
+#endif // MBED_CONF_APP_FILESYSTEM_SUPPORT
 
         /* this demo switches between being master and slave */
         _ble.securityManager().setHintFutureRoleReversal(true);
-#endif
 
         /* Tell the security manager to use methods in this class to inform us
          * of any events. Class needs to implement SecurityManagerEventHandler. */
@@ -183,20 +158,14 @@ private:
         print_mac_address();
 
         /* start test in 500 ms */
-        _event_queue.call_in(500, this, &SMDevice::start);
-    };
+        _event_queue.call_in(500ms, this, &SMDevice::start);
+    }
 
     /** Schedule processing of events from the BLE in the event queue. */
     void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
     {
         _event_queue.call(mbed::callback(&context->ble, &BLE::processEvents));
-    };
-
-    /** Blink LED to show we're running */
-    void blink(void)
-    {
-        _led1 = !_led1;
-    };
+    }
 
 private:
     /* Event handler */
@@ -206,7 +175,8 @@ private:
      * call acceptPairingRequest or cancelPairingRequest */
     virtual void pairingRequest(
         ble::connection_handle_t connectionHandle
-    ) {
+    )
+    {
         printf("Pairing requested - authorising\r\n");
         _ble.securityManager().acceptPairingRequest(connectionHandle);
     }
@@ -215,11 +185,12 @@ private:
     virtual void pairingResult(
         ble::connection_handle_t connectionHandle,
         SecurityManager::SecurityCompletionStatus_t result
-    ) {
+    )
+    {
         if (result == SecurityManager::SEC_STATUS_SUCCESS) {
             printf("Pairing successful\r\n");
         } else {
-            printf("Pairing failed\r\n");
+            printf("Pairing failed (error code: %d)\r\n", result);
         }
     }
 
@@ -228,7 +199,8 @@ private:
     virtual void linkEncryptionResult(
         ble::connection_handle_t connectionHandle,
         ble::link_encryption_t result
-    ) {
+    )
+    {
         if (result == ble::link_encryption_t::ENCRYPTED) {
             printf("Link ENCRYPTED\r\n");
         } else if (result == ble::link_encryption_t::ENCRYPTED_WITH_MITM) {
@@ -239,7 +211,7 @@ private:
 
         /* disconnect in 2 s */
         _event_queue.call_in(
-            2000,
+            2000ms,
             &_ble.gap(),
             disconnect_call,
             _handle,
@@ -263,15 +235,6 @@ private:
         }
     }
 
-    virtual void onScanTimeout(const ble::ScanTimeoutEvent &)
-    {
-        printf("Scan timed out - aborting\r\n");
-        _event_queue.break_dispatch();
-    }
-
-private:
-    DigitalOut _led1;
-
 protected:
     BLE &_ble;
     events::EventQueue &_event_queue;
@@ -285,7 +248,9 @@ protected:
 class SMDevicePeripheral : public SMDevice {
 public:
     SMDevicePeripheral(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address)
-        : SMDevice(ble, event_queue, peer_address) { }
+        : SMDevice(ble, event_queue, peer_address)
+    {
+    }
 
     virtual void start()
     {
@@ -312,7 +277,8 @@ public:
         }
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::CONNECTABLE_UNDIRECTED
+            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+            ble::adv_interval_t(ble::millisecond_t(20))
         );
 
         error = _ble.gap().setAdvertisingParameters(
@@ -334,19 +300,39 @@ public:
 
         printf("Please connect to device\r\n");
 
-        /** This tells the stack to generate a pairingRequest event
+        /* This tells the stack to generate a pairingRequest event
          * which will require this application to respond before pairing
          * can proceed. Setting it to false will automatically accept
          * pairing. */
         _ble.securityManager().setPairingRequestAuthorisation(true);
-    };
+    }
+
+    /** This is called by Gap to notify the application we connected,
+     *  in our case it immediately requests a change in link security */
+    void requestEncryption()
+    {
+        printf("Sending slave security request\r\n");
+
+        /* Request a change in link security. This will be done
+         * indirectly by asking the master of the connection to
+         * change it. Depending on circumstances different actions
+         * may be taken by the master which will trigger events
+         * which the applications should deal with. */
+        ble_error_t error = _ble.securityManager().setLinkSecurity(
+            _handle,
+            SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
+        );
+
+        if (error) {
+            printf("Error during SM::setLinkSecurity %d\r\n", error);
+            return;
+        }
+    }
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately requests a change in link security */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
-        ble_error_t error;
-
         /* remember the device that connects to us now so we can connect to it
          * during the next demonstration */
         _peer_address = event.getPeerAddress();
@@ -356,28 +342,17 @@ public:
 
         _handle = event.getConnectionHandle();
 
-        /* Request a change in link security. This will be done
-         * indirectly by asking the master of the connection to
-         * change it. Depending on circumstances different actions
-         * may be taken by the master which will trigger events
-         * which the applications should deal with. */
-        error = _ble.securityManager().setLinkSecurity(
-            _handle,
-            SecurityManager::SECURITY_MODE_ENCRYPTION_NO_MITM
-        );
-
-        if (error) {
-            printf("Error during SM::setLinkSecurity %d\r\n", error);
-            return;
-        }
-    };
+        _event_queue.call_in(1000ms, this, &SMDevicePeripheral::requestEncryption);
+    }
 };
 
 /** A central device will scan, connect to a peer and request pairing. */
 class SMDeviceCentral : public SMDevice {
 public:
     SMDeviceCentral(BLE &ble, events::EventQueue &event_queue, ble::address_t &peer_address)
-        : SMDevice(ble, event_queue, peer_address) { }
+        : SMDevice(ble, event_queue, peer_address)
+    {
+    }
 
     virtual void start()
     {
@@ -423,21 +398,10 @@ private:
                 return;
             }
 
-            ble::ConnectionParameters connection_params(
-                ble::phy_t::LE_1M,
-                ble::scan_interval_t(50),
-                ble::scan_window_t(50),
-                ble::conn_interval_t(50),
-                ble::conn_interval_t(100),
-                ble::slave_latency_t(0),
-                ble::supervision_timeout_t(100)
-            );
-            connection_params.setOwnAddressType(ble::own_address_type_t::RANDOM);
-
             error = _ble.gap().connect(
                 event.getPeerAddressType(),
                 event.getPeerAddress(),
-                connection_params
+                ble::ConnectionParameters()
             );
 
             if (error) {
@@ -469,18 +433,16 @@ private:
 
              if (error) {
                  printf("Error during SM::requestPairing %d\r\n", error);
-                 return;
              }
 
             /* upon pairing success the application will disconnect */
-        }
+        } else {
+            /* failed to connect - restart scan */
+            ble_error_t error = _ble.gap().startScan();
 
-        /* failed to connect - restart scan */
-        ble_error_t error = _ble.gap().startScan();
-
-        if (error) {
-            print_error(error, "Error in Gap::startScan %d\r\n");
-            return;
+            if (error) {
+                print_error(error, "Error in Gap::startScan %d\r\n");
+            }
         }
     };
 };

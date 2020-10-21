@@ -63,6 +63,9 @@ private:
         /* create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
+            /* you cannot connect to this device, you can only read its advertising data,
+             * scannable means that the device has extra advertising data that the peer can receive if it
+             * "scans" it which means it is using active scanning (it sends a scan request) */
             ble::advertising_type_t::SCANNABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
@@ -71,7 +74,7 @@ private:
         _adv_data_builder.setName(DEVICE_NAME);
 
         /* we add the battery level as part of the payload so it's visible to any device that scans */
-        _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, make_Span(&_battery_level, 1));
+        _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, {&_battery_level, 1});
 
         /* setup advertising */
 
@@ -95,6 +98,17 @@ private:
             return;
         }
 
+        /* when advertising you can optionally add extra data that is only sent
+         * if the central requests it by doing active scanning */
+        _adv_data_builder.clear();
+        const uint8_t _vendor_specific_data[4] = { 0xAD, 0xDE, 0xBE, 0xEF };
+        _adv_data_builder.setManufacturerSpecificData(_vendor_specific_data);
+
+        _ble.gap().setAdvertisingScanResponse(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
         /* start advertising */
 
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
@@ -105,7 +119,12 @@ private:
         }
 
         /* we simulate battery discharging by updating it every second */
-        _event_queue.call_every(1000ms, [&](){ update_battery_level(); });
+        _event_queue.call_every(
+            1000ms,
+            [this]() {
+                update_battery_level();
+            }
+        );
     }
 
     void update_battery_level()

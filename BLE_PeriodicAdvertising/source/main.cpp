@@ -382,18 +382,13 @@ private:
             printf("Roles established\r\n");
             _role_established = true;
 
-            /* we have to specify the disconnect call because of ambiguous overloads */
-            typedef ble_error_t (Gap::*disconnect_call_t)(ble::connection_handle_t, ble::local_disconnection_reason_t);
-            const disconnect_call_t disconnect_call = &Gap::disconnect;
-
             if (_is_scanner) {
                 printf("I will synchronise with periodic advertising\r\n");
                 _event_queue.call_in(
                     1000ms,
-                    &_ble.gap(),
-                    disconnect_call,
-                    event.getConnectionHandle(),
-                    ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+                    [this, handle = event.getConnectionHandle()] {
+                        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION));
+                    }
                 );
             } else {
                 printf("I will advertise periodic advertising\r\n");

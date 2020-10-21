@@ -60,7 +60,12 @@ private:
         _ble.gap().setEventHandler(this);
 
         /* heart rate value updated every second */
-        _event_queue.call_every(1000ms, this, &HeartrateDemo::update_sensor_value);
+        _event_queue.call_every(
+            1000ms,
+            [this] {
+                update_sensor_value();
+            }
+        );
 
         start_advertising();
     }
@@ -76,7 +81,7 @@ private:
 
         _adv_data_builder.setFlags();
         _adv_data_builder.setAppearance(ble::adv_data_appearance_t::GENERIC_HEART_RATE_SENSOR);
-        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_heartrate_uuid, 1));
+        _adv_data_builder.setLocalServiceList({&_heartrate_uuid, 1});
         _adv_data_builder.setName(DEVICE_NAME);
 
         /* Setup advertising */

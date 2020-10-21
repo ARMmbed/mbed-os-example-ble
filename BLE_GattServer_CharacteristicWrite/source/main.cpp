@@ -15,13 +15,12 @@
  */
 
 #include <events/mbed_events.h>
-#include <mbed.h>
 #include "ble/BLE.h"
-#include "gatt_server_process.h"
+#include "mbed-os-ble-utils/gatt_server_process.h"
 
 static EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
-class GattServerDemo : ble::Gap::EventHandler {
+class GattServerDemo : ble::GattServer::EventHandler {
 
     const static uint16_t EXAMPLE_SERVICE_UUID         = 0xA000;
     const static uint16_t WRITABLE_CHARACTERISTIC_UUID = 0xA001;
@@ -49,10 +48,10 @@ public:
 
         ble.gattServer().addService(example_service);
 
-        ble.gattServer().onDataWritten(this, &GattServerDemo::on_data_written);
+        ble.gattServer().setEventHandler(this);
 
-        printf("\r\nExample service added with UUID 0xA000\r\n");
-        printf("Connect and write to characteristic 0xA001\r\n\r\n");
+        printf("Example service added with UUID 0xA000\r\n");
+        printf("Connect and write to characteristic 0xA001\r\n");
     }
 
 private:
@@ -61,10 +60,10 @@ private:
      *
      * @param[in] params Information about the characterisitc being updated.
      */
-    void on_data_written(const GattWriteCallbackParams *params)
+    virtual void onDataWritten(const GattWriteCallbackParams &params)
     {
-        if ((params->handle == _writable_characteristic->getValueHandle()) && (params->len == 1)) {
-            printf("New characteristic value written: %x\r\n", *(params->data));
+        if ((params.handle == _writable_characteristic->getValueHandle()) && (params.len == 1)) {
+            printf("New characteristic value written: %x\r\n", *(params.data));
         }
     }
 
@@ -77,12 +76,12 @@ int main()
 {
     BLE &ble = BLE::Instance();
 
-    printf("GattServer demo of writable characteristic\r\n");
+    printf("\r\nGattServer demo of a writable characteristic\r\n");
 
     GattServerDemo demo;
 
     /* this process will handle basic setup and advertising for us */
-    BLEProcess ble_process(event_queue, ble);
+    GattServerProcess ble_process(event_queue, ble);
 
     /* once it's done it will let us continue with our demo*/
     ble_process.on_init(callback(&demo, &GattServerDemo::start));

@@ -137,9 +137,9 @@ Please have a client open and connected to the board. You may use:
 To observe and/or interact with example applications please use any BLE scanner on a smartphone.
 If you don't have a scanner on your phone, please install :
 
-- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
+- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android and iOS.
 
-- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
+- [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation) for Android.
 
 Known issues
 ============

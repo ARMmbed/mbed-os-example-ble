@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-
 #include "platform/Callback.h"
 #include "events/EventQueue.h"
-#include "platform/NonCopyable.h"
-
-#include "ble/GattServer.h"
-#include "BLEProcess.h"
+#include "ble/BLE.h"
+#include "mbed-os-ble-utils/gatt_server_process.h"
 
 using mbed::callback;
+using namespace std::literals::chrono_literals;
 
 /**
  * A Clock service that demonstrate the GattServer features.
@@ -36,9 +33,7 @@ using mbed::callback;
  * notified when one of the value is changed. Clients can also change value of
  * the second, minute and hour characteristric.
  */
-class ClockService {
-    typedef ClockService Self;
-
+class ClockService : public ble::GattServer::EventHandler {
 public:
     ClockService() :
         _hour_char("485f4145-52b9-4644-af1f-7a6b9322490f", 0),
@@ -49,34 +44,25 @@ public:
             /* characteristics */ _clock_characteristics,
             /* numCharacteristics */ sizeof(_clock_characteristics) /
                                      sizeof(_clock_characteristics[0])
-        ),
-        _server(NULL),
-        _event_queue(NULL)
+        )
     {
-        // update internal pointers (value, descriptors and characteristics array)
+        /* update internal pointers (value, descriptors and characteristics array) */
         _clock_characteristics[0] = &_hour_char;
         _clock_characteristics[1] = &_minute_char;
         _clock_characteristics[2] = &_second_char;
 
-        // setup authorization handlers
-        _hour_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
-        _minute_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
-        _second_char.setWriteAuthorizationCallback(this, &Self::authorize_client_write);
+        /* setup authorization handlers */
+        _hour_char.setWriteAuthorizationCallback(this, &ClockService::authorize_client_write);
+        _minute_char.setWriteAuthorizationCallback(this, &ClockService::authorize_client_write);
+        _second_char.setWriteAuthorizationCallback(this, &ClockService::authorize_client_write);
     }
 
-
-
-    void start(BLE &ble_interface, events::EventQueue &event_queue)
+    void start(BLE &ble, events::EventQueue &event_queue)
     {
-         if (_event_queue) {
-            return;
-        }
-
-        _server = &ble_interface.gattServer();
+        _server = &ble.gattServer();
         _event_queue = &event_queue;
 
-        // register the service
-        printf("Adding demo service\r\n");
+        printf("Registering demo service\r\n");
         ble_error_t err = _server->addService(_clock_service);
 
         if (err) {
@@ -84,60 +70,52 @@ public:
             return;
         }
 
-        // read write handler
-        _server->onDataSent(as_cb(&Self::when_data_sent));
-        _server->onDataWritten(as_cb(&Self::when_data_written));
-        _server->onDataRead(as_cb(&Self::when_data_read));
+        /* register handlers */
+        _server->setEventHandler(this);
 
-        // updates subscribtion handlers
-        _server->onUpdatesEnabled(as_cb(&Self::when_update_enabled));
-        _server->onUpdatesDisabled(as_cb(&Self::when_update_disabled));
-        _server->onConfirmationReceived(as_cb(&Self::when_confirmation_received));
-
-        // print the handles
         printf("clock service registered\r\n");
         printf("service handle: %u\r\n", _clock_service.getHandle());
-        printf("\thour characteristic value handle %u\r\n", _hour_char.getValueHandle());
-        printf("\tminute characteristic value handle %u\r\n", _minute_char.getValueHandle());
-        printf("\tsecond characteristic value handle %u\r\n", _second_char.getValueHandle());
+        printf("hour characteristic value handle %u\r\n", _hour_char.getValueHandle());
+        printf("minute characteristic value handle %u\r\n", _minute_char.getValueHandle());
+        printf("second characteristic value handle %u\r\n", _second_char.getValueHandle());
 
-        _event_queue->call_every(1000 /* ms */, callback(this, &Self::increment_second));
+        _event_queue->call_every(1000ms, callback(this, &ClockService::increment_second));
     }
 
+    /* GattServer::EventHandler */
 private:
-
     /**
      * Handler called when a notification or an indication has been sent.
      */
-    void when_data_sent(unsigned count)
+    void onDataSent(const GattDataSentCallbackParams &params) override
     {
-        printf("sent %u updates\r\n", count);
+        printf("sent updates\r\n");
     }
 
     /**
      * Handler called after an attribute has been written.
      */
-    void when_data_written(const GattWriteCallbackParams *e)
+    void onDataWritten(const GattWriteCallbackParams &params) override
     {
         printf("data written:\r\n");
-        printf("\tconnection handle: %u\r\n", e->connHandle);
-        printf("\tattribute handle: %u", e->handle);
-        if (e->handle == _hour_char.getValueHandle()) {
+        printf("connection handle: %u\r\n", params.connHandle);
+        printf("attribute handle: %u", params.handle);
+        if (params.handle == _hour_char.getValueHandle()) {
             printf(" (hour characteristic)\r\n");
-        } else if (e->handle == _minute_char.getValueHandle()) {
+        } else if (params.handle == _minute_char.getValueHandle()) {
             printf(" (minute characteristic)\r\n");
-        } else if (e->handle == _second_char.getValueHandle()) {
+        } else if (params.handle == _second_char.getValueHandle()) {
             printf(" (second characteristic)\r\n");
         } else {
             printf("\r\n");
         }
-        printf("\twrite operation: %u\r\n", e->writeOp);
-        printf("\toffset: %u\r\n", e->offset);
-        printf("\tlength: %u\r\n", e->len);
-        printf("\t data: ");
+        printf("write operation: %u\r\n", params.writeOp);
+        printf("offset: %u\r\n", params.offset);
+        printf("length: %u\r\n", params.len);
+        printf("data: ");
 
-        for (size_t i = 0; i < e->len; ++i) {
-            printf("%02X", e->data[i]);
+        for (size_t i = 0; i < params.len; ++i) {
+            printf("%02X", params.data[i]);
         }
 
         printf("\r\n");
@@ -146,16 +124,16 @@ private:
     /**
      * Handler called after an attribute has been read.
      */
-    void when_data_read(const GattReadCallbackParams *e)
+    void onDataRead(const GattReadCallbackParams &params) override
     {
         printf("data read:\r\n");
-        printf("\tconnection handle: %u\r\n", e->connHandle);
-        printf("\tattribute handle: %u", e->handle);
-        if (e->handle == _hour_char.getValueHandle()) {
+        printf("connection handle: %u\r\n", params.connHandle);
+        printf("attribute handle: %u", params.handle);
+        if (params.handle == _hour_char.getValueHandle()) {
             printf(" (hour characteristic)\r\n");
-        } else if (e->handle == _minute_char.getValueHandle()) {
+        } else if (params.handle == _minute_char.getValueHandle()) {
             printf(" (minute characteristic)\r\n");
-        } else if (e->handle == _second_char.getValueHandle()) {
+        } else if (params.handle == _second_char.getValueHandle()) {
             printf(" (second characteristic)\r\n");
         } else {
             printf("\r\n");
@@ -167,9 +145,9 @@ private:
      *
      * @param handle Handle of the characteristic value affected by the change.
      */
-    void when_update_enabled(GattAttribute::Handle_t handle)
+    void onUpdatesEnabled(const GattUpdatesEnabledCallbackParams &params) override
     {
-        printf("update enabled on handle %d\r\n", handle);
+        printf("update enabled on handle %d\r\n", params.attHandle);
     }
 
     /**
@@ -178,9 +156,9 @@ private:
      *
      * @param handle Handle of the characteristic value affected by the change.
      */
-    void when_update_disabled(GattAttribute::Handle_t handle)
+    void onUpdatesDisabled(const GattUpdatesDisabledCallbackParams &params) override
     {
-        printf("update disabled on handle %d\r\n", handle);
+        printf("update disabled on handle %d\r\n", params.attHandle);
     }
 
     /**
@@ -189,11 +167,12 @@ private:
      * @param handle Handle of the characteristic value that has emitted the
      * indication.
      */
-    void when_confirmation_received(GattAttribute::Handle_t handle)
+    void onConfirmationReceived(const GattConfirmationReceivedCallbackParams &params) override
     {
-        printf("confirmation received on handle %d\r\n", handle);
+        printf("confirmation received on handle %d\r\n", params.attHandle);
     }
 
+private:
     /**
      * Handler called when a write request is received.
      *
@@ -299,16 +278,6 @@ private:
 
 private:
     /**
-     * Helper that construct an event handler from a member function of this
-     * instance.
-     */
-    template<typename Arg>
-    FunctionPointerWithContext<Arg> as_cb(void (Self::*member)(Arg))
-    {
-        return makeFunctionPointer(this, member);
-    }
-
-    /**
      * Read, Write, Notify, Indicate  Characteristic declaration helper.
      *
      * @tparam T type of data held by the characteristic.
@@ -330,10 +299,10 @@ private:
                 /* Value size */ sizeof(_value),
                 /* Value capacity */ sizeof(_value),
                 /* Properties */ GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_READ |
-                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
-                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY |
-                                GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE,
-                /* Descriptors */ NULL,
+                                 GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_WRITE |
+                                 GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_NOTIFY |
+                                 GattCharacteristic::BLE_GATT_CHAR_PROPERTIES_INDICATE,
+                /* Descriptors */ nullptr,
                 /* Num descriptors */ 0,
                 /* variable len */ false
             ),
@@ -363,9 +332,8 @@ private:
          * @param[in] local_only Flag that determine if the change should be kept
          * locally or forwarded to subscribed clients.
          */
-        ble_error_t set(
-            GattServer &server, const uint8_t &value, bool local_only = false
-        ) const {
+        ble_error_t set(GattServer &server, const uint8_t &value, bool local_only = false) const
+        {
             return server.write(getValueHandle(), &value, sizeof(value), local_only);
         }
 
@@ -373,30 +341,29 @@ private:
         uint8_t _value;
     };
 
+private:
+    GattServer *_server = nullptr;
+    events::EventQueue *_event_queue = nullptr;
+
+    GattService _clock_service;
+    GattCharacteristic* _clock_characteristics[3];
+
     ReadWriteNotifyIndicateCharacteristic<uint8_t> _hour_char;
     ReadWriteNotifyIndicateCharacteristic<uint8_t> _minute_char;
     ReadWriteNotifyIndicateCharacteristic<uint8_t> _second_char;
-
-    // list of the characteristics of the clock service
-    GattCharacteristic* _clock_characteristics[3];
-
-    // demo service
-    GattService _clock_service;
-
-    GattServer* _server;
-    events::EventQueue *_event_queue;
 };
 
 int main() {
-    BLE &ble_interface = BLE::Instance();
+    BLE &ble = BLE::Instance();
     events::EventQueue event_queue;
     ClockService demo_service;
-    BLEProcess ble_process(event_queue, ble_interface);
 
+    /* this process will handle basic ble setup and advertising for us */
+    GattServerProcess ble_process(event_queue, ble);
+
+    /* once it's done it will let us continue with our demo */
     ble_process.on_init(callback(&demo_service, &ClockService::start));
 
-    // bind the event queue to the ble interface, initialize the interface
-    // and start advertising
     ble_process.start();
 
     return 0;

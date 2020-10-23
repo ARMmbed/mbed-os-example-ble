@@ -15,101 +15,81 @@
  */
 
 #include <events/mbed_events.h>
-#include <mbed.h>
 #include "ble/BLE.h"
-#include "gap/Gap.h"
-#include "gap/AdvertisingDataParser.h"
-#include "pretty_printer.h"
+#include "mbed-os-ble-utils/pretty_printer.h"
 
 /** This example demonstrates all the basic setup required
- *  to advertise, scan and connect to other devices.
+ *  to advertise and scan.
  *
  *  It contains a single class that performs both scans and advertisements.
  *
  *  The demonstrations happens in sequence, after each "mode" ends
- *  the demo jumps to the next mode to continue. There are several modes
- *  that show scanning and several showing advertising. These are configured
- *  according to the two arrays containing parameters. During scanning
- *  a connection will be made to a connectable device upon its discovery.
+ *  the demo jumps to the next mode to continue.
+ *
+ *  You may connect to the device during advertising and if you advertise
+ *  this demo will try to connect during the scanning phase. Connection
+ *  will terminate the phase early. At the end of the phase some stats
+ *  will be shown about the phase.
  */
+
+/* demo config */
+/* you can adjust these parameters and see the effect on the performance */
+
+/* Advertising parameters are mainly defined by an advertising type and
+ * and an interval between advertisements. lower interval increases the
+ * chances of being seen at the cost of more power.
+ * The Bluetooth controller may run concurrent operations with the radio;
+ * to help it, a minimum and maximum advertising interval should be
+ * provided.
+ */
+static const ble::AdvertisingParameters advertising_params(
+    ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+    ble::adv_interval_t(40),
+    ble::adv_interval_t(80)
+);
+
+/* if the controller support it we can advertise multiple sets */
+static const ble::AdvertisingParameters extended_advertising_params(
+    ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED,
+    ble::adv_interval_t(600),
+    ble::adv_interval_t(800)
+);
+
+static const std::chrono::milliseconds advertising_duration = 10000ms;
+
+/* Scanning happens repeatedly and is defined by:
+ *  - The scan interval which is the time (in 0.625us) between each scan cycle.
+ *  - The scan window which is the scanning time (in 0.625us) during a cycle.
+ * If the scanning process is active, the local device sends scan requests
+ * to discovered peer to get additional data.
+ */
+static const ble::ScanParameters scan_params(
+    ble::phy_t::LE_1M,
+    ble::scan_interval_t(80),
+    ble::scan_window_t(60),
+    false /* active scanning */
+);
+
+static const ble::scan_duration_t scan_duration(ble::millisecond_t(10000));
+
+/* config end */
 
 events::EventQueue event_queue;
 
-/* Duration of each mode in milliseconds */
-static const size_t MODE_DURATION_MS      = 6000;
+using namespace std::literals::chrono_literals;
 
-/* Time between each mode in milliseconds */
-static const size_t TIME_BETWEEN_MODES_MS = 2000;
+/* Delay between steps */
+static const std::chrono::milliseconds delay = 3000ms;
 
-/* how long to wait before disconnecting in milliseconds */
-static const size_t CONNECTION_DURATION   = 3000;
-
-/* how many advertising sets we want to crate at once */
-static const uint8_t ADV_SET_NUMBER       = 2;
-
-static const uint16_t MAX_ADVERTISING_PAYLOAD_SIZE = 1000;
-
-typedef struct {
-    ble::advertising_type_t type;
-    ble::adv_interval_t min_interval;
-    ble::adv_interval_t max_interval;
-} DemoAdvParams_t;
-
-typedef struct {
-    ble::scan_interval_t interval;
-    ble::scan_window_t   window;
-    ble::scan_duration_t duration;
-    bool active;
-} DemoScanParam_t;
-
-/** the entries in this array are used to configure our advertising
- *  parameters for each of the modes we use in our demo */
-static const DemoAdvParams_t advertising_params[] = {
-/*    advertising type                                   | min interval - 0.625us  | max interval - 0.625us   */
-    { ble::advertising_type_t::CONNECTABLE_UNDIRECTED,      ble::adv_interval_t(40), ble::adv_interval_t(80)  },
-    { ble::advertising_type_t::SCANNABLE_UNDIRECTED,       ble::adv_interval_t(100), ble::adv_interval_t(200) },
-    { ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED, ble::adv_interval_t(100), ble::adv_interval_t(200) }
-};
-
-/* when we cycle through all our advertising modes we will move to scanning modes */
-
-/** the entries in this array are used to configure our scanning
- *  parameters for each of the modes we use in our demo */
-static const DemoScanParam_t scanning_params[] = {
-/*                      interval                  window                   duration  active */
-/*                      0.625ms                  0.625ms                       10ms         */
-    {   ble::scan_interval_t(4),   ble::scan_window_t(4),   ble::scan_duration_t(0), false },
-    { ble::scan_interval_t(160), ble::scan_window_t(100), ble::scan_duration_t(300), false },
-    { ble::scan_interval_t(160),  ble::scan_window_t(40),   ble::scan_duration_t(0), true  },
-    { ble::scan_interval_t(500),  ble::scan_window_t(10),   ble::scan_duration_t(0), false }
-};
-
-/* helper that gets the number of items in arrays */
-template<class T, size_t N>
-size_t arraysize(const T (&)[N])
-{
-    return N;
-}
-
-/** Demonstrate advertising, scanning and connecting
- */
+/** Demonstrate advertising, scanning and connecting */
 class GapDemo : private mbed::NonCopyable<GapDemo>, public ble::Gap::EventHandler
 {
 public:
     GapDemo(BLE& ble, events::EventQueue& event_queue) :
         _ble(ble),
         _gap(ble.gap()),
-        _event_queue(event_queue),
-        _led1(LED1, 0),
-        _set_index(0),
-        _is_in_scanning_mode(true),
-        _is_connecting(false),
-        _on_duration_end_id(0),
-        _scan_count(0),
-        _blink_event(0) {
-        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
-            _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
-        }
+        _event_queue(event_queue)
+    {
     }
 
     ~GapDemo()
@@ -122,11 +102,6 @@ public:
     /** Start BLE interface initialisation */
     void run()
     {
-        if (_ble.hasInitialized()) {
-            printf("Ble instance already initialised.\r\n");
-            return;
-        }
-
         /* handle gap events */
         _gap.setEventHandler(this);
 
@@ -135,9 +110,6 @@ public:
             print_error(error, "Error returned by BLE::init");
             return;
         }
-
-        /* to show we're running we'll blink every 500ms */
-        _blink_event = _event_queue.call_every(500, this, &GapDemo::blink);
 
         /* this will not return until shutdown */
         _event_queue.dispatch_forever();
@@ -155,88 +127,41 @@ private:
         print_mac_address();
 
         /* setup the default phy used in connection to 2M to reduce power consumption */
-        if (is_2m_phy_supported()) {
+        if (_gap.isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY)) {
             ble::phy_set_t phys(/* 1M */ false, /* 2M */ true, /* coded */ false);
 
             ble_error_t error = _gap.setPreferredPhys(/* tx */&phys, /* rx */&phys);
+
+            /* PHY 2M communication will only take place if both peers support it */
             if (error) {
                 print_error(error, "GAP::setPreferedPhys failed");
             }
+        } else {
+            /* otherwise it will use 1M by default */
         }
 
         /* all calls are serialised on the user thread through the event queue */
-        _event_queue.call(this, &GapDemo::demo_mode_start);
-    }
-
-    /** queue up start of the current demo mode */
-    void demo_mode_start()
-    {
-        if (_is_in_scanning_mode) {
-            _event_queue.call(this, &GapDemo::scan);
-        } else {
-            _event_queue.call(this, &GapDemo::advertise);
-        }
-
-        /* for performance measurement keep track of duration of the demo mode */
-        _demo_duration.start();
-        /* keep track of our state */
-        _is_connecting = false;
-
-        /* queue up next demo mode */
-        _on_duration_end_id = _event_queue.call_in(
-            MODE_DURATION_MS,
-            this,
-            &GapDemo::end_demo_mode
-        );
-
-        printf("\r\n");
+        _event_queue.call(this, &GapDemo::advertise);
     }
 
     /** Set up and start advertising */
     void advertise()
     {
-        const DemoAdvParams_t &adv_params = advertising_params[_set_index];
-
-        /*
-         * Advertising parameters are mainly defined by an advertising type and
-         * and an interval between advertisements. lower interval increases the
-         * chances of being seen at the cost of more power.
-         * The Bluetooth controller may run concurrent operations with the radio;
-         * to help it, a minimum and maximum advertising interval should be
-         * provided.
-         *
-         * With Bluetooth 5; it is possible to advertise concurrently multiple
-         * payloads at different rate. The combination of payload and its associated
-         * parameters is named an advertising set. To refer to these advertising
-         * sets the Bluetooth system use an advertising set handle that needs to
-         * be created first.
-         * The only exception is the legacy advertising handle which is usable
-         * on Bluetooth 4 and Bluetooth 5 system. It is created at startup and
-         * its lifecycle is managed by the system.
-         */
-        ble_error_t error = _gap.setAdvertisingParameters(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            ble::AdvertisingParameters(
-                adv_params.type,
-                adv_params.min_interval,
-                adv_params.max_interval
-            )
-        );
+        ble_error_t error = _gap.setAdvertisingParameters(ble::LEGACY_ADVERTISING_HANDLE, advertising_params);
         if (error) {
             print_error(error, "Gap::setAdvertisingParameters() failed");
             return;
         }
 
+        /* to create a payload we'll use a helper class that builds a valid payload */
+        /* AdvertisingDataSimpleBuilder is a wrapper over AdvertisingDataBuilder that allocated the buffer for us */
+        ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE> data_builder;
+
+        /* builder methods can be chained together as they return the builder object */
+        data_builder.setFlags().setName("Legacy Set");
+
         /* Set payload for the set */
-        /* Use the simple builder to construct the payload; it fails at runtime
-         * if there is not enough space left in the buffer */
-        error = _gap.setAdvertisingPayload(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            ble::AdvertisingDataSimpleBuilder<ble::LEGACY_ADVERTISING_MAX_SIZE>()
-                .setFlags()
-                .setName("Legacy advertiser")
-                .getAdvertisingData()
-        );
+        error = _gap.setAdvertisingPayload(ble::LEGACY_ADVERTISING_HANDLE, data_builder.getAdvertisingData());
         if (error) {
             print_error(error, "Gap::setAdvertisingPayload() failed");
             return;
@@ -249,124 +174,66 @@ private:
             return;
         }
 
-        printf("Advertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
-            adv_params.type.value(),
-            adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
-
-        // CONNECTABLE_UNDIRECTED is incompatible with non-legacy PDU of extended advertising
-        if (adv_params.type != ble::advertising_type_t::CONNECTABLE_UNDIRECTED
-            && is_extended_advertising_supported()) {
-            advertise_extended();
-        }
-    }
-
-    void advertise_extended()
-    {
-        const DemoAdvParams_t &adv_params = advertising_params[_set_index];
-
-        /* this is the memory backing for the payload */
-        uint8_t adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
-
-        /* how many sets */
-        uint8_t max_adv_set = std::min(
-            _gap.getMaxAdvertisingSetNumber(),
-            (uint8_t) arraysize(_adv_handles)
+        printf(
+            "\r\nAdvertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
+            advertising_params.getType(),
+            advertising_params.getMinPrimaryInterval().valueInMs(),
+            advertising_params.getMaxPrimaryInterval().valueInMs()
         );
 
-        /* one advertising set is reserved for legacy advertising */
-        if (max_adv_set < 2) {
-            return;
-        }
-
-        /* how much payload in a set */
-        uint16_t max_adv_size = std::min(
-            (uint16_t) _gap.getMaxAdvertisingDataLength(),
-            MAX_ADVERTISING_PAYLOAD_SIZE
-        );
-
-        /* create and start all requested (and possible) advertising sets */
-        for (uint8_t i = 0; i < (max_adv_set - 1); ++i) {
-            /* create the advertising set with its parameter */
-            /* this time we do not use legacy PDUs */
-            ble_error_t error = _gap.createAdvertisingSet(
-                &_adv_handles[i],
-                ble::AdvertisingParameters(
-                    adv_params.type,
-                    adv_params.min_interval,
-                    adv_params.max_interval
-                ).setUseLegacyPDU(false)
-            );
+        /* if we support extended advertising we'll also additionally advertise another set at the same time */
+        if (_gap.isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING)) {
+            /* With Bluetooth 5; it is possible to advertise concurrently multiple
+             * payloads at different rate. The combination of payload and its associated
+             * parameters is named an advertising set. To refer to these advertising
+             * sets the Bluetooth system use an advertising set handle that needs to
+             * be created first.
+             * The only exception is the legacy advertising handle which is usable
+             * on Bluetooth 4 and Bluetooth 5 system. It is created at startup and
+             * its lifecycle is managed by the system.
+             */
+            ble_error_t error = _gap.createAdvertisingSet(&_extended_adv_handle, extended_advertising_params);
             if (error) {
                 print_error(error, "Gap::createAdvertisingSet() failed");
                 return;
             }
 
-            /* use the helper to build the payload */
-            ble::AdvertisingDataBuilder adv_data_builder(
-                adv_buffer,
-                max_adv_size
-            );
-
-            /* set the flags */
-            error = adv_data_builder.setFlags();
-            if (error) {
-                print_error(error, "AdvertisingDataBuilder::setFlags() failed");
-                return;
-            }
-
-            /* set different name for each set */
-            MBED_ASSERT(i < 9);
-            char device_name[] = "Advertiser x";
-            snprintf(device_name, arraysize(device_name), "Advertiser %d", i%10);
-            error = adv_data_builder.setName(device_name);
-            if (error) {
-                print_error(error, "AdvertisingDataBuilder::setName() failed");
-                return;
-            }
+            /* we can reuse the builder, we just replace the name */
+            data_builder.setName("Extended Set");
 
             /* Set payload for the set */
-            error = _gap.setAdvertisingPayload(
-                _adv_handles[i],
-                adv_data_builder.getAdvertisingData()
-            );
+            error = _gap.setAdvertisingPayload(_extended_adv_handle, data_builder.getAdvertisingData());
             if (error) {
                 print_error(error, "Gap::setAdvertisingPayload() failed");
                 return;
             }
 
             /* Start advertising the set */
-            error = _gap.startAdvertising(_adv_handles[i]);
+            error = _gap.startAdvertising(_extended_adv_handle);
             if (error) {
                 print_error(error, "Gap::startAdvertising() failed");
                 return;
             }
 
-            printf("Advertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
-                adv_params.type.value(),
-                adv_params.min_interval.valueInMs(), adv_params.max_interval.valueInMs() );
+            printf(
+                "Advertising started (type: 0x%x, interval: [%d : %d]ms)\r\n",
+                extended_advertising_params.getType(),
+                extended_advertising_params.getMinPrimaryInterval().valueInMs(),
+                extended_advertising_params.getMaxPrimaryInterval().valueInMs()
+            );
         }
+
+        _demo_duration.reset();
+        _demo_duration.start();
+
+        /* this will stop advertising if no connection takes place in the meantime */
+        _cancel_handle = _event_queue.call_in(advertising_duration, [this]{ end_advertising_mode(); });
     }
 
     /** Set up and start scanning */
     void scan()
     {
-        const DemoScanParam_t &scan_params = scanning_params[_set_index];
-
-        /*
-         * Scanning happens repeatedly and is defined by:
-         *  - The scan interval which is the time (in 0.625us) between each scan cycle.
-         *  - The scan window which is the scanning time (in 0.625us) during a cycle.
-         * If the scanning process is active, the local device sends scan requests
-         * to discovered peer to get additional data.
-         */
-        ble_error_t error = _gap.setScanParameters(
-            ble::ScanParameters(
-                ble::phy_t::LE_1M,   // scan on the 1M PHY
-                scan_params.interval,
-                scan_params.window,
-                scan_params.active
-            )
-        );
+        ble_error_t error = _gap.setScanParameters(scan_params);
         if (error) {
             print_error(error, "Error caused by Gap::setScanParameters");
             return;
@@ -374,46 +241,20 @@ private:
 
         /* start scanning and attach a callback that will handle advertisements
          * and scan requests responses */
-        error = _gap.startScan(scan_params.duration);
+        error = _gap.startScan(scan_duration);
         if (error) {
             print_error(error, "Error caused by Gap::startScan");
             return;
         }
 
-        printf("Scanning started (interval: %dms, window: %dms, timeout: %dms).\r\n",
-               scan_params.interval.valueInMs(), scan_params.window.valueInMs(), scan_params.duration.valueInMs());
+        printf("\r\nScanning started (interval: %dms, window: %dms, timeout: %dms).\r\n",
+               scan_params.get1mPhyConfiguration().getInterval().valueInMs(),
+               scan_params.get1mPhyConfiguration().getWindow().valueInMs(),
+               scan_duration.valueInMs());
+
+        _demo_duration.reset();
+        _demo_duration.start();
     }
-
-    /** Finish the mode by shutting down advertising or scanning and move to the next mode. */
-    void end_demo_mode()
-    {
-        if (_is_in_scanning_mode) {
-            end_scanning_mode();
-        } else {
-            end_advertising_mode();
-        }
-
-        /* alloted time has elapsed or be connected, move to next demo mode */
-        _event_queue.call(this, &GapDemo::next_demo_mode);
-    }
-
-    /** Execute the disconnection */
-    void do_disconnect(ble::connection_handle_t handle)
-    {
-        printf("Disconnecting\r\n");
-        _gap.disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
-    }
-
-    bool is_2m_phy_supported()
-    {
-        return _gap.isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY);
-    }
-
-    bool is_extended_advertising_supported()
-    {
-        return _gap.isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING);
-    }
-
 
 private:
     /* Gap::EventHandler */
@@ -450,7 +291,7 @@ private:
             /* connect to a discoverable device */
 
             /* abort timeout as the mode will end on disconnection */
-            _event_queue.cancel(_on_duration_end_id);
+            _event_queue.cancel(_cancel_handle);
 
             printf("We found a connectable device\r\n");
             ble_error_t error = _gap.connect(
@@ -460,8 +301,6 @@ private:
             );
             if (error) {
                 print_error(error, "Error caused by Gap::connect");
-                /* since no connection will be attempted end the mode */
-                _event_queue.call(this, &GapDemo::end_demo_mode);
                 return;
             }
 
@@ -482,32 +321,46 @@ private:
 
     virtual void onScanTimeout(const ble::ScanTimeoutEvent&)
     {
-        printf("Stopped scanning early due to timeout parameter\r\n");
-        _demo_duration.stop();
+        printf("Stopped scanning due to timeout parameter\r\n");
+        _event_queue.call(this, &GapDemo::end_scanning_mode);
     }
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately disconnects */
     virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
     {
+        _is_connecting = false;
         _demo_duration.stop();
 
-        if (event.getStatus() == BLE_ERROR_NONE) {
-            printf("Connected in %dms\r\n", _demo_duration.read_ms());
-
-            /* cancel the connect timeout since we connected */
-            _event_queue.cancel(_on_duration_end_id);
-
-            _event_queue.call_in(
-                CONNECTION_DURATION,
-                this,
-                &GapDemo::do_disconnect,
-                event.getConnectionHandle()
-            );
-        } else {
-            printf("Failed to connect after scanning %d advertisements\r\n", _scan_count);
-            _event_queue.call(this, &GapDemo::end_demo_mode);
+        if (!_is_in_scanning_phase) {
+            /* if we have more than one advertising sets one of them might still be active */
+            if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
+                /* if it's still active, stop it */
+                if (_gap.isAdvertisingActive(_extended_adv_handle)) {
+                    _gap.stopAdvertising(_extended_adv_handle);
+                } else if (_gap.isAdvertisingActive(ble::LEGACY_ADVERTISING_HANDLE)) {
+                    _gap.stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
+                }
+            }
         }
+
+        if (event.getStatus() != BLE_ERROR_NONE) {
+            print_error(event.getStatus(), "Connection failed");
+            return;
+        }
+
+        printf("Connected in %dms\r\n", _demo_duration.read_ms());
+
+        /* cancel the connect timeout since we connected */
+        _event_queue.cancel(_cancel_handle);
+
+        _cancel_handle = _event_queue.call_in(
+            delay,
+            [this, handle=event.getConnectionHandle()]{
+                _gap.disconnect(handle, ble::local_disconnection_reason_t::USER_TERMINATION);
+            }
+        );
+
     }
 
     /** This is called by Gap to notify the application we disconnected,
@@ -516,8 +369,16 @@ private:
     {
         printf("Disconnected\r\n");
 
-        /* we have successfully disconnected ending the demo, move to next mode */
-        _event_queue.call(this, &GapDemo::end_demo_mode);
+        /* if it wasn't us disconnecting then we should cancel our attempt */
+        if (event.getReason() == ble::disconnection_reason_t::REMOTE_USER_TERMINATED_CONNECTION) {
+            _event_queue.cancel(_cancel_handle);
+        }
+
+        if (_is_in_scanning_phase) {
+            _event_queue.call(this, &GapDemo::end_scanning_mode);
+        } else {
+            _event_queue.call(this, &GapDemo::end_advertising_mode);
+        }
     }
 
     /**
@@ -528,19 +389,17 @@ private:
         ble::connection_handle_t connectionHandle,
         ble::phy_t txPhy,
         ble::phy_t rxPhy
-    ) {
+    )
+    {
         if (error) {
             printf(
                 "Phy read on connection %d failed with error code %s\r\n",
-                connectionHandle,
-                BLE::errorToString(error)
+                connectionHandle, BLE::errorToString(error)
             );
         } else {
             printf(
                 "Phy read on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
-                connectionHandle,
-                phy_to_string(txPhy),
-                phy_to_string(rxPhy)
+                connectionHandle, phy_to_string(txPhy), phy_to_string(rxPhy)
             );
         }
     }
@@ -553,19 +412,17 @@ private:
         ble::connection_handle_t connectionHandle,
         ble::phy_t txPhy,
         ble::phy_t rxPhy
-    ) {
+    )
+    {
         if (error) {
             printf(
                 "Phy update on connection: %d failed with error code %s\r\n",
-                connectionHandle,
-                BLE::errorToString(error)
+                connectionHandle, BLE::errorToString(error)
             );
         } else {
             printf(
                 "Phy update on connection %d - Tx Phy: %s, Rx Phy: %s\r\n",
-                connectionHandle,
-                phy_to_string(txPhy),
-                phy_to_string(rxPhy)
+                connectionHandle, phy_to_string(txPhy), phy_to_string(rxPhy)
             );
         }
     }
@@ -577,42 +434,17 @@ private:
         ble::connection_handle_t connectionHandle,
         uint16_t txSize,
         uint16_t rxSize
-    ) {
+    )
+    {
         printf(
             "Data length changed on the connection %d.\r\n"
             "Maximum sizes for over the air packets are:\r\n"
             "%d octets for transmit and %d octets for receive.\r\n",
-            connectionHandle,
-            txSize,
-            rxSize
+            connectionHandle, txSize, rxSize
         );
     }
 
 private:
-
-    /** Clean up internal state after last run, cycle to the next mode and launch it */
-    void next_demo_mode()
-    {
-        /* reset the demo ready for the next mode */
-        _scan_count = 0;
-        _demo_duration.stop();
-        _demo_duration.reset();
-
-        /* cycle through all demo modes */
-        _set_index++;
-
-        /* switch between advertising and scanning when we go
-         * through all the params in the array */
-        if (_set_index >= (_is_in_scanning_mode ? arraysize(scanning_params) : arraysize(advertising_params))) {
-            _set_index = 0;
-            _is_in_scanning_mode = !_is_in_scanning_mode;
-        }
-
-        _ble.shutdown();
-        _event_queue.cancel(_blink_event);
-        _event_queue.break_dispatch();
-    }
-
     /** Finish the mode by shutting down advertising or scanning and move to the next mode. */
     void end_scanning_mode()
     {
@@ -622,6 +454,11 @@ private:
         if (error) {
             print_error(error, "Error caused by Gap::stopScan");
         }
+
+        _is_in_scanning_phase = false;
+        _scan_count = 0;
+
+        _event_queue.call_in(delay, this, &GapDemo::advertise);
     }
 
     void end_advertising_mode()
@@ -630,37 +467,26 @@ private:
 
         _gap.stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
-        if (is_extended_advertising_supported()) {
-            end_extended_advertising();
-        }
-    }
-
-    void end_extended_advertising()
-    {
-        /* iterate over the advertising handles */
-        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
-            /* check if the set has been sucesfully created */
-            if (_adv_handles[i] == ble::INVALID_ADVERTISING_HANDLE) {
-                continue;
-            }
-
+        if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
             /* if it's still active, stop it */
-            if (_gap.isAdvertisingActive(_adv_handles[i])) {
-                ble_error_t error = _gap.stopAdvertising(_adv_handles[i]);
+            if (_gap.isAdvertisingActive(_extended_adv_handle)) {
+                ble_error_t error = _gap.stopAdvertising(_extended_adv_handle);
                 if (error) {
                     print_error(error, "Error caused by Gap::stopAdvertising");
-                    continue;
                 }
             }
 
-            ble_error_t error = _gap.destroyAdvertisingSet(_adv_handles[i]);
+            ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
             if (error) {
                 print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-                continue;
             }
 
-            _adv_handles[i] = ble::INVALID_ADVERTISING_HANDLE;
+            _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
         }
+
+        _is_in_scanning_phase = true;
+
+        _event_queue.call_in(delay, [this]{ scan(); });
     }
 
     /** print some information about our radio activity */
@@ -672,16 +498,18 @@ private:
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */
         uint16_t duration_ts = ble::scan_interval_t(ble::millisecond_t(duration_ms)).value();
-        uint16_t interval_ts = scanning_params[_set_index].interval.value();
-        uint16_t window_ts = scanning_params[_set_index].window.value();
+        uint16_t interval_ts = scan_params.get1mPhyConfiguration().getInterval().value();
+        uint16_t window_ts = scan_params.get1mPhyConfiguration().getWindow().value();
         /* this is how long we scanned for in timeslots */
         uint16_t rx_ts = (duration_ts / interval_ts) * window_ts;
         /* convert to milliseconds */
         uint16_t rx_ms = ble::scan_interval_t(rx_ts).valueInMs();
 
-        printf("We have scanned for %dms with an interval of %d"
-               " timeslots and a window of %d timeslots\r\n",
-            duration_ms, interval_ts, window_ts);
+        printf(
+            "We have scanned for %dms with an interval of %d"
+            " timeslots and a window of %d timeslots\r\n",
+            duration_ms, interval_ts, window_ts
+        );
 
         printf("We have been listening on the radio for at least %dms\r\n", rx_ms);
     }
@@ -691,71 +519,63 @@ private:
     {
         /* measure time from mode start, may have been stopped by timeout */
         uint16_t duration_ms = _demo_duration.read_ms();
-        uint8_t number_of_active_sets = 0;
-
-        for (uint8_t i = 0; i < arraysize(_adv_handles); ++i) {
-            if (_adv_handles[i] != ble::INVALID_ADVERTISING_HANDLE) {
-                if (_gap.isAdvertisingActive(_adv_handles[i])) {
-                    number_of_active_sets++;
-                }
-            }
-        }
 
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */
         uint16_t duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
-        uint16_t interval_ts = advertising_params[_set_index].max_interval.value();
+        uint16_t interval_ts = advertising_params.getMaxPrimaryInterval().value();
         /* this is how many times we advertised */
-        uint16_t events = (duration_ts / interval_ts) * number_of_active_sets;
+        uint16_t events = (duration_ts / interval_ts);
+        uint16_t extended_events = 0;
 
-        printf("We have advertised for %dms with an interval of at least %d timeslots\r\n",
-            duration_ms, interval_ts);
-
-        if (number_of_active_sets > 1) {
-            printf("We had %d active advertising sets\r\n", number_of_active_sets);
+        if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
+            duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
+            interval_ts = extended_advertising_params.getMaxPrimaryInterval().value();
+            /* this is how many times we advertised */
+            extended_events = (duration_ts / interval_ts);
         }
+
+        printf("We have advertised for %dms\r\n", duration_ms);
 
         /* non-scannable and non-connectable advertising
          * skips rx events saving on power consumption */
-        if (advertising_params[_set_index].type == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
+        if (advertising_params.getType() == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
             printf("We created at least %d tx events\r\n", events);
         } else {
             printf("We created at least %d tx and rx events\r\n", events);
         }
-    }
-
-    /** Blink LED to show we're running */
-    void blink(void)
-    {
-        _led1 = !_led1;
+        if (extended_events) {
+            if (extended_advertising_params.getType() == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
+                printf("We created at least %d tx events with extended advertising\r\n", extended_events);
+            } else {
+                printf("We created at least %d tx and rx events with extended advertising\r\n", extended_events);
+            }
+        }
     }
 
 private:
-    BLE                &_ble;
-    ble::Gap           &_gap;
+    BLE &_ble;
+    ble::Gap &_gap;
     events::EventQueue &_event_queue;
-    DigitalOut          _led1;
 
     /* Keep track of our progress through demo modes */
-    size_t              _set_index;
-    bool                _is_in_scanning_mode;
-    bool                _is_connecting;
+    bool _is_in_scanning_phase = false;
+    bool _is_connecting = false;
 
     /* Remember the call id of the function on _event_queue
-     * so we can cancel it if we need to end the mode early */
-    int                 _on_duration_end_id;
+     * so we can cancel it if we need to end the phase early */
+    int _cancel_handle = 0;
 
     /* Measure performance of our advertising/scanning */
-    Timer               _demo_duration;
-    size_t              _scan_count;
+    Timer _demo_duration;
+    size_t _scan_count = 0;
 
-    int                 _blink_event;
-
-    ble::advertising_handle_t _adv_handles[ADV_SET_NUMBER];
+    ble::advertising_handle_t _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */
-void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
+{
     event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 
@@ -769,11 +589,7 @@ int main()
 
     GapDemo demo(ble, event_queue);
 
-    while (1) {
-        demo.run();
-        thread_sleep_for(TIME_BETWEEN_MODES_MS);
-        printf("\r\nStarting next GAP demo mode\r\n");
-    };
+    demo.run();
 
     return 0;
 }

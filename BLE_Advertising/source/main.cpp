@@ -15,15 +15,13 @@
  */
 
 #include <events/mbed_events.h>
-#include <mbed.h>
 #include "ble/BLE.h"
 #include "ble/Gap.h"
-#include "ble/services/BatteryService.h"
 #include "pretty_printer.h"
 
-static DigitalOut led1(LED1, 1);
-
 const static char DEVICE_NAME[] = "BATTERY";
+
+using namespace std::literals::chrono_literals;
 
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
@@ -32,24 +30,24 @@ public:
     BatteryDemo(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
         _event_queue(event_queue),
-        _battery_uuid(GattService::UUID_BATTERY_SERVICE),
         _battery_level(50),
-        _battery_service(ble, _battery_level),
-        _adv_data_builder(_adv_buffer) { }
+        _adv_data_builder(_adv_buffer)
+    {
+    }
 
-    void start() {
-        _ble.gap().setEventHandler(this);
-
+    void start()
+    {
+        /* mbed will call on_init_complete when when ble is ready */
         _ble.init(this, &BatteryDemo::on_init_complete);
 
-        _event_queue.call_every(500, this, &BatteryDemo::blink);
-
+        /* this will never return */
         _event_queue.dispatch_forever();
     }
 
 private:
     /** Callback triggered when the ble initialization process has finished */
-    void on_init_complete(BLE::InitializationCompleteCallbackContext *params) {
+    void on_init_complete(BLE::InitializationCompleteCallbackContext *params)
+    {
         if (params->error != BLE_ERROR_NONE) {
             print_error(params->error, "Ble initialization failed.");
             return;
@@ -60,19 +58,25 @@ private:
         start_advertising();
     }
 
-    void start_advertising() {
-        /* Create advertising parameters and payload */
+    void start_advertising()
+    {
+        /* create advertising parameters and payload */
 
         ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
+            /* you cannot connect to this device, you can only read its advertising data,
+             * scannable means that the device has extra advertising data that the peer can receive if it
+             * "scans" it which means it is using active scanning (it sends a scan request) */
+            ble::advertising_type_t::SCANNABLE_UNDIRECTED,
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
         _adv_data_builder.setFlags();
-        _adv_data_builder.setLocalServiceList(mbed::make_Span(&_battery_uuid, 1));
         _adv_data_builder.setName(DEVICE_NAME);
 
-        /* Setup advertising */
+        /* we add the battery level as part of the payload so it's visible to any device that scans */
+        _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, {&_battery_level, 1});
+
+        /* setup advertising */
 
         ble_error_t error = _ble.gap().setAdvertisingParameters(
             ble::LEGACY_ADVERTISING_HANDLE,
@@ -94,7 +98,18 @@ private:
             return;
         }
 
-        /* Start advertising */
+        /* when advertising you can optionally add extra data that is only sent
+         * if the central requests it by doing active scanning */
+        _adv_data_builder.clear();
+        const uint8_t _vendor_specific_data[4] = { 0xAD, 0xDE, 0xBE, 0xEF };
+        _adv_data_builder.setManufacturerSpecificData(_vendor_specific_data);
+
+        _ble.gap().setAdvertisingScanResponse(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        /* start advertising */
 
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
@@ -102,52 +117,55 @@ private:
             print_error(error, "_ble.gap().startAdvertising() failed");
             return;
         }
-    }
 
-    void update_sensor_value() {
-        _battery_level++;
-        if (_battery_level > 100) {
-            _battery_level = 20;
-        }
-
-        _battery_service.updateBatteryLevel(_battery_level);
-    }
-
-    void blink(void) {
-        led1 = !led1;
-    }
-
-private:
-    /* Event handler */
-
-    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent&) {
-        _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
-        event_queue.cancel(_update_sensor_event);
-    }
-
-    void onConnectionComplete(const ble::ConnectionCompleteEvent&) {
-        _update_sensor_event = _event_queue.call_every(
-            1000, this, &BatteryDemo::update_sensor_value
+        /* we simulate battery discharging by updating it every second */
+        _event_queue.call_every(
+            1000ms,
+            [this]() {
+                update_battery_level();
+            }
         );
     }
 
+    void update_battery_level()
+    {
+        if (_battery_level-- == 10) {
+            _battery_level = 100;
+        }
+
+        /* update the payload with the new value */
+        ble_error_t error = _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, make_Span(&_battery_level, 1));
+
+        if (error) {
+            print_error(error, "_adv_data_builder.setServiceData() failed");
+            return;
+        }
+
+        /* set the new payload, we don't need to stop advertising */
+        error = _ble.gap().setAdvertisingPayload(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        if (error) {
+            print_error(error, "_ble.gap().setAdvertisingPayload() failed");
+            return;
+        }
+    }
 
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
 
-    UUID _battery_uuid;
-
     uint8_t _battery_level;
-    BatteryService _battery_service;
-    int _update_sensor_event;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
-/** Schedule processing of events from the BLE middleware in the event queue. */
-void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context) {
+/* Schedule processing of events from the BLE middleware in the event queue. */
+void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
+{
     event_queue.call(Callback<void()>(&context->ble, &BLE::processEvents));
 }
 

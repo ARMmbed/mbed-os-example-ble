@@ -8,6 +8,8 @@ set(MBED_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/mbed-os CACHE INTERNAL "")
 set(MBED_CONFIG_PATH ${CMAKE_CURRENT_SOURCE_DIR}/.mbedbuild CACHE INTERNAL "")
 set(APP_TARGET BLE_LED)
 
+include(${MBED_ROOT}/tools/cmake/app.cmake)
+
 add_subdirectory(${MBED_ROOT})
 
 add_executable(${APP_TARGET})

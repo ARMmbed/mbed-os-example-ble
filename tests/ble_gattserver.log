@@ -1,9 +1,0 @@
-Ble process started.
-Ble instance initialized
-Advertising started.
-Adding demo service
-clock service registered
-service handle: \d+
-hour characteristic value handle \d+
-minute characteristic value handle \d+
-second characteristic value handle \d+

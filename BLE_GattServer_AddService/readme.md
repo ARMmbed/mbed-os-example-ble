@@ -1,22 +1,13 @@
-# BLE Heart Rate Monitor
+# BLE Service Example
 
-This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx). The heart rate value is provided by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example.
-
-Technical details are better presented [in the mbed Classic equivalent of this example](https://developer.mbed.org/teams/Bluetooth-Low-Energy/code/BLE_HeartRate/).
+This application shows how to add a new service and allow clients to interact with it.
+This application transmits a heart rate value using the [Bluetooth SIG Heart Rate Profile](https://developer.bluetooth.org/TechnologyOverview/Pages/HRP.aspx).
+The heart rate value is simulated by the application itself, not by a sensor, so that you don't have to get a sensor just to run the example.
+The demo will advertise connectable advertising. Upon connection the client will be able to subscribe to heart rate value updates.
 
 # Running the application
 
 ## Requirements
-
-To see the heart rate information on your phone, use the BLE Profiles App by ST:
-
-- [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation) for Android.
-
-Alternatively, use a BLE scanner:
-
-- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
-
-- [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 
 Hardware requirements are in the [main readme](https://github.com/ARMmbed/mbed-os-example-ble/blob/master/README.md).
 

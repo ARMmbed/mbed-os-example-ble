@@ -16,9 +16,7 @@
 
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
-#include "Gap.h"
-#include "pretty_printer.h"
-#include "BatteryService.h"
+#include "mbed-os-ble-utils/pretty_printer.h"
 
 /** This example demonstrates extended and periodic advertising
  */
@@ -39,13 +37,7 @@ public:
     PeriodicDemo(BLE& ble, events::EventQueue& event_queue) :
         _ble(ble),
         _event_queue(event_queue),
-        _adv_data_builder(_adv_buffer),
-        _adv_handle(ble::INVALID_ADVERTISING_HANDLE),
-        _sync_handle(ble::INVALID_ADVERTISING_HANDLE),
-        _battery_level(100),
-        _is_scanner(false),
-        _is_connecting_or_syncing(false),
-        _role_established(false)
+        _adv_data_builder(_adv_buffer)
     {
     }
 
@@ -195,28 +187,7 @@ private:
             return;
         }
 
-        error = _ble.gap().setPeriodicAdvertisingParameters(
-            _adv_handle,
-            ble::periodic_interval_t(100),
-            ble::periodic_interval_t(1000)
-        );
-
-        if (error) {
-            print_error(error, "Gap::setPeriodicAdvertisingParameters() failed\r\n");
-            return;
-        }
-
-        error = _ble.gap().startPeriodicAdvertising(_adv_handle);
-
-        if (error) {
-            print_error(error, "Gap::startPeriodicAdvertising() failed\r\n");
-            return;
-        }
-
-        printf("Periodic advertising started\r\n");
-
-        /* tick over our fake battery data, this will also update the advertising payload */
-        _event_queue.call_every(1000ms, this, &PeriodicDemo::update_sensor_value);
+        /* periodic advertising will be enabled when advertising starts */
     }
 
     /** Set up and start scanning */
@@ -293,10 +264,37 @@ private:
 private:
     /* Gap::EventHandler */
 
+    void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
+    {
+        /* start periodic advertising only if we're already advertising after roles established */
+        if (_role_established) {
+            ble_error_t error = _ble.gap().setPeriodicAdvertisingParameters(
+                _adv_handle,
+                ble::periodic_interval_t(100),
+                ble::periodic_interval_t(1000)
+            );
+
+            if (error) {
+                print_error(error, "Gap::setPeriodicAdvertisingParameters() failed\r\n");
+                return;
+            }
+
+            error = _ble.gap().startPeriodicAdvertising(_adv_handle);
+
+            if (error) {
+                print_error(error, "Gap::startPeriodicAdvertising() failed\r\n");
+                return;
+            }
+
+            printf("Periodic advertising started\r\n");
+
+            /* tick over our fake battery data, this will also update the advertising payload */
+            _event_queue.call_every(1000ms, this, &PeriodicDemo::update_sensor_value);
+        }
+    }
+
     /** Look at scan payload to find a peer device and connect to it */
-    virtual void onAdvertisingReport(
-        const ble::AdvertisingReportEvent &event
-    )
+    void onAdvertisingReport(const ble::AdvertisingReportEvent &event) override
     {
         /* don't bother with analysing scan result if we're already connecting */
         if (_is_connecting_or_syncing) {
@@ -331,11 +329,6 @@ private:
                         2,
                         ble::sync_timeout_t(ble::millisecond_t(5000))
                     );
-
-                    if (error) {
-                        print_error(error, "Error caused by Gap::createSync\r\n");
-                        return;
-                    }
                 } else {
                     printf("We found the peer, connecting\r\n");
 
@@ -361,9 +354,7 @@ private:
         }
     }
 
-    virtual void onScanTimeout(
-        const ble::ScanTimeoutEvent&
-    )
+    void onScanTimeout(const ble::ScanTimeoutEvent&) override
     {
         if (!_is_connecting_or_syncing) {
             printf("Scanning ended, failed to find peer\r\n");
@@ -372,9 +363,7 @@ private:
     }
 
     /** This is called by Gap to notify the application we connected */
-    virtual void onConnectionComplete(
-        const ble::ConnectionCompleteEvent &event
-    )
+    void onConnectionComplete(const ble::ConnectionCompleteEvent &event) override
     {
         if (event.getStatus() == BLE_ERROR_NONE) {
             printf("Connected to: ");
@@ -387,7 +376,10 @@ private:
                 _event_queue.call_in(
                     1000ms,
                     [this, handle = event.getConnectionHandle()] {
-                        _ble.gap().disconnect(handle, ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION));
+                        _ble.gap().disconnect(
+                            handle,
+                            ble::local_disconnection_reason_t(ble::local_disconnection_reason_t::USER_TERMINATION)
+                        );
                     }
                 );
             } else {
@@ -400,18 +392,14 @@ private:
     }
 
     /** This is called by Gap to notify the application we disconnected */
-    virtual void onDisconnectionComplete(
-        const ble::DisconnectionCompleteEvent &event
-    )
+    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event) override
     {
         printf("Disconnected\r\n");
         start_role();
     }
 
     /** Called when first advertising packet in periodic advertising is received. */
-    virtual void onPeriodicAdvertisingSyncEstablished(
-        const ble::PeriodicAdvertisingSyncEstablishedEvent &event
-    )
+    void onPeriodicAdvertisingSyncEstablished(const ble::PeriodicAdvertisingSyncEstablishedEvent &event) override
     {
         if (event.getStatus() == BLE_ERROR_NONE) {
             printf("Synced with periodic advertising\r\n");
@@ -422,9 +410,7 @@ private:
     }
 
     /** Called when a periodic advertising packet is received. */
-    virtual void onPeriodicAdvertisingReport(
-       const ble::PeriodicAdvertisingReportEvent &event
-    )
+    void onPeriodicAdvertisingReport(const ble::PeriodicAdvertisingReportEvent &event) override
     {
         ble::AdvertisingDataParser adv_parser(event.getPayload());
 
@@ -446,9 +432,7 @@ private:
     }
 
     /** Called when a periodic advertising sync has been lost. */
-    virtual void onPeriodicAdvertisingSyncLoss(
-       const ble::PeriodicAdvertisingSyncLoss &event
-    )
+    void onPeriodicAdvertisingSyncLoss(const ble::PeriodicAdvertisingSyncLoss &event) override
     {
         printf("Sync to periodic advertising lost\r\n");
         _sync_handle = ble::INVALID_ADVERTISING_HANDLE;
@@ -462,14 +446,14 @@ private:
     uint8_t _adv_buffer[MAX_ADVERTISING_PAYLOAD_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;
 
-    ble::advertising_handle_t _adv_handle;
-    ble::periodic_sync_handle_t _sync_handle;
+    ble::advertising_handle_t _adv_handle = ble::INVALID_ADVERTISING_HANDLE;
+    ble::periodic_sync_handle_t _sync_handle = ble::INVALID_ADVERTISING_HANDLE;
 
-    uint8_t _battery_level;
+    uint8_t _battery_level = 100;
 
-    bool _is_scanner;
-    bool _is_connecting_or_syncing;
-    bool _role_established;
+    bool _is_scanner = false;
+    bool _is_connecting_or_syncing = false;
+    bool _role_established = false;
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */

@@ -81,6 +81,8 @@ static const ble::scan_duration_t scan_duration(ble::millisecond_t(10000));
 
 events::EventQueue event_queue;
 
+using namespace std::chrono;
+using std::milli;
 using namespace std::literals::chrono_literals;
 
 /* Delay between steps */
@@ -261,6 +263,12 @@ private:
         _demo_duration.start();
     }
 
+    /* helper function to hide the casts */
+    int read_demo_duration_in_ms()
+    {
+        return duration_cast<duration<int, milli>>(_demo_duration.elapsed_time()).count();
+    }
+
 private:
     /* Gap::EventHandler */
 
@@ -359,7 +367,7 @@ private:
             return;
         }
 
-        printf("Connected in %dms\r\n", _demo_duration.read_ms());
+        printf("Connected in %dms\r\n", read_demo_duration_in_ms());
 
         /* cancel the connect timeout since we connected */
         _event_queue.cancel(_cancel_handle);
@@ -503,7 +511,7 @@ private:
     void print_scanning_performance()
     {
         /* measure time from mode start, may have been stopped by timeout */
-        uint16_t duration_ms = _demo_duration.read_ms();
+        uint16_t duration_ms = read_demo_duration_in_ms();
 
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */
@@ -528,7 +536,7 @@ private:
     void print_advertising_performance()
     {
         /* measure time from mode start, may have been stopped by timeout */
-        uint16_t duration_ms = _demo_duration.read_ms();
+        uint16_t duration_ms = read_demo_duration_in_ms();
 
         /* convert ms into timeslots for accurate calculation as internally
          * all durations are in timeslots (0.625ms) */

@@ -36,16 +36,21 @@
 /* you can adjust these parameters and see the effect on the performance */
 
 /* Advertising parameters are mainly defined by an advertising type and
- * and an interval between advertisements. lower interval increases the
- * chances of being seen at the cost of more power.
+ * and an interval between advertisements. Lower interval increases the
+ * chances of being seen at the cost of increased power usage.
+ *
  * The Bluetooth controller may run concurrent operations with the radio;
  * to help it, a minimum and maximum advertising interval should be
  * provided.
+ *
+ * Most bluetooth time units are specific to each operation. For example
+ * adv_interval_t is expressed in multiples of 625 microseconds. If precision
+ * is not require you may use a conversion from milliseconds.
  */
 static const ble::AdvertisingParameters advertising_params(
     ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
-    ble::adv_interval_t(40),
-    ble::adv_interval_t(80)
+    ble::adv_interval_t(ble::millisecond_t(25)), /* this could also be expressed as ble::adv_interval_t(40) */
+    ble::adv_interval_t(ble::millisecond_t(50)) /* this could also be expressed as ble::adv_interval_t(80) */
 );
 
 /* if the controller support it we can advertise multiple sets */

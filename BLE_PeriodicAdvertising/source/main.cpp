@@ -329,6 +329,11 @@ private:
                         2,
                         ble::sync_timeout_t(ble::millisecond_t(5000))
                     );
+
+                    if (error) {
+                        print_error(error, "Error caused by Gap::createSync\r\n");
+                        return;
+                    }
                 } else {
                     printf("We found the peer, connecting\r\n");
 

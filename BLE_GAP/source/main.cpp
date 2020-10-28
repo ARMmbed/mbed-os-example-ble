@@ -265,7 +265,7 @@ private:
     /* Gap::EventHandler */
 
     /** Look at scan payload to find a peer device and connect to it */
-    virtual void onAdvertisingReport(const ble::AdvertisingReportEvent &event)
+    void onAdvertisingReport(const ble::AdvertisingReportEvent &event) override
     {
         /* keep track of scan events for performance reporting */
         _scan_count++;
@@ -317,14 +317,19 @@ private:
         }
     }
 
-    virtual void onAdvertisingEnd(const ble::AdvertisingEndEvent &event)
+    void onAdvertisingEnd(const ble::AdvertisingEndEvent &event) override
     {
         if (event.isConnected()) {
             printf("Stopped advertising early due to connection\r\n");
         }
     }
 
-    virtual void onScanTimeout(const ble::ScanTimeoutEvent&)
+    void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
+    {
+        printf("Advertising set %d started\r\n", event.getAdvHandle());
+    }
+
+    void onScanTimeout(const ble::ScanTimeoutEvent&) override
     {
         printf("Stopped scanning due to timeout parameter\r\n");
         _event_queue.call(this, &GapDemo::end_scanning_mode);
@@ -332,7 +337,7 @@ private:
 
     /** This is called by Gap to notify the application we connected,
      *  in our case it immediately disconnects */
-    virtual void onConnectionComplete(const ble::ConnectionCompleteEvent &event)
+    void onConnectionComplete(const ble::ConnectionCompleteEvent &event) override
     {
         _is_connecting = false;
         _demo_duration.stop();
@@ -370,7 +375,7 @@ private:
 
     /** This is called by Gap to notify the application we disconnected,
      *  in our case it calls next_demo_mode() to progress the demo */
-    virtual void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event)
+    void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event) override
     {
         printf("Disconnected\r\n");
 
@@ -389,12 +394,12 @@ private:
     /**
      * Implementation of Gap::EventHandler::onReadPhy
      */
-    virtual void onReadPhy(
+    void onReadPhy(
         ble_error_t error,
         ble::connection_handle_t connectionHandle,
         ble::phy_t txPhy,
         ble::phy_t rxPhy
-    )
+    ) override
     {
         if (error) {
             printf(
@@ -412,12 +417,12 @@ private:
     /**
      * Implementation of Gap::EventHandler::onPhyUpdateComplete
      */
-    virtual void onPhyUpdateComplete(
+    void onPhyUpdateComplete(
         ble_error_t error,
         ble::connection_handle_t connectionHandle,
         ble::phy_t txPhy,
         ble::phy_t rxPhy
-    )
+    ) override
     {
         if (error) {
             printf(
@@ -435,11 +440,11 @@ private:
     /**
      * Implementation of Gap::EventHandler::onDataLengthChange
      */
-    virtual void onDataLengthChange(
+    void onDataLengthChange(
         ble::connection_handle_t connectionHandle,
         uint16_t txSize,
         uint16_t rxSize
-    )
+    ) override
     {
         printf(
             "Data length changed on the connection %d.\r\n"

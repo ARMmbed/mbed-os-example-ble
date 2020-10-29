@@ -1,4 +1,7 @@
 {
+    "config": {
+        "filesystem-support": false
+    },
     "target_overrides": {
         "K64F": {
             "target.components_add": ["BlueNRG_MS"],

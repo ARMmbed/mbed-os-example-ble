@@ -182,9 +182,26 @@ private:
         /* print device address */
         print_mac_address();
 
+        /* With filesystem support enabled, privacy is configured above.
+           Setting up the privacy subsystem takes some time, during which most
+           GAP operations (advertising, scanning, connecting) are not possible.
+           The user application is notified by the BLE stack when privacy is ready
+           by the signal "Gap::EventHandler::onPrivacyEnabled". So in this case we 
+           defer the call to "SMDevice::start" to that callback handler. */
+#if !MBED_CONF_APP_FILESYSTEM_SUPPORT  
         /* start test in 500 ms */
         _event_queue.call_in(500, this, &SMDevice::start);
+#endif
+        
     };
+
+#if MBED_CONF_APP_FILESYSTEM_SUPPORT
+
+    virtual void onPrivacyEnabled() {
+        _event_queue.call(this, &SMDevice::start);
+    };
+    
+#endif
 
     /** Schedule processing of events from the BLE in the event queue. */
     void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)

@@ -9,7 +9,7 @@ and print over the serial connection information about current activity.
 
 The sample application can be seen on any BLE scanner on a smartphone. If you don't have a scanner on your phone, please install :
 
-- [nRF Master Control Panel](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
+- [nRF Connect for Mobile](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android.
 
 - [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone.
 

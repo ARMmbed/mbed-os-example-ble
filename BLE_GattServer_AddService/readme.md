@@ -17,7 +17,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
 ## Checking for success
 
-**Note:** Screens captures depicted below show what is expected from this example if the scanner used is *ST BLE Profile* version 2.0.0 or *nRF Master Control Panel* version 4.0.5. If you encounter any difficulties consider trying another scanner or another version of nRF Master Control Panel. Alternative scanners may require reference to their manuals.
+**Note:** Screens captures depicted below show what is expected from this example if the scanner used is *ST BLE Profile* version 2.0.0 or *nRF Connect for Mobile* version 4.0.5. If you encounter any difficulties consider trying another scanner or another version of nRF Connect for Mobile. Alternative scanners may require reference to their manuals.
 
 1. Build the application and install it on your board as explained in the building instructions.
 1. Open the BLE scanner on your phone.
@@ -29,7 +29,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
     ![](img/start_scan.png)
 
-    **figure 1.b** How to start scan using nRF Master Control Panel 4.0.5
+    **figure 1.b** How to start scan using nRF Connect for Mobile 4.0.5
 
 1. Find your device; it should be named `HRM`.
 
@@ -39,7 +39,7 @@ Building instructions for all samples are in the [main readme](https://github.co
 
     ![](img/scan_result.png)
 
-    **figure 2.b** Scan results using nRF Master Control Panel 4.0.5
+    **figure 2.b** Scan results using nRF Connect for Mobile 4.0.5
 
 1. Establish a connection with your device.
 

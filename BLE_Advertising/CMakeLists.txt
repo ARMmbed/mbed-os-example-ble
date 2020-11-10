@@ -11,6 +11,8 @@ include(${MBED_PATH}/tools/cmake/app.cmake)
 
 add_subdirectory(${MBED_PATH})
 
+add_subdirectory(mbed-os-ble-utils)
+
 add_executable(${APP_TARGET})
 
 mbed_configure_app_target(${APP_TARGET})
@@ -36,6 +38,7 @@ target_link_libraries(${APP_TARGET}
         mbed-ble
         mbed-ble-cordio
         mbed-ble-blue_nrg
+        mbed-os-ble-utils
 )
 
 mbed_set_post_build(${APP_TARGET})

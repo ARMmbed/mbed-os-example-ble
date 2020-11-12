@@ -39,6 +39,8 @@ target_link_libraries(${APP_TARGET}
         mbed-ble-cordio
         mbed-ble-blue_nrg
         mbed-os-ble-utils
+        mbed-mbedtls-cryptocell310
+        mbed-ble-cordio_ll
 )
 
 mbed_set_post_build(${APP_TARGET})

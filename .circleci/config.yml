@@ -6,7 +6,7 @@ version: 2
 jobs:
   prepare:
     docker:
-      - image: mbedos/mbed-os-env:stable
+      - image: mbedos/mbed-os-env:latest
     working_directory: ~
     steps:
       - checkout:
@@ -43,6 +43,28 @@ jobs:
           cd mbed-os-example-ble
           for i in BLE_* ; do cd $i ; mbed update ; mbed compile -t GCC_ARM -m DISCO_L475VG_IOT01A || exit 1 ; cd .. ; done
 
+  cmake_nrf52840:
+    docker:
+      - image: mbedos/mbed-os-env:latest
+    working_directory: ~
+    steps:
+      - attach_workspace:
+          at: /root/project
+      - run: |
+          cd mbed-os-example-ble
+          for i in BLE_* ; do cd $i ; mbedtools checkout ; mbedtools build -t GCC_ARM -m NRF52840_DK || exit 1 ; cd .. ; done
+
+  cmake_disco_l475vg:
+    docker:
+      - image: mbedos/mbed-os-env:latest
+    working_directory: ~
+    steps:
+      - attach_workspace:
+          at: /root/project
+      - run: |
+          cd mbed-os-example-ble
+          for i in BLE_* ; do cd $i ; mbedtools checkout ; mbedtools build -t GCC_ARM -m DISCO_L475VG_IOT01A || exit 1 ; cd .. ; done
+
 workflows:
   version: 2
   workflow:
@@ -52,5 +74,11 @@ workflows:
         requires:
           - prepare
     - build_disco_l475vg:
+        requires:
+          - prepare
+    - cmake_nrf52840:
+        requires:
+          - prepare
+    - cmake_disco_l475vg:
         requires:
           - prepare

@@ -16,7 +16,7 @@
 
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
-#include "mbed-os-ble-utils/pretty_printer.h"
+#include "pretty_printer.h"
 
 /** This example demonstrates extended and periodic advertising
  */

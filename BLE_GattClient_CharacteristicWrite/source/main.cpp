@@ -16,7 +16,7 @@
 
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
-#include "mbed-os-ble-utils/gatt_client_process.h"
+#include "gatt_client_process.h"
 
 static EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 

@@ -1,4 +1,7 @@
 {
+    "config": {
+        "filesystem-support": false
+    },
     "target_overrides": {
         "*": {
             "platform.stdio-baud-rate": 115200

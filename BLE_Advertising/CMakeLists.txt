@@ -36,9 +36,7 @@ target_link_libraries(${APP_TARGET}
         mbed-os
         mbed-events
         mbed-ble
-        mbed-ble-cordio
-        mbed-ble-blue_nrg
-        mbed-os-ble-utils
+        mbed-ble-utils
 )
 
 mbed_set_post_build(${APP_TARGET})

@@ -38,5 +38,5 @@ mbed-os/
 mbed_settings.py
 mbed_config.h
 *.pyc
-BUILD
+BUILD/
 

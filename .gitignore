@@ -27,7 +27,7 @@
 *.app
 
 .yotta.json
-build/
+BUILD
 yotta_modules/
 yotta_targets/
 .DS_Store

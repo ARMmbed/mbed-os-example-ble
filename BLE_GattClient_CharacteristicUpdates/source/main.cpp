@@ -20,7 +20,7 @@
 
 #include "ble/GattClient.h"
 
-#include "mbed-os-ble-utils/gatt_client_process.h"
+#include "gatt_client_process.h"
 
 /**
  * Handle discovery of the GATT server.

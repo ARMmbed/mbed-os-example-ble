@@ -17,7 +17,7 @@
 #include "platform/Callback.h"
 #include "events/EventQueue.h"
 #include "ble/BLE.h"
-#include "mbed-os-ble-utils/gatt_server_process.h"
+#include "gatt_server_process.h"
 
 using mbed::callback;
 using namespace std::literals::chrono_literals;

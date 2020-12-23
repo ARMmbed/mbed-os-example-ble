@@ -18,22 +18,24 @@
 #include "ble/BLE.h"
 #include "ble/gap/Gap.h"
 #include "pretty_printer.h"
-#include "LinkLossService.h"
+#include "ble-service-link-loss/LinkLossService.h"
+#include "ble-service-current-time/CurrentTimeService.h"
 
 using namespace std::literals::chrono_literals;
 
-const static char DEVICE_NAME[] = "LinkLoss";
+const static char DEVICE_NAME[] = "ExperimentalServices";
 
 static events::EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 static ChainableGapEventHandler chainable_gap_event_handler;
 
-class LinkLossDemo : ble::Gap::EventHandler, LinkLossService::EventHandler {
+class LinkLossDemo : ble::Gap::EventHandler, LinkLossService::EventHandler, CurrentTimeService::EventHandler {
 public:
     LinkLossDemo(BLE &ble, events::EventQueue &event_queue, ChainableGapEventHandler &chainable_gap_event_handler) :
             _ble(ble),
             _event_queue(event_queue),
             _chainable_gap_event_handler(chainable_gap_event_handler),
             _link_loss_service(_ble, _event_queue, _chainable_gap_event_handler),
+            _current_time_service(_ble, _event_queue),
             _adv_data_builder(_adv_buffer)
     {
     }
@@ -64,13 +66,15 @@ private:
         _link_loss_service.set_event_handler(this);
         _link_loss_service.set_alert_timeout(60000ms);
 
+        _current_time_service.init();
+
+        _current_time_service.set_event_handler(this);
+
         start_advertising();
     }
 
     void start_advertising()
     {
-        UUID link_loss_service_uuid = GattService::UUID_LINK_LOSS_SERVICE;
-
         ble::AdvertisingParameters adv_parameters(
                 ble::advertising_type_t::CONNECTABLE_UNDIRECTED,
                 ble::adv_interval_t(ble::millisecond_t(100))
@@ -78,7 +82,6 @@ private:
 
         _adv_data_builder.setFlags();
         _adv_data_builder.setAppearance(ble::adv_data_appearance_t::UNKNOWN);
-        _adv_data_builder.setLocalServiceList({&link_loss_service_uuid, 1});
         _adv_data_builder.setName(DEVICE_NAME);
 
         ble_error_t error = _ble.gap().setAdvertisingParameters(
@@ -125,6 +128,11 @@ private:
         printf("Alert ended\r\n");
     }
 
+    void on_current_time_changed(time_t current_time, uint8_t adjust_reason) final
+    {
+        printf("Current time: %ld - Adjust reason: %d\r\n", (long)current_time, adjust_reason);
+    }
+
 private:
     void onConnectionComplete(const ble::ConnectionCompleteEvent &event) override
     {
@@ -151,6 +159,7 @@ private:
     ChainableGapEventHandler &_chainable_gap_event_handler;
 
     LinkLossService _link_loss_service;
+    CurrentTimeService _current_time_service;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
     ble::AdvertisingDataBuilder _adv_data_builder;
@@ -165,6 +174,8 @@ int main()
 {
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
+
+    set_time(1256729737);  // Set RTC time to Wed, 28 Oct 2009 11:35:37
 
     LinkLossDemo demo(ble, event_queue, chainable_gap_event_handler);
     demo.start();

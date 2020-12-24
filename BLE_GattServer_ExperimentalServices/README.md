@@ -92,4 +92,3 @@ The illustrations will be different for other clients.
 ![](img/read_current_time.png)
 
 * The current time in seconds should appear at your terminal, i.e. "1256729737"
-* Further reads should now tick from this base point

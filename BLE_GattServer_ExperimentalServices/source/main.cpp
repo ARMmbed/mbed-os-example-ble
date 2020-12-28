@@ -28,9 +28,9 @@ const static char DEVICE_NAME[] = "ExperimentalServices";
 static events::EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 static ChainableGapEventHandler chainable_gap_event_handler;
 
-class LinkLossDemo : ble::Gap::EventHandler, LinkLossService::EventHandler, CurrentTimeService::EventHandler {
+class ExperimentalServicesDemo : ble::Gap::EventHandler, LinkLossService::EventHandler, CurrentTimeService::EventHandler {
 public:
-    LinkLossDemo(BLE &ble, events::EventQueue &event_queue, ChainableGapEventHandler &chainable_gap_event_handler) :
+    ExperimentalServicesDemo(BLE &ble, events::EventQueue &event_queue, ChainableGapEventHandler &chainable_gap_event_handler) :
             _ble(ble),
             _event_queue(event_queue),
             _chainable_gap_event_handler(chainable_gap_event_handler),
@@ -42,7 +42,7 @@ public:
 
     void start()
     {
-        _ble.init(this, &LinkLossDemo::on_init_complete);
+        _ble.init(this, &ExperimentalServicesDemo::on_init_complete);
 
         _event_queue.dispatch_forever();
     }
@@ -177,7 +177,7 @@ int main()
 
     set_time(1256729737);  // Set RTC time to Wed, 28 Oct 2009 11:35:37
 
-    LinkLossDemo demo(ble, event_queue, chainable_gap_event_handler);
+    ExperimentalServicesDemo demo(ble, event_queue, chainable_gap_event_handler);
     demo.start();
 
     return 0;

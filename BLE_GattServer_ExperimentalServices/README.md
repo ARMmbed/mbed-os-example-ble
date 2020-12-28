@@ -20,7 +20,7 @@ Table 1 shows the byte stream required to set the device's current time to Wed, 
 
 |  B0  |  B1  |  B2  |  B3  |  B4  |  B5  |  B6  |  B7  |  B8  |  B9  |
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-| 0xD9 | 0x07 | 0x0A | 0x13 | 0x0B | 0x23 | 0x25 | 0x03 | 0x00 | 0x00 |
+| 0xD9 | 0x07 | 0x0A | 0x1C | 0x0B | 0x23 | 0x25 | 0x03 | 0x00 | 0x00 |
 
 **Table 1. Byte stream required to set the device's current time to Wed, 28 Oct 2009 11:35:37** 
 
@@ -79,16 +79,24 @@ The illustrations will be different for other clients.
 
 ![](img/select_cts.png)
 
+**Fig. 6. Selecting the Current Time Service**
+
 * Press the upward pointing arrow to interact with the current time characteristic (Fig. 7)
 
 ![](img/interact_current_time.png)
+
+**Fig. 7. Interacting with the current time characteristic**
 
 * Create a new write value for the byte stream in Table 1, save and load it, and press send (Fig. 8)
 
 ![](img/write_current_time.png)
 
+**Fig. 8. Writing the current time characteristic**
+
 * Confirm that the value parameter was updated with the correct date/time after the write (Fig. 9)
 
 ![](img/read_current_time.png)
+
+**Fig. 9. Reading the current time characteristic**
 
 * The current time in seconds should appear at your terminal, i.e. "1256729737"

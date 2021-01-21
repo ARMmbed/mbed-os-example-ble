@@ -1,8 +1,7 @@
 {
     "target_overrides": {
         "*": {
-            "platform.stdio-baud-rate": 115200,
-            "target.requires": ["ble-service-link-loss","ble-current-time-service"]
+            "platform.stdio-baud-rate": 115200
         },
         "K64F": {
             "target.components_add": ["BlueNRG_MS"],

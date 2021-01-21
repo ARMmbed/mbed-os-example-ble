@@ -17,6 +17,7 @@
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 #if MBED_CONF_APP_FILESYSTEM_SUPPORT
 #include "LittleFileSystem.h"
@@ -544,6 +545,8 @@ bool create_filesystem()
 
 int main()
 {
+    mbed_trace_init();
+
     BLE& ble = BLE::Instance();
     events::EventQueue queue;
 

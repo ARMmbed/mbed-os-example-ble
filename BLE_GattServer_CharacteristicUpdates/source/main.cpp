@@ -18,6 +18,7 @@
 #include "events/EventQueue.h"
 #include "ble/BLE.h"
 #include "gatt_server_process.h"
+#include "mbed-trace/mbed_trace.h"
 
 using mbed::callback;
 using namespace std::literals::chrono_literals;
@@ -353,7 +354,10 @@ private:
     ReadWriteNotifyIndicateCharacteristic<uint8_t> _second_char;
 };
 
-int main() {
+int main()
+{
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     events::EventQueue event_queue;
     ClockService demo_service;

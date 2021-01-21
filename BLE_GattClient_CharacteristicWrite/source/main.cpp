@@ -17,6 +17,7 @@
 #include "events/mbed_events.h"
 #include "ble/BLE.h"
 #include "ble_app.h"
+#include "mbed-trace/mbed_trace.h"
 
 /* GATT server needs free functions */
 void service_discovery(const DiscoveredService *service);
@@ -157,6 +158,8 @@ void on_write(const GattWriteCallbackParams *response) {
 int main()
 {
     printf("\r\nGattClient demo of a writable characteristic\r\n");
+
+    mbed_trace_init();
 
     GattClientDemo &demo = GattClientDemo::get_instance();
 

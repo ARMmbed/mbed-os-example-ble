@@ -21,6 +21,7 @@
 #include "ble/GattClient.h"
 
 #include "gatt_client_process.h"
+#include "mbed-trace/mbed_trace.h"
 
 /**
  * Handle discovery of the GATT server.
@@ -534,6 +535,8 @@ private:
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     events::EventQueue event_queue;
 

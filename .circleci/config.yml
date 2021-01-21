@@ -1,84 +1,72 @@
+version: 2.1
 
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
-version: 2
 jobs:
   prepare:
     docker:
       - image: mbedos/mbed-os-env:latest
-    working_directory: ~
     steps:
-      - checkout:
-          path: mbed-os-example-ble
-      - run: |
-          cd mbed-os-example-ble
-          git clone https://github.com/ARMmbed/mbed-os.git
-      - run:
-          working_directory: mbed-os-example-ble
-          command: for i in BLE_* ; do cd $i ; ln -s $PWD/../mbed-os mbed-os ; cd .. ; done
+      - checkout
+      - run: git clone https://github.com/ARMmbed/mbed-os.git
+      - run: for i in BLE_* ; do cd $i ; ln -s $PWD/../mbed-os mbed-os ; mbed update ; cd .. ; done
       - persist_to_workspace:
-          root: /root/project
-          paths: mbed-os-example-ble
+          root: .
+          paths:
+            - .
 
-  build_nrf52840:
+  build_mbed:
     docker:
-      - image: mbedos/mbed-os-env:stable
-    working_directory: ~
+      - image: mbedos/mbed-os-env-armc:latest
+        auth:
+          username: mbedos
+          password: $DOCKERHUB_PASSWORD
+    parameters:
+      toolchain:
+        type: string
+      target:
+        type: string
     steps:
       - attach_workspace:
-          at: /root/project
-      - run: |
-          cd mbed-os-example-ble
-          for i in BLE_* ; do cd $i ; mbed update ; mbed compile -t GCC_ARM -m NRF52840_DK || exit 1 ; cd .. ; done
+          at: .
+      - run: for i in BLE_* ; do cd $i ; mbed compile -t << parameters.toolchain >> -m << parameters.target >> || exit 1 ; cd .. ; done
 
-  build_disco_l475vg:
+  build_cmake:
     docker:
-      - image: mbedos/mbed-os-env:stable
-    working_directory: ~
+      - image: mbedos/mbed-os-env-armc:latest
+        auth:
+          username: mbedos
+          password: $DOCKERHUB_PASSWORD
+    parameters:
+      toolchain:
+        type: string
+      target:
+        type: string
     steps:
       - attach_workspace:
-          at: /root/project
-      - run: |
-          cd mbed-os-example-ble
-          for i in BLE_* ; do cd $i ; mbed update ; mbed compile -t GCC_ARM -m DISCO_L475VG_IOT01A || exit 1 ; cd .. ; done
-
-  cmake_nrf52840:
-    docker:
-      - image: mbedos/mbed-os-env:latest
-    working_directory: ~
-    steps:
-      - attach_workspace:
-          at: /root/project
-      - run: |
-          cd mbed-os-example-ble
-          for i in BLE_* ; do cd $i ; mbedtools checkout ; mbedtools build -t GCC_ARM -m NRF52840_DK || exit 1 ; cd .. ; done
-
-  cmake_disco_l475vg:
-    docker:
-      - image: mbedos/mbed-os-env:latest
-    working_directory: ~
-    steps:
-      - attach_workspace:
-          at: /root/project
-      - run: |
-          cd mbed-os-example-ble
-          for i in BLE_* ; do cd $i ; mbedtools checkout ; mbedtools build -t GCC_ARM -m DISCO_L475VG_IOT01A || exit 1 ; cd .. ; done
+          at: .
+      - run: python3 -m pip install mbed-tools --upgrade # remove after docker image is updated to contain new tools
+      - run: for i in BLE_* ; do cd $i ; mbed-tools compile -t << parameters.toolchain >> -m << parameters.target >> || exit 1 ; cd .. ; done
 
 workflows:
-  version: 2
   workflow:
     jobs:
-    - prepare
-    - build_nrf52840:
-        requires:
-          - prepare
-    - build_disco_l475vg:
-        requires:
-          - prepare
-    - cmake_nrf52840:
-        requires:
-          - prepare
-    - cmake_disco_l475vg:
-        requires:
-          - prepare
+      - prepare
+      - build_mbed:
+          context:
+            - mbedos-docker-hub-creds
+          requires:
+            - prepare
+          matrix:
+            parameters:
+              target: ["DISCO_L475VG_IOT01A", "NRF52840_DK"]
+              toolchain: ["GCC_ARM"]
+          name: build-mbed-<< matrix.target >>-<< matrix.toolchain >>
+      - build_cmake:
+          context:
+            - mbedos-docker-hub-creds
+          requires:
+            - prepare
+          matrix:
+            parameters:
+              target: ["DISCO_L475VG_IOT01A"]
+              toolchain: ["GCC_ARM"]
+          name: build-cmake-<< matrix.target >>-<< matrix.toolchain >>

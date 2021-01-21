@@ -17,6 +17,7 @@
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 /** This example demonstrates extended and periodic advertising
  */
@@ -469,6 +470,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
 
     /* this will inform us off all events so we can schedule their handling

@@ -19,6 +19,7 @@
 #include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -174,6 +175,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

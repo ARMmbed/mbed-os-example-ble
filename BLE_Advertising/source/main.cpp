@@ -18,6 +18,7 @@
 #include "ble/BLE.h"
 #include "ble/Gap.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 const static char DEVICE_NAME[] = "BATTERY";
 
@@ -177,6 +178,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

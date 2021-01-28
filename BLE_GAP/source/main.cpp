@@ -188,6 +188,7 @@ private:
             advertising_params.getMaxPrimaryInterval().valueInMs()
         );
 
+#if BLE_FEATURE_EXTENDED_ADVERTISING
         /* if we support extended advertising we'll also additionally advertise another set at the same time */
         if (_gap.isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING)) {
             /* With Bluetooth 5; it is possible to advertise concurrently multiple
@@ -229,6 +230,7 @@ private:
                 extended_advertising_params.getMaxPrimaryInterval().valueInMs()
             );
         }
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
 
         _demo_duration.reset();
         _demo_duration.start();
@@ -350,6 +352,7 @@ private:
         _is_connecting = false;
         _demo_duration.stop();
 
+#if BLE_FEATURE_EXTENDED_ADVERTISING
         if (!_is_in_scanning_phase) {
             /* if we have more than one advertising sets one of them might still be active */
             if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
@@ -361,6 +364,7 @@ private:
                 }
             }
         }
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
 
         if (event.getStatus() != BLE_ERROR_NONE) {
             print_error(event.getStatus(), "Connection failed");
@@ -485,6 +489,7 @@ private:
 
         _gap.stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
+#if BLE_FEATURE_EXTENDED_ADVERTISING
         if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
             /* if it's still active, stop it */
             if (_gap.isAdvertisingActive(_extended_adv_handle)) {
@@ -501,6 +506,7 @@ private:
 
             _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
         }
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
 
         _is_in_scanning_phase = true;
 
@@ -546,12 +552,14 @@ private:
         uint16_t events = (duration_ts / interval_ts);
         uint16_t extended_events = 0;
 
+#if BLE_FEATURE_EXTENDED_ADVERTISING
         if (_extended_adv_handle != ble::INVALID_ADVERTISING_HANDLE) {
             duration_ts = ble::adv_interval_t(ble::millisecond_t(duration_ms)).value();
             interval_ts = extended_advertising_params.getMaxPrimaryInterval().value();
             /* this is how many times we advertised */
             extended_events = (duration_ts / interval_ts);
         }
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
 
         printf("We have advertised for %dms\r\n", duration_ms);
 
@@ -562,6 +570,8 @@ private:
         } else {
             printf("We created at least %d tx and rx events\r\n", events);
         }
+
+#if BLE_FEATURE_EXTENDED_ADVERTISING
         if (extended_events) {
             if (extended_advertising_params.getType() == ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED) {
                 printf("We created at least %d tx events with extended advertising\r\n", extended_events);
@@ -569,6 +579,8 @@ private:
                 printf("We created at least %d tx and rx events with extended advertising\r\n", extended_events);
             }
         }
+
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
     }
 
 private:
@@ -588,7 +600,9 @@ private:
     Timer _demo_duration;
     size_t _scan_count = 0;
 
+#if BLE_FEATURE_EXTENDED_ADVERTISING
     ble::advertising_handle_t _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
 };
 
 /** Schedule processing of events from the BLE middleware in the event queue. */

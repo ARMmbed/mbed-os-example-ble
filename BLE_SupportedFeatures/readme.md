@@ -1,7 +1,7 @@
 # BLE Supported Features
 
 This application tells you which optional BLE features are supported by your device. This info can be useful as product datasheets often do not go into these details.
-Knowing which optional features are supported, might have an influence how exactly you implement BLE feature of your applications.
+Knowing which optional features are supported might how exactly you implement BLE feature of your applications.
 This demo also showcases how to access BLE related API methods via your BLE object instance.
 Though this demo also starts advertising, the device will not be connectible, as this demo sets up an advertisement of non-connectable type.
 That is why this demo only listens to the on_init_complete event.

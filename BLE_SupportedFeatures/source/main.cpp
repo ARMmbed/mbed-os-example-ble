@@ -21,17 +21,13 @@
 
 using namespace std::literals::chrono_literals;
 
-const static char DEVICE_NAME[] = "SupportedBLEFeatures";
-
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
 class SupportedFeatures : ble::Gap::EventHandler {
 public:
     SupportedFeatures(BLE &ble, events::EventQueue &event_queue) :
         _ble(ble),
-        _event_queue(event_queue),
-        _service_uuid(GattService::UUID_DEVICE_INFORMATION_SERVICE),
-        _adv_data_builder(_adv_buffer)
+        _event_queue(event_queue)
     {
     }
 
@@ -55,95 +51,30 @@ private:
 
         /* display basic info and optional BLE features supported by our device */
 
-        printf("BLE Version %s\n", _ble.getVersion());
-        printf("Conn handle %d\n", ble::connection_handle_t(&_ble));
-        printf("LE_ENCRYPTION feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_ENCRYPTION));
-        printf("CONNECTION_PARAMETERS_REQUEST_PROCEDURE feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::CONNECTION_PARAMETERS_REQUEST_PROCEDURE));
-        printf("EXTENDED_REJECT_INDICATION feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::EXTENDED_REJECT_INDICATION));
-        printf("SLAVE_INITIATED_FEATURES_EXCHANGE feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::SLAVE_INITIATED_FEATURES_EXCHANGE));
-        printf("LE_PING feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_PING));
-        printf("LE_DATA_PACKET_LENGTH_EXTENSION feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_DATA_PACKET_LENGTH_EXTENSION));
-        printf("LL_PRIVACY feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LL_PRIVACY));
-        printf("EXTENDED_SCANNER_FILTER_POLICIES feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::EXTENDED_SCANNER_FILTER_POLICIES));
-        printf("LE_2M_PHY feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY));
-        printf("STABLE_MODULATION_INDEX_TRANSMITTER feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::STABLE_MODULATION_INDEX_TRANSMITTER));
-        printf("STABLE_MODULATION_INDEX_RECEIVER feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::STABLE_MODULATION_INDEX_RECEIVER));
-        printf("LE_CODED_PHY feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_CODED_PHY));
-        printf("LE_EXTENDED_ADVERTISING feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING));
-        printf("LE_PERIODIC_ADVERTISING feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_PERIODIC_ADVERTISING));
-        printf("CHANNEL_SELECTION_ALGORITHM_2 feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::CHANNEL_SELECTION_ALGORITHM_2));
-        printf("LE_POWER_CLASS feature supported %d\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_POWER_CLASS));
-
-        /* this allows us to capture events like onConnectionComplete() */
-        _ble.gap().setEventHandler(this);
-
-        start_advertising();
+        printf("--- List of optional BLE features that are supported/unsupported by this board ---\n");
+        printf("LE_ENCRYPTION feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_ENCRYPTION) ? "supported" : "not supported");
+        printf("CONNECTION_PARAMETERS_REQUEST_PROCEDURE feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::CONNECTION_PARAMETERS_REQUEST_PROCEDURE) ? "supported" : "not supported");
+        printf("EXTENDED_REJECT_INDICATION feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::EXTENDED_REJECT_INDICATION) ? "supported" : "not supported");
+        printf("SLAVE_INITIATED_FEATURES_EXCHANGE feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::SLAVE_INITIATED_FEATURES_EXCHANGE) ? "supported" : "not supported");
+        printf("LE_PING feature supported: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_PING) ? "supported" : "not supported");
+        printf("LE_DATA_PACKET_LENGTH_EXTENSION feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_DATA_PACKET_LENGTH_EXTENSION) ? "supported" : "not supported");
+        printf("LL_PRIVACY feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LL_PRIVACY) ? "supported" : "not supported");
+        printf("EXTENDED_SCANNER_FILTER_POLICIES feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::EXTENDED_SCANNER_FILTER_POLICIES) ? "supported" : "not supported");
+        printf("LE_2M_PHY feature supported: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_2M_PHY) ? "supported" : "not supported");
+        printf("STABLE_MODULATION_INDEX_TRANSMITTER feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::STABLE_MODULATION_INDEX_TRANSMITTER) ? "supported" : "not supported");
+        printf("STABLE_MODULATION_INDEX_RECEIVER feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::STABLE_MODULATION_INDEX_RECEIVER) ? "supported" : "not supported");
+        printf("LE_CODED_PHY feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_CODED_PHY) ? "supported" : "not supported");
+        printf("LE_EXTENDED_ADVERTISING feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_EXTENDED_ADVERTISING) ? "supported" : "not supported");
+        printf("LE_PERIODIC_ADVERTISING feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_PERIODIC_ADVERTISING) ? "supported" : "not supported");
+        printf("CHANNEL_SELECTION_ALGORITHM_2 feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::CHANNEL_SELECTION_ALGORITHM_2) ? "supported" : "not supported");
+        printf("LE_POWER_CLASS feature: %s\n", _ble.gap().isFeatureSupported(ble::controller_supported_features_t::LE_POWER_CLASS) ? "supported" : "not supported");
     }
 
-    void start_advertising()
-    {
-        /* Configure advertising parameters */
 
-        ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::NON_CONNECTABLE_UNDIRECTED,
-            ble::adv_interval_t(ble::millisecond_t(100))
-        );
-
-
-        /* Configure advertising payload */
-
-        _adv_data_builder.setFlags();
-        _adv_data_builder.setAppearance(ble::adv_data_appearance_t::UNKNOWN);
-        _adv_data_builder.setLocalServiceList({&_service_uuid, 1});
-        _adv_data_builder.setName(DEVICE_NAME);
-
-
-        /* Set advertising parameters configuration to our BLE instance */
-
-        ble_error_t error = _ble.gap().setAdvertisingParameters(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            adv_parameters
-        );
-
-        if (error) {
-            printf("_ble.gap().setAdvertisingParameters() failed\r\n");
-            return;
-        }
-
-        /* Set advertising payload configuration to our BLE instance */
-
-        error = _ble.gap().setAdvertisingPayload(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            _adv_data_builder.getAdvertisingData()
-        );
-
-        if (error) {
-            printf("_ble.gap().setAdvertisingPayload() failed\r\n");
-            return;
-        }
-
-        /* Start advertising */
-
-        error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
-
-        if (error) {
-            printf("_ble.gap().startAdvertising() failed\r\n");
-            return;
-        }
-
-        printf("Device is advertising\r\n");
-
-    }
-
-    /* these implement ble::Gap::EventHandler */
 private:
     BLE &_ble;
     events::EventQueue &_event_queue;
 
-    UUID _service_uuid;
-
-    uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
-    ble::AdvertisingDataBuilder _adv_data_builder;
 };
 
 /* Schedule processing of events from the BLE middleware in the event queue. */

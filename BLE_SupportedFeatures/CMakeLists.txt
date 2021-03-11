@@ -11,8 +11,6 @@ include(${MBED_PATH}/tools/cmake/app.cmake)
 
 add_subdirectory(${MBED_PATH})
 
-add_subdirectory(mbed-os-ble-utils)
-
 add_executable(${APP_TARGET})
 
 mbed_configure_app_target(${APP_TARGET})

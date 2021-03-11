@@ -71,12 +71,11 @@ private:
     {
         const bool supported = _ble.gap().isFeatureSupported(feature);
 
-        printf(
-            "%s %s feature %s\r\n",
-            supported ? "+" : "-",
-            feature_name,
-            supported ? "supported" : "not supported"
-        );
+        if (supported) {
+            printf("+ %s feature supported\r\n", feature_name);
+        } else {
+            printf("- %s feature not supported\r\n", feature_name);
+        }
     }
 
 private:

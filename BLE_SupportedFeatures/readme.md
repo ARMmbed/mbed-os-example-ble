@@ -1,6 +1,6 @@
 # BLE Supported Features
 
-This application will list optional BLE features are supported by your device. Knowing which optional features
+This application will list BLE features supported by your device. Knowing which features
 are supported, might have an influence on how exactly you implement BLE feature of your applications.
 
 # Running the application

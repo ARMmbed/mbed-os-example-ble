@@ -17,11 +17,11 @@ To build these examples, you need to have a computer with software installed as 
 
 In order to use BLE in mbed OS you need one of the following hardware combinations:
 
-* A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
-* A supported target, such as the [NUCLEO-F401RE](https://os.mbed.com/platforms/ST-Nucleo-F401RE/), with a BLE shield or an external BLE peripheral, such as an [ST shield](https://os.mbed.com/components/X-NUCLEO-IDB04A1/).
+* A supported target, such as the [NUCLEO-F401RE](https://os.mbed.com/platforms/ST-Nucleo-F401RE/), with a BLE shield or an external BLE peripheral, such as an [X-NUCLEO-BNRG2A1](https://os.mbed.com/components/X-NUCLEO-BNRG2A1/) or an [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) ST BLE expansion board.
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](https://os.mbed.com/platforms/ST-Discovery-L475E-IOT01A/) board.
 * A [DISCO_L562QE (ref STM32L562E-DK)](https://os.mbed.com/platforms/ST-Discovery-L562QE/) board.
 * A [NUCLEO_WB55RG](https://os.mbed.com/platforms/ST-Nucleo-WB55RG/) board.
+* A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
 * An Embedded Planet [Agora](https://os.mbed.com/platforms/agora-dev/) board
 
 The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
@@ -31,51 +31,53 @@ Targets for BLE
 
 The following targets have been tested and work with these examples:
 
-* Nordic:
-	* NRF52_DK
-	* NRF52840_DK
-
-* Boards with an ST shield plugged in:
-	* K64F
+* Targets with an ST BLE expansion board plugged in:
 	* NUCLEO_F401RE
+	* NUCLEO_L476RG
+	* NUCLEO_L446RE
+	* K64F
 
-* ST boards with embedded BlueNrg module:
+* ST boards with embedded SPBTLE-RF module (BlueNRG-MS):
 	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
 	* DISCO_L562QE (ref STM32L562E-DK)
 
 * Board with wireless STM32WB microcontrollers:
   * NUCLEO_WB55RG
 
+* Nordic:
+	* NRF52_DK
+	* NRF52840_DK
+
 * Embedded Planet:
 	* EP_AGORA
 
-	<span> **Important:** if an ST shield is used with the K64F board, an hardware is patch required. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+	<span> **Important:** If an ST BLE expansion is used with the K64F board, an hardware patch is required. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.</span>
 	
 The following board is currently not supported as it doesn't yet support the Cordio stack:
 	* NRF51_DK
 
-### Using ST Nucleo shield on other targets
+### Using ST BLE expansion board on other targets
 
-It is possible to use the ST Nucleo shield on boards not directly supported by these examples as long as the board has an Arduino UNO R3 connector.
+It is possible to use the ST BLE expansion on boards not directly supported by these examples as long as the board has an Arduino UNO R3 connector.
 
-To makes the board compatible with the ST shield three things are required:
+To make the board compatible with the ST BLE expansion three things are required:
 * Add the BLE feature to your target.
-* Add the BLE implementation for the ST shield to the list of modules which have to be compiled.
+* Add the BLE implementation for the ST BLE expansion to the list of modules which have to be compiled.
 * Indicate to the BLE implementation that your board use an Arduino connector.
 
 All these operations can be done in the file `mbed_app.json` present in every example.
 
 In the section `target_overrides` add a new object named after your target.
 In this object two fields are required:
-* `"target.components_add": ["BlueNRG_MS"]` Add the BlueNRG_MS component to the target.
+* `"target.components_add": ["BlueNRG_2"]` Add the BlueNRG-2 component to the target.
 * `"target.features_add": ["BLE"]` Add the BLE feature to the target.
-* `"target.extra_labels_add": ["CORDIO"]`: Add the BLE implementation of the ST shield to the list of the application modules.
+* `"target.extra_labels_add": ["CORDIO"]`: Add the BLE implementation of the ST BLE expansion to the list of the application modules.
 
-As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F411RE` board.
+As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F401RE` board.
 
 ```json
-        "NUCLEO_F411RE": {
-            "target.components_add": ["BlueNRG_MS"],
+        "NUCLEO_F401RE": {
+            "target.components_add": ["BlueNRG_2"],
             "target.features_add": ["BLE"],
             "target.extra_labels_add": ["CORDIO"]
         },
@@ -83,7 +85,7 @@ As an example, this is the JSON bit which has to be added in the `target_overrid
 
 <span> **Note:** You can get more information about the configuration system in the [documentation](https://os.mbed.com/docs/latest/reference/configuration.html)</span>
 
-<span> **Important:** It is required to apply an hardware patch to the ST shield if it is used on a board with an Arduino connector. Check out https://developer.mbed.org/teams/ST/code/X_NUCLEO_IDB0XA1/ for more information.</span>
+<span> **Important:** It is required to apply an hardware patch to the ST BLE expansion if it is used on a board with an Arduino connector. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.</span>
 
 
 Building and flashing examples
@@ -126,7 +128,7 @@ __To run the application on your board:__
 Running the examples
 ---------------------------------
 
-When example application is running information about activity is printed over the serial connection.
+When example application is running, information about activity is printed over the serial connection.
 The default serial baudrate has been set to 115200 for these examples.
 Please have a client open and connected to the board. You may use:
 
@@ -144,7 +146,7 @@ If you don't have a scanner on your phone, please install :
 Known issues
 ============
 
-* [NUCLEO_F411RE]: Some BLE examples doesn't work with the X-NUCLEO BLE shield. See [#40](https://github.com/ARMmbed/mbed-os-example-ble/issues/40)
+* [NUCLEO_F411RE]: Some BLE examples doesn't work with the ST BLE expansion. See [#40](https://github.com/ARMmbed/mbed-os-example-ble/issues/40)
 * [NRF5] Impossible to debug or flash the examples with IAR: See [#39](https://github.com/ARMmbed/mbed-os-example-ble/issues/39)
 * [NUCLEO_WB55RG]: some examples are not working with default application described in examples readme. Better use [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone or try out [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation).
 

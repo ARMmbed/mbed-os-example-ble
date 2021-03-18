@@ -70,10 +70,27 @@ private:
             ble::adv_interval_t(ble::millisecond_t(1000))
         );
 
+        /* when advertising you can optionally add extra data that is only sent
+         * if the central requests it by doing active scanning (sending scan requests),
+         * in this example we set this payload first because we want to later reuse
+         * the same _adv_data_builder builder for payload updates */
+
+        const uint8_t _vendor_specific_data[4] = { 0xAD, 0xDE, 0xBE, 0xEF };
+        _adv_data_builder.setManufacturerSpecificData(_vendor_specific_data);
+
+        _ble.gap().setAdvertisingScanResponse(
+            ble::LEGACY_ADVERTISING_HANDLE,
+            _adv_data_builder.getAdvertisingData()
+        );
+
+        /* now we set the advertising payload that gets sent during advertising without any scan requests */
+
+        _adv_data_builder.clear();
         _adv_data_builder.setFlags();
         _adv_data_builder.setName(DEVICE_NAME);
 
-        /* we add the battery level as part of the payload so it's visible to any device that scans */
+        /* we add the battery level as part of the payload so it's visible to any device that scans,
+         * this part of the payload will be updated periodically without affecting the rest of the payload */
         _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, {&_battery_level, 1});
 
         /* setup advertising */
@@ -97,17 +114,6 @@ private:
             print_error(error, "_ble.gap().setAdvertisingPayload() failed");
             return;
         }
-
-        /* when advertising you can optionally add extra data that is only sent
-         * if the central requests it by doing active scanning */
-        _adv_data_builder.clear();
-        const uint8_t _vendor_specific_data[4] = { 0xAD, 0xDE, 0xBE, 0xEF };
-        _adv_data_builder.setManufacturerSpecificData(_vendor_specific_data);
-
-        _ble.gap().setAdvertisingScanResponse(
-            ble::LEGACY_ADVERTISING_HANDLE,
-            _adv_data_builder.getAdvertisingData()
-        );
 
         /* start advertising */
 
@@ -133,7 +139,7 @@ private:
             _battery_level = 100;
         }
 
-        /* update the payload with the new value */
+        /* update the payload with the new value of the bettery level, the rest of the payload remains the same */
         ble_error_t error = _adv_data_builder.setServiceData(GattService::UUID_BATTERY_SERVICE, make_Span(&_battery_level, 1));
 
         if (error) {

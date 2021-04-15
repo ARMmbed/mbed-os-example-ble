@@ -15,46 +15,45 @@ Pre-Requisites
 
 To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/index.html).
 
-In order to use BLE in mbed OS you need one of the following hardware combinations:
+In order to use BLE in Mbed OS you need one of the following hardware combinations:
 
 * A supported target, such as the [NUCLEO-F401RE](https://os.mbed.com/platforms/ST-Nucleo-F401RE/), with a BLE shield or an external BLE peripheral, such as an [X-NUCLEO-BNRG2A1](https://os.mbed.com/components/X-NUCLEO-BNRG2A1/) or an [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) ST BLE expansion board.
 * A [DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)](https://os.mbed.com/platforms/ST-Discovery-L475E-IOT01A/) board.
 * A [DISCO_L562QE (ref STM32L562E-DK)](https://os.mbed.com/platforms/ST-Discovery-L562QE/) board.
 * A [NUCLEO_WB55RG](https://os.mbed.com/platforms/ST-Nucleo-WB55RG/) board.
-* A Nordic nRF52-based board such as [nrf52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/)
-* An Embedded Planet [Agora](https://os.mbed.com/platforms/agora-dev/) board
+* A Nordic nRF52-based board such as [nRF52DK](https://os.mbed.com/platforms/Nordic-nRF52-DK/).
+* An Embedded Planet [Agora](https://os.mbed.com/platforms/agora-dev/) board.
 
 The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on mbed OS.
 
-Targets for BLE
----------------
+### Targets for BLE
 
 The following targets have been tested and work with these examples:
 
 * Targets with an ST BLE expansion board plugged in:
-	* NUCLEO_F401RE
-	* NUCLEO_L476RG
-	* NUCLEO_L446RE
-	* K64F
+    * NUCLEO_F401RE
+    * NUCLEO_L476RG
+    * NUCLEO_L446RE
+    * K64F
 
 * ST boards with embedded SPBTLE-RF module (BlueNRG-MS):
-	* DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
-	* DISCO_L562QE (ref STM32L562E-DK)
+    * DISCO_L475VG_IOT01A (ref B-L475E-IOT01A)
+    * DISCO_L562QE (ref STM32L562E-DK)
 
 * Board with wireless STM32WB microcontrollers:
-  * NUCLEO_WB55RG
+    * NUCLEO_WB55RG
 
 * Nordic:
-	* NRF52_DK
-	* NRF52840_DK
+    * NRF52_DK
+    * NRF52840_DK
 
 * Embedded Planet:
-	* EP_AGORA
+    * EP_AGORA
 
-	<span> **Important:** If an ST BLE expansion is used with the K64F board, an hardware patch is required. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.</span>
-	
+**Important:** If an ST BLE expansion is used with the K64F board, a hardware patch is required. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.
+
 The following board is currently not supported as it doesn't yet support the Cordio stack:
-	* NRF51_DK
+    * NRF51_DK
 
 ### Using ST BLE expansion board on other targets
 
@@ -63,17 +62,16 @@ It is possible to use the ST BLE expansion on boards not directly supported by t
 To make the board compatible with the ST BLE expansion three things are required:
 * Add the BLE feature to your target.
 * Add the BLE implementation for the ST BLE expansion to the list of modules which have to be compiled.
-* Indicate to the BLE implementation that your board use an Arduino connector.
+* Indicate to the BLE implementation that your board uses an Arduino connector.
 
 All these operations can be done in the file `mbed_app.json` present in every example.
 
-In the section `target_overrides` add a new object named after your target.
-In this object two fields are required:
+In the section `target_overrides`, add a new object named after your target with the following three fields:
 * `"target.components_add": ["BlueNRG_2"]` Add the BlueNRG-2 component to the target.
 * `"target.features_add": ["BLE"]` Add the BLE feature to the target.
 * `"target.extra_labels_add": ["CORDIO"]`: Add the BLE implementation of the ST BLE expansion to the list of the application modules.
 
-As an example, this is the JSON bit which has to be added in the `target_overrides` section of `mbed_app.json` for a `NUCLEO_F401RE` board.
+Below is an example of the JSON to be added in the `target_overrides` section of `mbed_app.json`, with the `NUCLEO_F401RE` board.
 
 ```json
         "NUCLEO_F401RE": {
@@ -83,31 +81,28 @@ As an example, this is the JSON bit which has to be added in the `target_overrid
         },
 ```
 
-<span> **Note:** You can get more information about the configuration system in the [documentation](https://os.mbed.com/docs/latest/reference/configuration.html)</span>
+**Note:** Further information about the configuration system is available in the [documentation](https://os.mbed.com/docs/latest/reference/configuration.html).
 
-<span> **Important:** It is required to apply an hardware patch to the ST BLE expansion if it is used on a board with an Arduino connector. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.</span>
+**Important:** It is required to apply an hardware patch to the ST BLE expansion if it is used on a board with an Arduino connector. Check out [X-NUCLEO-BNRG2A1](https://github.com/ARMmbed/mbed-os/tree/master/connectivity/drivers/ble/FEATURE_BLE/COMPONENT_BlueNRG_2) or [X-NUCLEO-IDB05A1](https://os.mbed.com/components/X-NUCLEO-IDB05A1/) for more information.
 
 
-Building and flashing examples
----------------------------------
-
-__To build an example:__
+## Building the examples
 
 1. Clone the repository containing the collection of examples:
 
-	```
-	$ git clone https://github.com/ARMmbed/mbed-os-example-ble.git
-	```
+    ```bash
+    $ git clone https://github.com/ARMmbed/mbed-os-example-ble.git
+    ```
 
 
-	**Tip:** If you don't have git installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
+    **Tip:** If you don't have git installed, you can [download a zip file](https://github.com/ARMmbed/mbed-os-example-ble/archive/master.zip) of the repository.
 
-1. Using a command-line tool, navigate to any of the example directories, like BLE_Button:
+1. Using a command-line tool, navigate to any of the example directories, like BLE_Advertising:
 
-	```
-	$ cd mbed-os-example-ble
-	$ cd BLE_Advertising
-	```
+    ```bash
+    $ cd mbed-os-example-ble
+    $ cd BLE_Advertising
+    ```
 
 1. Update the source tree:
 
@@ -125,19 +120,21 @@ __To run the application on your board:__
 
 1. When you run the `mbed compile` command above, mbed cli creates a .bin or a .hex file (depending on your target) in ```BUILD/<target-name>/<toolchain>``` under the example's directory. Drag and drop the file to the removable storage.
 
-Running the examples
----------------------------------
+## Running the examples
 
 When example application is running, information about activity is printed over the serial connection.
 The default serial baudrate has been set to 115200 for these examples.
 Please have a client open and connected to the board. You may use:
 
-- [Tera Term](https://ttssh2.osdn.jp/index.html.en) for windows
+- [Tera Term](https://ttssh2.osdn.jp/index.html.en) for Windows
 
-- screen or minicom for Linux (example usage: `screen /dev/serial/<your board> 115200`)
+- screen or minicom for Linux
+    ```bash
+    screen /dev/serial/<your board> 115200
+    ```
 
 To observe and/or interact with example applications please use any BLE scanner on a smartphone.
-If you don't have a scanner on your phone, please install :
+If you don't have a scanner on your phone, please install:
 
 - [nRF Connect for Mobile](https://play.google.com/store/apps/details?id=no.nordicsemi.android.mcp) for Android and iOS.
 
@@ -145,9 +142,9 @@ If you don't have a scanner on your phone, please install :
 
 ### License and contributions
 
-The software is provided under Apache-2.0 license. Contributions to this project are accepted under the same license. Please see contributing.md for more info.
+The software is provided under Apache-2.0 license. Contributions to this project are accepted under the same license. Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for more info.
 
-This project contains code from other projects. The original license text is included in those source files. They must comply with our license guide
+This project contains code from other projects. The original license text is included in those source files. They must comply with our license guide.
 
 ## Branches
 

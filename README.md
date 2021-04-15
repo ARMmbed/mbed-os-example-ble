@@ -143,13 +143,6 @@ If you don't have a scanner on your phone, please install :
 
 - [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation) for Android.
 
-Known issues
-============
-
-* [NUCLEO_F411RE]: Some BLE examples doesn't work with the ST BLE expansion. See [#40](https://github.com/ARMmbed/mbed-os-example-ble/issues/40)
-* [NRF5] Impossible to debug or flash the examples with IAR: See [#39](https://github.com/ARMmbed/mbed-os-example-ble/issues/39)
-* [NUCLEO_WB55RG]: some examples are not working with default application described in examples readme. Better use [LightBlue](https://itunes.apple.com/gb/app/lightblue-bluetooth-low-energy/id557428110?mt=8) for iPhone or try out [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation).
-
 ### License and contributions
 
 The software is provided under Apache-2.0 license. Contributions to this project are accepted under the same license. Please see contributing.md for more info.

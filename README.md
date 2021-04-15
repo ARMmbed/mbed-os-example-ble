@@ -1,19 +1,24 @@
 ![](./resources/official_armmbed_example_badge.png)
 # BLE Examples
-This repo contains a collection of BLE example applications based on
-mbed OS and built with [mbed-cli](https://github.com/ARMmbed/mbed-cli).
-Each example subdirectory contains a separate mbed-cli module meant for building an executable.
 
-Please browse to subdirectories for descriptions of the examples and any additional instructions on running them.
+This repo contains a collection of BLE example applications based on Mbed OS. Each example subdirectory contains a separate Mbed OS project, along with a description of the example and additional instructions for running it.
 
-Getting Started
-===============
+You can build each project with all supported [Mbed OS build tools](https://os.mbed.com/docs/mbed-os/latest/tools/index.html). However, this file specifically refers to the command-line interface tools, [Arm Mbed CLI 1](https://github.com/ARMmbed/mbed-cli#installing-mbed-cli) and [Mbed CLI 2](https://github.com/ARMmbed/mbed-tools#installation).
 
+The [BLE documentation](https://os.mbed.com/docs/latest/reference/bluetooth.html) describes the BLE APIs on Mbed OS.
 
-Pre-Requisites
---------------
+## Mbed OS build tools
 
-To build these examples, you need to have a computer with software installed as described [here](https://os.mbed.com/docs/latest/tools/index.html).
+### Mbed CLI 2
+Starting with version 6.5, Mbed OS uses Mbed CLI 2. It uses Ninja as a build system, and CMake to generate the build environment and manage the build process in a compiler-independent manner. If you are working with Mbed OS version prior to 6.5 then check the section [Mbed CLI 1](#mbed-cli-1).
+
+[Install Mbed CLI 2](https://os.mbed.com/docs/mbed-os/latest/build-tools/install-or-upgrade.html).
+
+### Mbed CLI 1
+[Install Mbed CLI 1](https://os.mbed.com/docs/mbed-os/latest/quick-start/offline-with-mbed-cli.html).
+
+## Pre-Requisites
+
 
 In order to use BLE in Mbed OS you need one of the following hardware combinations:
 
@@ -106,25 +111,62 @@ Below is an example of the JSON to be added in the `target_overrides` section of
 
 1. Update the source tree:
 
-	```
-	mbed deploy
-	```
+    * Mbed CLI 2
 
-1. Run the build:
+    ```bash
+    $ mbed-tools deploy
+    ```
+    
+    * Mbed CLI 1
 
-	```mbed compile -t <ARM | GCC_ARM> -m <YOUR_TARGET>```
+    ```bash
+    $ mbed deploy
+    ```
 
-__To run the application on your board:__
+1. Connect a USB cable between the USB port on the board and the host computer.
 
-1. Connect your mbed board to your computer over USB. It appears as removable storage.
+1. Run the following command: this will build the example project, program the microcontroller flash memory, and then
+open a serial terminal to the device.
 
-1. When you run the `mbed compile` command above, mbed cli creates a .bin or a .hex file (depending on your target) in ```BUILD/<target-name>/<toolchain>``` under the example's directory. Drag and drop the file to the removable storage.
+    * Mbed CLI 2
+
+    ```bash
+    $ mbed-tools compile -m <TARGET> -t <TOOLCHAIN> --flash --sterm --baudrate 115200
+    ```
+
+    * Mbed CLI 1
+
+    ```bash
+    $ mbed compile -m <TARGET> -t <TOOLCHAIN> --flash --sterm --baudrate 115200
+    ```
+
+Your PC may take a few minutes to compile your code.
+
+The binary will be located in the following directory:
+* **Mbed CLI 2** - `./cmake_build/<TARGET>/<PROFILE>/<TOOLCHAIN>/`
+* **Mbed CLI 1** - `./BUILD/<TARGET>/<TOOLCHAIN>/`
+
+You can manually copy the binary to the target, which gets mounted on the host computer through USB, rather than using the `--flash` option.
+
+You can also open a serial terminal separately, as explained below, rather than using the `--sterm` and `--baudrate` options.
 
 ## Running the examples
 
 When example application is running, information about activity is printed over the serial connection.
 The default serial baudrate has been set to 115200 for these examples.
-Please have a client open and connected to the board. You may use:
+
+If not using the `--sterm` and `--baudrate` options when flashing, have a client 
+open and connected to the board. You may use:
+
+- Mbed CLI 2 
+    ```bash
+    $ mbed-tools sterm -b 115200
+    ```
+
+- Mbed CLI 1
+    ```bash
+    $ mbed sterm -b 115200
+    ```
 
 - [Tera Term](https://ttssh2.osdn.jp/index.html.en) for Windows
 

@@ -13,8 +13,6 @@ add_subdirectory(${MBED_PATH})
 
 add_executable(${APP_TARGET})
 
-mbed_configure_app_target(${APP_TARGET})
-
 project(${APP_TARGET})
 
 target_include_directories(${APP_TARGET}

@@ -1,0 +1,17 @@
+{
+    "target_overrides": {
+        "*": {
+            "platform.stdio-baud-rate": 115200,
+            "cordio.desired-att-mtu": 200,
+            "cordio-ll.max-acl-size": 204,
+            "cordio.rx-acl-buffer-size": 204,
+            "mbed-trace.enable": 1,
+            "mbed-trace.max-level": "TRACE_LEVEL_DEBUG",
+            "ble-api-implementation.max-characteristic-authorisation-count": 100
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "cordio-nordic-ll.wsf-pool-buffer-size": 8192
+        }
+    }
+}

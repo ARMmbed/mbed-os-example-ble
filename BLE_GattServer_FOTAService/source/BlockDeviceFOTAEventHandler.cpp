@@ -67,8 +67,6 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
 
         case FOTAService::FOTA_START:
         {
-            uint8_t status = FOTAService::FOTA_STATUS_OK;
-
             tr_info("Starting FOTA session\r\n");
             fota_service.start_fota_session();
 
@@ -84,13 +82,9 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
             _bd_eraser = new PeriodicBlockDeviceEraser(_bd, _eq);
             tr_info("Erasing block device: size=%" PRIu64 "",
                     static_cast<uint64_t>(_bd.size()));
-            bd_size_t erase_size = _bd.get_erase_size();
-            int error = _bd_eraser->start_erase(0, _bd.size(),
-                   mbed::callback(this, &BlockDeviceFOTAEventHandler::on_bd_erased));
+            _bd_eraser->start_erase(0, _bd.size(),
+                    mbed::callback(this, &BlockDeviceFOTAEventHandler::on_bd_erased));
 
-            MBED_ASSERT(error);
-
-            fota_service.notify_status(status);
             break;
         }
 
@@ -125,5 +119,6 @@ void BlockDeviceFOTAEventHandler::on_bd_erased(int result)
     } else {
         tr_info("Successfully erased the update block Device");
         _fota_service->set_xon();
+        _fota_service->notify_status(FOTAService::FOTA_STATUS_OK);
     }
 }

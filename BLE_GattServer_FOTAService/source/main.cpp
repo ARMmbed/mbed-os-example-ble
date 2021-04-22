@@ -190,6 +190,7 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 int main()
 {
     mbed_trace_init();
+    mbed_trace_exclude_filters_set("QSPIF");
 
     get_secondary_bd()->init();
 

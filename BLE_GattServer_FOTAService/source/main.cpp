@@ -191,6 +191,8 @@ int main()
 {
     mbed_trace_init();
 
+    get_secondary_bd()->init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

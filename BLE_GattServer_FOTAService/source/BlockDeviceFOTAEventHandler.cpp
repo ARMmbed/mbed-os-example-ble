@@ -67,7 +67,7 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
 
         case FOTAService::FOTA_START:
         {
-            tr_info("Starting FOTA session\r\n");
+            tr_info("Starting FOTA session");
             fota_service.start_fota_session();
 
             /* We must erase the update block device before accepting BSC writes
@@ -90,7 +90,7 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
 
         case FOTAService::FOTA_STOP:
         {
-            tr_info("Stopping FOTA session\r\n");
+            tr_info("Stopping FOTA session");
             fota_service.stop_fota_session();
             break;
         }

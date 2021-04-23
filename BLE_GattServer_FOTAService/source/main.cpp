@@ -122,7 +122,7 @@ private:
         );
 
         if (error) {
-            tr_error("_ble.gap().setAdvertisingParameters() failed\r\n");
+            tr_error("_ble.gap().setAdvertisingParameters() failed");
             return;
         }
 
@@ -132,18 +132,18 @@ private:
         );
 
         if (error) {
-            tr_error("_ble.gap().setAdvertisingPayload() failed\r\n");
+            tr_error("_ble.gap().setAdvertisingPayload() failed");
             return;
         }
 
         error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (error) {
-            tr_error("_ble.gap().startAdvertising() failed\r\n");
+            tr_error("_ble.gap().startAdvertising() failed");
             return;
         }
 
-        tr_info("Device advertising, please connect\r\n");
+        tr_info("Device advertising, please connect");
     }
 
 private:
@@ -151,18 +151,18 @@ private:
     {
         if (event.getStatus() == ble_error_t::BLE_ERROR_NONE) {
             _connection_handle = event.getConnectionHandle();
-            tr_info("Client connected, you may now subscribe to updates\r\n");
+            tr_info("Client connected, you may now subscribe to updates");
         }
     }
 
     void onDisconnectionComplete(const ble::DisconnectionCompleteEvent &event) override
     {
-        printf("Client disconnected, restarting advertising\r\n");
+        tr_info("Client disconnected, restarting advertising");
 
         ble_error_t error = _ble.gap().startAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
         if (error) {
-            tr_error("_ble.gap().startAdvertising() failed\r\n");
+            tr_error("_ble.gap().startAdvertising() failed");
             return;
         }
     }

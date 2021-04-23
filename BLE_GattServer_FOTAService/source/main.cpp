@@ -42,12 +42,42 @@ mbed::BlockDevice* get_secondary_bd()
     return &sliced_bd;
 }
 
-class FOTADemoEventHandler : public BlockDeviceFOTAEventHandler {
+class FOTADemoEventHandler : public BlockDeviceFOTAEventHandler{
 public:
-    FOTADemoEventHandler(mbed::BlockDevice &bd, events::EventQueue &eq) :
-            BlockDeviceFOTAEventHandler(bd, eq)
+    FOTADemoEventHandler(mbed::BlockDevice &bd, events::EventQueue &eq, BLE &ble) :
+            BlockDeviceFOTAEventHandler(bd, eq),
+            _ble(ble)
     {
     }
+
+    GattAuthCallbackReply_t on_control_written(FOTAService &fota_service,
+                                               mbed::Span<const uint8_t> buffer) override
+    {
+        /* Check for FOTA Commit request */
+        if (buffer[0] == FOTAService::FOTA_COMMIT) {
+            tr_info("Committing the update");
+            disconnect(ble::local_disconnection_reason_t::USER_TERMINATION );
+            return AUTH_CALLBACK_REPLY_SUCCESS;
+        } else {
+            /* Let the BlockDeviceFOTAEventHandler handle the other requests */
+            return BlockDeviceFOTAEventHandler::on_control_written(fota_service, buffer);
+        }
+    }
+
+    void disconnect(ble::local_disconnection_reason_t disconnection_reason)
+    {
+        _ble.gap().disconnect(_connection_handle, disconnection_reason);
+    }
+
+    void set_connection_handle(ble::connection_handle_t connection_handle)
+    {
+        _connection_handle = connection_handle;
+    }
+
+private:
+    BLE &_ble;
+
+    ble::connection_handle_t _connection_handle = 0;
 };
 
 class FOTAServiceDemo : public ble::Gap::EventHandler,
@@ -61,7 +91,7 @@ public:
                     _event_queue(eq),
                     _chainable_gap_event_handler(chainable_gap_eh),
                     _chainable_gatt_server_event_handler(chainable_gatt_server_eh),
-                    _fota_handler(*get_secondary_bd(), eq),
+                    _fota_handler(*get_secondary_bd(), eq, ble),
                     _fota_service(_ble,
                                   _event_queue,
                                   _chainable_gap_event_handler,
@@ -78,11 +108,6 @@ public:
         _ble.init(this, &FOTAServiceDemo::on_init_complete);
 
         _event_queue.dispatch_forever();
-    }
-
-    void disconnect(ble::local_disconnection_reason_t disconnection_reason)
-    {
-        _ble.gap().disconnect(_connection_handle, disconnection_reason);
     }
 
 private:
@@ -150,7 +175,7 @@ private:
     void onConnectionComplete(const ble::ConnectionCompleteEvent &event) override
     {
         if (event.getStatus() == ble_error_t::BLE_ERROR_NONE) {
-            _connection_handle = event.getConnectionHandle();
+            _fota_handler.set_connection_handle(event.getConnectionHandle());
             tr_info("Client connected, you may now subscribe to updates");
         }
     }
@@ -178,8 +203,6 @@ private:
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE]{};
     ble::AdvertisingDataBuilder _adv_data_builder;
-
-    ble::connection_handle_t _connection_handle = 0;
 };
 
 void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)

@@ -38,8 +38,8 @@ FOTAService::StatusCode_t BlockDeviceFOTAEventHandler::on_binary_stream_written(
         FOTAService &fota_service,
         mbed::Span<const uint8_t> buffer)
 {
-    tr_info("BSC written: programming %" PRIu64 "bytes at address %" PRIu64 "",
-            static_cast<uint64_t>(buffer.size()),
+    tr_info("BSC written: programming %s at address %" PRIu64 "",
+            mbed_trace_array(buffer.data(), buffer.size()),
             _addr);
 
     int error = _bd.program(buffer.data(), _addr, buffer.size());

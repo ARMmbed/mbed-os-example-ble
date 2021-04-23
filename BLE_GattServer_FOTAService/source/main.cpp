@@ -213,7 +213,7 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 int main()
 {
     mbed_trace_init();
-    mbed_trace_exclude_filters_set("QSPIF");
+    mbed_trace_include_filters_set("MAIN, FOTA");
 
     get_secondary_bd()->init();
 

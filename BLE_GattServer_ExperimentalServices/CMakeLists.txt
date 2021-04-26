@@ -17,8 +17,6 @@ add_subdirectory(mbed-os-experimental-ble-services/services/LinkLoss)
 
 add_executable(${APP_TARGET})
 
-mbed_configure_app_target(${APP_TARGET})
-
 project(${APP_TARGET})
 
 target_sources(${APP_TARGET}

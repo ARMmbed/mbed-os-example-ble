@@ -119,6 +119,5 @@ void BlockDeviceFOTAEventHandler::on_bd_erased(int result)
     } else {
         tr_info("Successfully erased the update block Device");
         _fota_service->set_xon();
-        _fota_service->notify_status(FOTAService::FOTA_STATUS_OK);
     }
 }

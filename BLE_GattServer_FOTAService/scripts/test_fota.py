@@ -261,6 +261,7 @@ async def main():
 
     await session.commit_update()
 
+    await client.disconnect()
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

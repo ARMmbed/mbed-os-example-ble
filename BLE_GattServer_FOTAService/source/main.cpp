@@ -68,43 +68,72 @@ public:
         if (buffer[0] == FOTAService::FOTA_COMMIT) {
             tr_info("Committing the update");
 
-            uint8_t data[4];
+            int error = MBEDTLS_EXIT_FAILURE;
+
+            // mbed TLS platform setup
+            if((error = mbedtls_platform_setup(nullptr)) != 0) {
+                tr_error("Platform initialization failed with error %d\r\n", error);
+                return AUTH_CALLBACK_REPLY_ATTERR_UNLIKELY_ERROR;
+            }
+
+#if defined(MBEDTLS_USE_PSA_CRYPTO)
+            /*
+             * Initialize underlying PSA Crypto implementation.
+             * Even if the HTTPS client doesn't make use of
+             * PSA-specific API, for example for setting opaque PSKs
+             * or opaque private keys, Mbed TLS will use PSA
+             * for public and symmetric key operations as well as
+             * hashing.
+             */
+            psa_status_t status;
+            status = psa_crypto_init();
+            if( status != PSA_SUCCESS )
+            {
+                printf("psa_crypto_init() failed with %d\r\n", status );
+                return MBEDTLS_EXIT_FAILURE;
+            }
+#endif /* MBEDTLS_USE_PSA_CRYPTO */
+
+            uint8_t data[128];
             bd_addr_t addr = 0;
 
-            // Initialize hash
+            // Create and initialize the SHA-256 context
             mbedtls_sha256_context ctx;
             mbedtls_sha256_init(&ctx);
+
+            // Start the SHA-256 checksum calculation
             mbedtls_sha256_starts_ret(&ctx, /*is224=*/0);
 
-            while  (addr <= _addr) {
-                // Read a 4 bytes of the binary into RAM
-                int error = _bd.read(data, addr, 4);
+            size_t size = 128;
+            while (addr < _addr) {
+                error = _bd.read(data, addr, size);
                 if (error) {
                     tr_error("Reading block device failed: %d", error);
                 }
 
                 // Feed the bytes into the ongoing checksum calculation
-                mbedtls_sha256_update_ret(&ctx, data, 4);
+                mbedtls_sha256_update_ret(&ctx, data, size);
 
-                // Increment read address by 4 bytes
-                addr += 4;
+                addr += size;
+                if (_addr - addr < size) {
+                    size = _addr - addr;
+                }
             }
 
-            // Finish the hash calculation and store result
+            // Finish the SHA-256 checksum calculation and store result
             uint8_t hash[32];
             mbedtls_sha256_finish(&ctx, hash);
 
-            // Clear the hash context
+            // Clear the SHA-256 context
             mbedtls_sha256_free(&ctx);
 
-            // Print the hash result
-            print_hex("hash=", hash, sizeof hash);
+            // Print the SHA-256
+            print_hex("hash", hash, sizeof hash);
 
-            // Deinitialize the block device
+            // mbed TLS platform teardown
+            mbedtls_platform_teardown(nullptr);
+
             _bd.deinit();
-
-            // Disconnect from the client
-            disconnect(ble::local_disconnection_reason_t::USER_TERMINATION);
 
             return AUTH_CALLBACK_REPLY_SUCCESS;
         } else {
@@ -262,7 +291,7 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 int main()
 {
     mbed_trace_init();
-    //mbed_trace_include_filters_set("MAIN, FOTA");
+    mbed_trace_include_filters_set("MAIN, FOTA");
 
     get_secondary_bd()->init();
 

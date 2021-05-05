@@ -3,10 +3,10 @@
 **Note:** These are basic instructions intended for reviewers. A more comprehensive README is required. 
 
 ## Usage
-1. Using Mbed CLI (CMake is WIP), build and flash the FOTA target onto the board.
+1. Using Mbed CLI (CMake is WIP), deploy, build and flash the FOTA target onto the board.
 
     ```shell
-    mbed compile -t GCC_ARM -m NRF52840_DK -f 
+    mbed deploy && compile -t GCC_ARM -m NRF52840_DK -f 
     ```
 
 1. CLI 1 outputs a hex file to the BUILD folder, but we need a bin. Manually create it from the elf using objcopy:
@@ -26,7 +26,7 @@
 4. Run the test script. It will guide you through the process of transferring the binary.
 
    ```shell
-   ./test_fota.py
+   python test_fota.py
    ```
 
 5. Once you commit the update, the target will compute its SHA256 and print it to the serial. Verify the hash with sha256sum.

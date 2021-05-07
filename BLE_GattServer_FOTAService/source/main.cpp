@@ -36,6 +36,16 @@ static events::EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 static ChainableGapEventHandler chainable_gap_event_handler;
 static ChainableGattServerEventHandler chainable_gatt_server_event_handler;
 
+/*
+ * Update BlockDevice hook
+ *
+ * This hook returns a pointer to a SlicingBlockDevice of size = 0.5 MiB =
+ * SLOT_SIZE. The SlicingBlockingDevice is backed by the default instance. The
+ * nature of this device depends on the targets default configuration in mbed-
+ * os/targets/targets.json. However, it must be SPIF, QSPIF or OSPIF. For example,
+ * the NRF52840 MCU has QSPIF in its "components_add" list, so the default
+ * instance is QSPIFBlockDevice.
+ */
 mbed::BlockDevice* get_secondary_bd()
 {
     mbed::BlockDevice* default_bd = mbed::BlockDevice::get_default_instance();
@@ -43,17 +53,14 @@ mbed::BlockDevice* get_secondary_bd()
     return &sliced_bd;
 }
 
-static void print_hex(const char *title, const unsigned char buf[], size_t len)
-{
-    mbedtls_printf("%s: ", title);
-
-    for (size_t i = 0; i < len; i++)
-        mbedtls_printf("%02x", buf[i]);
-
-    mbedtls_printf("\r\n");
-}
-
-class FOTADemoEventHandler : public BlockDeviceFOTAEventHandler{
+/*
+ * Event handler for FOTA events
+ *
+ * For requests other than commit, the handler delegates responsibility to the
+ * base class. On commit, the update is "mocked" by computing the SHA-256 of the
+ * binary and writing it to the serial.
+ */
+class FOTADemoEventHandler : public BlockDeviceFOTAEventHandler {
 public:
     FOTADemoEventHandler(mbed::BlockDevice &bd, events::EventQueue &eq, BLE &ble) :
             BlockDeviceFOTAEventHandler(bd, eq),
@@ -68,9 +75,9 @@ public:
         if (buffer[0] == FOTAService::FOTA_COMMIT) {
             tr_info("Committing the update");
 
-            int error = MBEDTLS_EXIT_FAILURE;
+            static constexpr const size_t FRAGMENT_SIZE = 128;
 
-            // mbed TLS platform setup
+            int error = MBEDTLS_EXIT_FAILURE;
             if((error = mbedtls_platform_setup(nullptr)) != 0) {
                 tr_error("Platform initialization failed with error %d\r\n", error);
                 return AUTH_CALLBACK_REPLY_ATTERR_UNLIKELY_ERROR;
@@ -94,25 +101,22 @@ public:
             }
 #endif /* MBEDTLS_USE_PSA_CRYPTO */
 
-            uint8_t data[128];
+            uint8_t buf[FRAGMENT_SIZE];
             bd_addr_t addr = 0;
 
-            // Create and initialize the SHA-256 context
             mbedtls_sha256_context ctx;
-            mbedtls_sha256_init(&ctx);
+            mbedtls_sha256_init( &ctx);
 
-            // Start the SHA-256 checksum calculation
             mbedtls_sha256_starts_ret(&ctx, /*is224=*/0);
 
-            size_t size = 128;
+            size_t size = FRAGMENT_SIZE;
             while (addr < _addr) {
-                error = _bd.read(data, addr, size);
+                error = _bd.read(buf, addr, size);
                 if (error) {
                     tr_error("Reading block device failed: %d", error);
                 }
 
-                // Feed the bytes into the ongoing checksum calculation
-                mbedtls_sha256_update_ret(&ctx, data, size);
+                mbedtls_sha256_update_ret(&ctx, buf, size);
 
                 addr += size;
                 if (_addr - addr < size) {
@@ -120,24 +124,20 @@ public:
                 }
             }
 
-            // Finish the SHA-256 checksum calculation and store result
             uint8_t hash[32];
             mbedtls_sha256_finish(&ctx, hash);
 
-            // Clear the SHA-256 context
             mbedtls_sha256_free(&ctx);
 
-            // Print the SHA-256
-            print_hex("hash", hash, sizeof hash);
+            printf("hash=%s", hash);
 
-            // mbed TLS platform teardown
             mbedtls_platform_teardown(nullptr);
 
             _bd.deinit();
 
             return AUTH_CALLBACK_REPLY_SUCCESS;
         } else {
-            /* Let the BlockDeviceFOTAEventHandler handle the other requests */
+            /* Let the base class handle the other requests */
             return BlockDeviceFOTAEventHandler::on_control_written(fota_service, buffer);
         }
     }

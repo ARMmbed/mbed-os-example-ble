@@ -25,13 +25,8 @@
 #define TRACE_GROUP "FOTA"
 
 BlockDeviceFOTAEventHandler::BlockDeviceFOTAEventHandler(mbed::BlockDevice &bd, events::EventQueue &eq) :
-                                                         _bd(bd), _eq(eq)
+                                                         _bd(bd), _eq(eq), _bd_eraser(bd, eq)
 {
-}
-
-BlockDeviceFOTAEventHandler::~BlockDeviceFOTAEventHandler()
-{
-    delete _bd_eraser;
 }
 
 FOTAService::StatusCode_t BlockDeviceFOTAEventHandler::on_binary_stream_written(
@@ -74,14 +69,9 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
              */
             fota_service.set_xoff();
 
-            /* Delete previously allocated eraser */
-            delete _bd_eraser;
-
-            /* Erase update block device */
-            _bd_eraser = new PeriodicBlockDeviceEraser(_bd, _eq);
             tr_info("Erasing block device: size=%" PRIu64 "",
                     static_cast<uint64_t>(_bd.size()));
-            _bd_eraser->start_erase(0, _bd.size(),
+            _bd_eraser.start_erase(0, _bd.size(),
                     mbed::callback(this, &BlockDeviceFOTAEventHandler::on_bd_erased));
 
             break;

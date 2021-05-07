@@ -31,7 +31,7 @@ class BlockDeviceFOTAEventHandler : public FOTAService::EventHandler {
 public:
     BlockDeviceFOTAEventHandler(mbed::BlockDevice &bd, events::EventQueue &eq);
 
-    ~BlockDeviceFOTAEventHandler();
+    ~BlockDeviceFOTAEventHandler() override = default;
 
     FOTAService::StatusCode_t on_binary_stream_written(FOTAService &fota_service,
                                                        mbed::Span<const uint8_t> buffer) override;
@@ -44,7 +44,7 @@ protected:
     mbed::BlockDevice  &_bd;
     events::EventQueue &_eq;
 
-    PeriodicBlockDeviceEraser *_bd_eraser = nullptr;
+    PeriodicBlockDeviceEraser _bd_eraser;
 
     bd_addr_t _addr = 0;
 

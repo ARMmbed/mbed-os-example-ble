@@ -162,6 +162,8 @@ class FOTASession:
                 if count >= 5:
                     raise asyncio.TimeoutError
 
+        logger.info(f'FOTA session started.')
+
     async def transfer_binary(self, path: str):
         try:
             file = open(path, 'rb')
@@ -172,6 +174,8 @@ class FOTASession:
 
         binary_sent = False
         flow_paused = False
+
+        num_bytes_sent = 0
 
         start_time = time.time()
         while not binary_sent:
@@ -210,9 +214,9 @@ class FOTASession:
                 binary_sent = True
                 if packet_size == 0:
                     continue
-            bytes_sent = n * FRAGMENT_SIZE + packet_size
-            logger.info(f'Sending packet {n}: bytes sent = {bytes_sent}/{len(data)}, '
-                        f'elapsed time = {(time.time() - start_time) * 1000} ms')
+            num_bytes_sent += packet_size
+            logger.debug(f'Sending packet {n}: bytes sent = {num_bytes_sent}/{len(data)}, '
+                         f'elapsed time = {(time.time() - start_time) * 1000} ms')
             fragment = bytearray([self.fragment_id]) + packet_data
             try:
                 await asyncio.wait_for(self.client.write_gatt_char(UUID_BINARY_STREAM_CHAR, fragment, False),
@@ -227,6 +231,9 @@ class FOTASession:
             if  self.fragment_id >= MAXIMUM_FRAGMENT_ID:
                 self.rollover_counter += 1
                 self.fragment_id = 0
+
+        logger.info(f'Binary sent. Transferred {num_bytes_sent} in '
+                    f'{time.time() - start_time} seconds')
 
     async def commit_update(self):
         await self.client.write_gatt_char(UUID_CONTROL_CHAR, FOTA_OP_CODE_COMMIT, True)
@@ -249,13 +256,9 @@ async def main():
         await client.disconnect()
         return
 
-    logger.info(f'FOTA session started.')
-
     input('Press enter to transfer binary')
 
     await session.transfer_binary('../BUILD/NRF52840_DK/GCC_ARM/BLE_GattServer_FOTAService.bin')
-
-    logger.info(f'Binary transferred')
 
     input('Press enter to commit the update')
 

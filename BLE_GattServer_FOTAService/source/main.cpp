@@ -53,6 +53,16 @@ mbed::BlockDevice* get_secondary_bd()
     return &sliced_bd;
 }
 
+static void print_hex(const char *title, const unsigned char buf[], size_t len)
+{
+    mbedtls_printf("%s: ", title);
+
+    for (size_t i = 0; i < len; i++)
+        mbedtls_printf("%02x", buf[i]);
+
+    mbedtls_printf("\r\n");
+}
+
 /*
  * Event handler for FOTA events
  *
@@ -129,7 +139,7 @@ public:
 
             mbedtls_sha256_free(&ctx);
 
-            printf("hash=%s", hash);
+            print_hex("hash", hash, sizeof hash);
 
             mbedtls_platform_teardown(nullptr);
 

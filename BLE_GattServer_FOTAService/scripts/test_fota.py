@@ -79,7 +79,7 @@ def get_chunk_n(data, chunk_size: int, n: int):
 
 
 async def find_device(name: str) -> Optional[BleakClient]:
-    logger.info(f'Scanning for device named {name}...')
+    logger.info(f"Scanning for device '{name}'")
     devices = await BleakScanner.discover()
     for d in devices:
         if name == d.name:
@@ -88,12 +88,13 @@ async def find_device(name: str) -> Optional[BleakClient]:
             count = 0
             while count < 5:
                 try:
-                    logger.info(f'Connecting to BLE device @ {d.address}...')
+                    logger.info(f'Connecting to BLE device @ {d.address}')
                     connected = await client.connect()
                     if connected is True:
+                        logger.info(f"Success. Connected to device '{name}'")
                         return client
                 except BleakError:
-                    logger.info(f'Waiting to connect: ({count}/{5})...')
+                    logger.info(f'Waiting to connect: ({count}/{5})')
                     pass
                 count += 1
             logger.error(f'Failed to connect to BLE device @ {d.address}')
@@ -120,11 +121,14 @@ class StatusNotificationHandler:
 
 class FOTASession:
 
-    def __init__(self, client: BleakClient):
+    def __init__(self, client: BleakClient, data: bytes):
         self.client = client
+        self.data = data
         self.handler = StatusNotificationHandler()
         self.fragment_id = 0
         self.rollover_counter = 0
+        self.flow_paused = False
+        self.sync_lost = True
 
     def update_fragment_id(self, fragment_id):
         # Account for rollover
@@ -135,6 +139,32 @@ class FOTASession:
             self.rollover_counter = 0
         if  self.fragment_id < 0:
             self.fragment_id = 0
+
+    def check_status_notifications(self):
+        if self.handler.status_event.is_set():
+            status = bytearray([self.handler.status_value[0]])
+            if status == FOTA_STATUS_OK:
+                logger.info(f'Received status OK')
+                self.sync_lost = False
+            elif status == FOTA_STATUS_XOFF:
+                fragment_id = self.handler.status_value[1]
+                logger.info(f'Received status XOFF. '
+                            f'Fragment ID = {fragment_id}')
+                self.flow_paused = True
+                self.update_fragment_id(fragment_id)
+            elif status == FOTA_STATUS_XON:
+                fragment_id = self.handler.status_value[1]
+                logger.info(f'Received status XON. '
+                            f'Fragment ID = {fragment_id}')
+                self.flow_paused = False
+                self.update_fragment_id(fragment_id)
+            elif status == FOTA_STATUS_SYNC_LOST:
+                fragment_id = self.handler.status_value[1]
+                logger.info(f'Received status SYNC_LOST. '
+                            f'Fragment ID = {fragment_id}')
+                self.sync_lost = True
+                self.update_fragment_id(fragment_id)
+            self.handler.status_event.clear()
 
     async def start(self):
         # Subscribe to notifications from the status characteristic
@@ -162,61 +192,21 @@ class FOTASession:
                 if count >= 5:
                     raise asyncio.TimeoutError
 
-        logger.info(f'FOTA session started.')
-
-    async def transfer_binary(self, path: str):
-        try:
-            file = open(path, 'rb')
-        except IOError:
-            logger.error(f'Could not open file {path}')
-            raise
-        data = file.read()
-
+    async def transfer_binary(self):
         binary_sent = False
-        flow_paused = False
 
-        num_bytes_sent = 0
-
-        start_time = time.time()
         while not binary_sent:
-            # Check status notifications
-            if self.handler.status_event.is_set():
-                status = bytearray([self.handler.status_value[0]])
-                if status == FOTA_STATUS_OK:
-                    logger.info(f'Received status OK')
-                elif status == FOTA_STATUS_XOFF:
-                    fragment_id = self.handler.status_value[1]
-                    logger.info(f'Received status XOFF. '
-                                f'Fragment ID = {fragment_id}')
-                    flow_paused = True
-                    self.update_fragment_id(fragment_id)
-                elif status == FOTA_STATUS_XON:
-                    fragment_id = self.handler.status_value[1]
-                    logger.info(f'Received status XON. '
-                                f'Fragment ID = {fragment_id}')
-                    flow_paused = False
-                    self.update_fragment_id(fragment_id)
-                elif status == FOTA_STATUS_SYNC_LOST:
-                    fragment_id = self.handler.status_value[1]
-                    logger.info(f'Received status SYNC LOST. '
-                                f'Fragment ID = {fragment_id}')
-                    self.update_fragment_id(fragment_id)
-                self.handler.status_event.clear()
-
-            if flow_paused:
+            # If the target wrote XOFF, keep checking the status characteristic until it writes XON
+            if  self.flow_paused:
+                self.check_status_notifications()
                 continue
 
-            # Send next packet
             n = (MAXIMUM_FRAGMENT_ID + 1) * self.rollover_counter + self.fragment_id
-            packet_data = bytearray(get_chunk_n(data, FRAGMENT_SIZE, n))
-            packet_size = len(packet_data)
-            if packet_size < FRAGMENT_SIZE:
+            packet_data = bytearray(get_chunk_n(self.data, FRAGMENT_SIZE, n))
+            if len(packet_data) < FRAGMENT_SIZE:
                 binary_sent = True
-                if packet_size == 0:
+                if len(packet_data) == 0:
                     continue
-            num_bytes_sent += packet_size
-            logger.debug(f'Sending packet {n}: bytes sent = {num_bytes_sent}/{len(data)}, '
-                         f'elapsed time = {(time.time() - start_time) * 1000} ms')
             fragment = bytearray([self.fragment_id]) + packet_data
             try:
                 await asyncio.wait_for(self.client.write_gatt_char(UUID_BINARY_STREAM_CHAR, fragment, False),
@@ -232,8 +222,11 @@ class FOTASession:
                 self.rollover_counter += 1
                 self.fragment_id = 0
 
-        logger.info(f'Binary sent. Transferred {num_bytes_sent} in '
-                    f'{time.time() - start_time} seconds')
+            self.check_status_notifications()
+
+            # Ensure delivery of final fragment
+            if  binary_sent and self.sync_lost:
+                binary_sent = False
 
     async def commit_update(self):
         await self.client.write_gatt_char(UUID_CONTROL_CHAR, FOTA_OP_CODE_COMMIT, True)
@@ -245,22 +238,35 @@ async def main():
     if client is None:
         return
 
-    session = FOTASession(client)
+    path = input('Enter the path to the binary: ')
 
-    input('Press enter to start a FOTA session')
+    try:
+        file = open(path, 'rb')
+    except IOError:
+        logger.error(f'Could not open file {path}')
+        await client.disconnect()
+        raise
+    data = file.read()
 
+    session = FOTASession(client, data)
+
+    logger.info('Starting FOTA session')
     try:
         await session.start()
     except asyncio.TimeoutError:
-        logger.error("FOTA session failed to start within timeout period")
+        logger.error('FOTA session failed to start within timeout period')
         await client.disconnect()
         return
 
-    input('Press enter to transfer binary')
+    logger.info('FOTA session started')
 
-    await session.transfer_binary('../BUILD/NRF52840_DK/GCC_ARM/BLE_GattServer_FOTAService.bin')
+    start_time = time.time()
 
-    input('Press enter to commit the update')
+    logger.info('Transferring binary')
+    await session.transfer_binary()
+
+    logger.info(f'Success. Transferred {len(data)} in '
+                f'{time.time() - start_time} seconds')
 
     await session.commit_update()
 

@@ -86,7 +86,7 @@ GattAuthCallbackReply_t BlockDeviceFOTAEventHandler::on_control_written(
 
         case FOTAService::FOTA_COMMIT:
         {
-            /* Application-specific */
+            tr_info("Committing the update");
             break;
         }
 

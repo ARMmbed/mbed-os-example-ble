@@ -64,7 +64,7 @@ FOTA_OP_CODE_SET_FRAGMENT_ID       = bytearray(b'\x43')
 # Number of bytes in a single BSC packet, excluding fragment ID
 FRAGMENT_SIZE       = 128
 
-MAXIMUM_FRAGMENT_ID = 256
+MAXIMUM_FRAGMENT_ID = 255
 
 
 def get_chunk_n(data, chunk_size: int, n: int):
@@ -207,7 +207,7 @@ class FOTASession:
                 continue
 
             # Send next packet
-            n = MAXIMUM_FRAGMENT_ID * self.rollover_counter + self.fragment_id
+            n = (MAXIMUM_FRAGMENT_ID + 1) * self.rollover_counter + self.fragment_id
             packet_data = bytearray(get_chunk_n(data, FRAGMENT_SIZE, n))
             packet_size = len(packet_data)
             if packet_size < FRAGMENT_SIZE:
@@ -228,7 +228,7 @@ class FOTASession:
 
             self.fragment_id += 1
             # In case of rollover, increment counter and reset fragment ID
-            if  self.fragment_id >= MAXIMUM_FRAGMENT_ID:
+            if  self.fragment_id >= MAXIMUM_FRAGMENT_ID + 1:
                 self.rollover_counter += 1
                 self.fragment_id = 0
 

@@ -145,6 +145,8 @@ public:
 
             _bd.deinit();
 
+            disconnect(ble::local_disconnection_reason_t::USER_TERMINATION);
+
             return AUTH_CALLBACK_REPLY_SUCCESS;
         } else {
             /* Let the base class handle the other requests */

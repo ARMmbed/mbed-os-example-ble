@@ -16,7 +16,6 @@
 
 import logging
 import asyncio
-import time
 
 from bleak          import BleakScanner, BleakClient, BleakError
 from bleak.uuids    import uuid16_dict

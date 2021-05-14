@@ -1,6 +1,6 @@
 # FOTA Service Mock Example
 
-The FOTA service, as defined in its [specification](https://github.com/ARMmbed/mbed-os-experimental-ble-services/blob/fota-service-github-ci/services/FOTA/docs/README.md) document, facilities the transfer of firmware updates over BLE.
+The FOTA service, as defined in its [specification](https://github.com/ARMmbed/mbed-os-experimental-ble-services/blob/fota-service-github-ci/services/FOTA/docs/README.md) document, facilitates the transfer of firmware updates over BLE.
 
 In this demo, the FOTA service is used to transfer a binary from the host PC into the flash of the target. 
 A basic _FOTA client_, implemented in Python using [bleak](https://pypi.org/project/bleak/), is used to read/write the binary stream, control and status characteristics. 

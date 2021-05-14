@@ -23,8 +23,8 @@ To use the Python client, the host PC must have Bluetooth capabilities, either t
 The application can be built and flashed onto the target using Mbed CLI 2:
 
 ```shell
-mbedtools deploy
-mbedtools compile -t <toolchain> -m <target> -f
+mbed-tools deploy
+mbed-tools compile -t <toolchain> -m <target> -f
 ```
 
 A `bin` file is required for the demo. 

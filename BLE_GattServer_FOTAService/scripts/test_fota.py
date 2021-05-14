@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License
 
+import hashlib
 import logging
 import asyncio
 
@@ -249,7 +250,8 @@ async def main():
 
     logger.info(f'FOTA session started')
 
-    logger.info(f'Transferring binary of size {len(data)} bytes')
+    logger.info(f'Transferring binary of size {len(data)} bytes, '
+                f'hash: {hashlib.sha256(data).hexdigest()}')
 
     await session.transfer_binary()
 

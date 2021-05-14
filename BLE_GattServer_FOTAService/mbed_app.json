@@ -1,0 +1,23 @@
+{
+    "target_overrides": {
+        "*": {
+            "platform.stdio-convert-newlines": true,
+            "platform.stdio-baud-rate": 115200,
+            "mbed-trace.enable": 1,
+            "mbed-trace.max-level": "TRACE_LEVEL_INFO",
+            "ble-api-implementation.max-characteristic-authorisation-count": 100
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "cordio.desired-att-mtu": 200,
+            "cordio.rx-acl-buffer-size": 204
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "cordio.desired-att-mtu": 200,
+            "cordio.rx-acl-buffer-size": 204,
+            "cordio-nordic-ll.wsf-pool-buffer-size": 8192,
+            "cordio-ll.max-acl-size": 204
+        }
+    }
+}

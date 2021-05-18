@@ -20,6 +20,10 @@
 #include "ble/services/HeartRateService.h"
 #include "pretty_printer.h"
 
+#if MBED_CONF_MBED_TRACE_ENABLE
+#include "mbed-trace/mbed_trace.h"
+#endif
+
 using namespace std::literals::chrono_literals;
 
 const static char DEVICE_NAME[] = "Heartrate";
@@ -174,6 +178,12 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    printf("\nSTART BLE_GattServer_AddService mbed-os example\n");
+
+#if MBED_CONF_MBED_TRACE_ENABLE
+    mbed_trace_init()
+#endif
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

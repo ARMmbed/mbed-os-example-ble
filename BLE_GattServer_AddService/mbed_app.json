@@ -1,6 +1,7 @@
 {
     "target_overrides": {
         "*": {
+            "mbed-trace.enable": "0",
             "platform.stdio-baud-rate": 115200
         },
         "K64F": {

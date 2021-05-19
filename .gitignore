@@ -34,6 +34,8 @@ cmake-build-*/
 GettingStarted.html
 
 # mbed build system
+mbed-os-experimental-ble-services/
+mbed-os-ble-utils/
 mbed-os/
 mbed_settings.py
 mbed_config.h

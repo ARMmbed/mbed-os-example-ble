@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run: git clone https://github.com/ARMmbed/mbed-os.git
-      - run: for i in BLE_* ; do cd $i ; rm -rf mbed-os ; ln -s $PWD/../mbed-os mbed-os ; mbed update ; cd .. ; done
+      - run: for i in BLE_* ; do cd $i ; mbed config root . ; rm -rf mbed-os ; ln -s $PWD/../mbed-os mbed-os ; mbed update ; cd .. ; done
       - persist_to_workspace:
           root: .
           paths:

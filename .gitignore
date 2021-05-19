@@ -35,9 +35,10 @@ GettingStarted.html
 
 # mbed build system
 mbed-os/
+mbed-os-ble-utils/
 mbed_settings.py
 mbed_config.h
 *.pyc
 BUILD/
 cmake_build/
-
+.mbedls*

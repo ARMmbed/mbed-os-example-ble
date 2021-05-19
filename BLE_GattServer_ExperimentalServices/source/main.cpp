@@ -20,6 +20,7 @@
 #include "pretty_printer.h"
 #include "ble-service-link-loss/LinkLossService.h"
 #include "ble-service-current-time/CurrentTimeService.h"
+#include "mbed-trace/mbed_trace.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -172,6 +173,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

@@ -182,6 +182,36 @@ If you don't have a scanner on your phone, please install:
 
 - [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation) for Android.
 
+
+## Using bare metal profile
+
+MBED BLE can support bare metal profile: https://os.mbed.com/docs/mbed-os/v6.10/bare-metal/using-the-bare-metal-profile.html
+
+
+Here is an example with NUCLEO_WB55RG, update your local mbed_app.json:
+```
+{
+    "requires": ["bare-metal", "events", "cordio-stm32wb"],
+```
+
+## How to reduce application size
+
+Here are few tips to reduce further application size (this could be in addition of baremetal)
+
+Update in mbed_app.json:
+
+```
+{
+    "target_overrides": {
+        "*": {
+            "target.c_lib": "small",
+            "target.printf_lib": "minimal-printf",
+            "platform.minimal-printf-enable-floating-point": false,
+            "platform.stdio-minimal-console-only": true,
+...
+```
+
+
 ## Troubleshooting
 
 If you encounter problems with running the example, first try to update to the `development` branch of the example and

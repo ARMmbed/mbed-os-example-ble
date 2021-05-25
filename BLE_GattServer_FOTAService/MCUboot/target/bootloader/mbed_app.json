@@ -1,0 +1,38 @@
+{
+    "requires": ["bare-metal", "mbedtls", "mcuboot", "flashiap-block-device", "spif-driver", "qspif", "mbed-trace"],
+    "config": {
+        "serial-bootloader-enable": {
+            "help": "Build bootloader with serial update support",
+            "value": 0
+        }
+    },
+    "target_overrides": {
+        "*": {
+            "target.restrict_size": "0x20000",
+            "target.c_lib": "small",
+            "mcuboot.log-level": "MCUBOOT_LOG_LEVEL_DEBUG",
+            "mbed-trace.enable": true,
+            "mbed-trace.fea-ipv6": false
+        },
+        "NRF52840_DK": {
+            "target.features_remove": ["CRYPTOCELL310"],
+            "target.macros_remove": ["MBEDTLS_CONFIG_HW_SUPPORT"],
+            "mcuboot.primary-slot-address": "0x20000",
+            "mcuboot.slot-size": "0xC0000",
+            "mcuboot.scratch-address": "0xE0000",
+            "mcuboot.scratch-size": "0x20000",
+            "mcuboot.max-img-sectors": "0x180",
+            "mcuboot.read-granularity": 4,
+            "qspif.QSPI_MIN_PROG_SIZE": 4
+        },
+        "DISCO_L475VG_IOT01A": {
+            "mcuboot.primary-slot-address": "0x8020000",
+            "mcuboot.slot-size": "0xC0000",
+            "mcuboot.scratch-address": "0x80E0000",
+            "mcuboot.scratch-size": "0x20000",
+            "mcuboot.max-img-sectors": "0x180",
+            "mcuboot.read-granularity": 1,
+            "qspif.QSPI_MIN_PROG_SIZE": 1
+        }
+    }
+}

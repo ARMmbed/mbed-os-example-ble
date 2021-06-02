@@ -335,17 +335,19 @@ private:
         }
 
 #if BLE_FEATURE_EXTENDED_ADVERTISING
-        /* we were waiting for it to stop before destroying it and starting scanning */
-        ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
-        if (error) {
-            print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+        if (event.getAdvHandle() == _extended_adv_handle) {
+            /* we were waiting for it to stop before destroying it and starting scanning */
+            ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
+            if (error) {
+                print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+            }
+
+            _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
+
+            _is_in_scanning_phase = true;
+
+            _event_queue.call_in(delay, [this]{ scan(); });
         }
-
-        _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
-
-        _is_in_scanning_phase = true;
-
-        _event_queue.call_in(delay, [this]{ scan(); });
 #endif //BLE_FEATURE_EXTENDED_ADVERTISING
     }
 

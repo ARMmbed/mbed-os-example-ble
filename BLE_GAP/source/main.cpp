@@ -333,6 +333,20 @@ private:
         if (event.isConnected()) {
             printf("Stopped advertising early due to connection\r\n");
         }
+
+#if BLE_FEATURE_EXTENDED_ADVERTISING
+        /* we were waiting for it to stop before destroying it and starting scanning */
+        ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
+        if (error) {
+            print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+        }
+
+        _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
+
+        _is_in_scanning_phase = true;
+
+        _event_queue.call_in(delay, [this]{ scan(); });
+#endif //BLE_FEATURE_EXTENDED_ADVERTISING
     }
 
     void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
@@ -499,19 +513,13 @@ private:
                     print_error(error, "Error caused by Gap::stopAdvertising");
                 }
             }
-
-            ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
-            if (error) {
-                print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-            }
-
-            _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
         }
-#endif // BLE_FEATURE_EXTENDED_ADVERTISING
-
+        /* we have to wait before we destroy it until it's stopped */
+#else
         _is_in_scanning_phase = true;
 
         _event_queue.call_in(delay, [this]{ scan(); });
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
     }
 
     /** print some information about our radio activity */

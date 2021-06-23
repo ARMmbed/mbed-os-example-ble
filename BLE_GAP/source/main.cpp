@@ -17,6 +17,7 @@
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 /** This example demonstrates all the basic setup required
  *  to advertise and scan.
@@ -329,9 +330,40 @@ private:
 
     void onAdvertisingEnd(const ble::AdvertisingEndEvent &event) override
     {
-        if (event.isConnected()) {
-            printf("Stopped advertising early due to connection\r\n");
+        ble::advertising_handle_t adv_handle = event.getAdvHandle();
+        if (event.getStatus() == BLE_ERROR_UNSPECIFIED) {
+            printf("Error: Failed to stop advertising set %d\r\n", adv_handle);
+        } else {
+            printf("Stopped advertising set %d\r\n", adv_handle);
+
+            if (event.getStatus() == BLE_ERROR_TIMEOUT) {
+                printf("Stopped due to timeout\r\n");
+            } else if (event.getStatus() == BLE_ERROR_LIMIT_REACHED) {
+                printf("Stopped due to max number of adv events reached\r\n");
+            } else if (event.getStatus() == BLE_ERROR_NONE) {
+                if (event.isConnected()) {
+                    printf("Stopped early due to connection\r\n");
+                } else {
+                    printf("Stopped due to user request\r\n");
+                }
+            }
         }
+
+#if BLE_FEATURE_EXTENDED_ADVERTISING
+        if (event.getAdvHandle() == _extended_adv_handle) {
+            /* we were waiting for it to stop before destroying it and starting scanning */
+            ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
+            if (error) {
+                print_error(error, "Error caused by Gap::destroyAdvertisingSet");
+            }
+
+            _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
+
+            _is_in_scanning_phase = true;
+
+            _event_queue.call_in(delay, [this]{ scan(); });
+        }
+#endif //BLE_FEATURE_EXTENDED_ADVERTISING
     }
 
     void onAdvertisingStart(const ble::AdvertisingStartEvent &event) override
@@ -487,6 +519,8 @@ private:
     {
         print_advertising_performance();
 
+        printf("Requesting stop advertising.\r\n");
+
         _gap.stopAdvertising(ble::LEGACY_ADVERTISING_HANDLE);
 
 #if BLE_FEATURE_EXTENDED_ADVERTISING
@@ -498,19 +532,13 @@ private:
                     print_error(error, "Error caused by Gap::stopAdvertising");
                 }
             }
-
-            ble_error_t error = _gap.destroyAdvertisingSet(_extended_adv_handle);
-            if (error) {
-                print_error(error, "Error caused by Gap::destroyAdvertisingSet");
-            }
-
-            _extended_adv_handle = ble::INVALID_ADVERTISING_HANDLE;
         }
-#endif // BLE_FEATURE_EXTENDED_ADVERTISING
-
+        /* we have to wait before we destroy it until it's stopped */
+#else
         _is_in_scanning_phase = true;
 
         _event_queue.call_in(delay, [this]{ scan(); });
+#endif // BLE_FEATURE_EXTENDED_ADVERTISING
     }
 
     /** print some information about our radio activity */
@@ -613,6 +641,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
 
     /* this will inform us off all events so we can schedule their handling

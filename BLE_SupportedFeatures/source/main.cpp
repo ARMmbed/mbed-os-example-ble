@@ -16,6 +16,7 @@
 
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
+#include "mbed-trace/mbed_trace.h"
 
 static events::EventQueue event_queue(/* event count */ 16 * EVENTS_EVENT_SIZE);
 
@@ -91,6 +92,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

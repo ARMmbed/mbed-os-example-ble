@@ -17,6 +17,7 @@
 #include <events/mbed_events.h>
 #include "ble/BLE.h"
 #include "gatt_server_process.h"
+#include "mbed-trace/mbed_trace.h"
 
 static EventQueue event_queue(/* event count */ 10 * EVENTS_EVENT_SIZE);
 
@@ -74,6 +75,8 @@ private:
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
 
     printf("\r\nGattServer demo of a writable characteristic\r\n");

@@ -182,11 +182,64 @@ If you don't have a scanner on your phone, please install:
 
 - [ST BLE Profile](https://play.google.com/store/apps/details?id=com.stm.bluetoothlevalidation) for Android.
 
-### License and contributions
+
+## Using bare metal profile
+
+MBED BLE can support bare metal profile: https://os.mbed.com/docs/mbed-os/v6.10/bare-metal/using-the-bare-metal-profile.html
+
+
+Here is an example with NUCLEO_WB55RG, update your local mbed_app.json:
+```
+{
+    "requires": ["bare-metal", "events", "cordio-stm32wb"],
+```
+
+## How to reduce application size
+
+Here are few tips to reduce further application size (this could be in addition of baremetal)
+
+Update in mbed_app.json:
+
+```
+{
+    "target_overrides": {
+        "*": {
+            "target.c_lib": "small",
+            "target.printf_lib": "minimal-printf",
+            "platform.minimal-printf-enable-floating-point": false,
+            "platform.stdio-minimal-console-only": true,
+...
+```
+
+
+## Troubleshooting
+
+If you encounter problems with running the example, first try to update to the `development` branch of the example and
+see if the problem persists. Make sure to run `mbed update` after you checkout the `development` branch to update the
+libraries to the versions in that branch.
+
+If the problem persists, try turning on traces in the example. This is done by changing the config in `mbed_app.json`:
+
+```
+		"mbed-trace.enable": true,
+		"mbed-trace.max-level": "TRACE_LEVEL_DEBUG",
+		"cordio.trace-hci-packets": true,
+		"cordio.trace-cordio-wsf-traces": true,
+		"ble.trace-human-readable-enums": true
+```
+
+Compile with `--profile debug` and run with the serial connected to your PC.
+
+This will enable all the traces in BLE. If the number of traces is too big for the serial to handle or the image
+doesn't fit try turning off all except the first one (`mbed-trace.enable`) and/or lowering the `max-level` to
+`"TRACE_LEVEL_WARNING"`.
+
+Save the output of the serial to a file. Please open an issue in this repo, describe the problem and attach the file
+containing the trace output.
+
+## License and contributions
 
 The software is provided under Apache-2.0 license. Contributions to this project are accepted under the same license. Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for more info.
-
-This project contains code from other projects. The original license text is included in those source files. They must comply with our license guide.
 
 ## Branches
 

@@ -19,6 +19,7 @@
 #include "ble/gap/Gap.h"
 #include "ble/services/HeartRateService.h"
 #include "pretty_printer.h"
+#include "mbed-trace/mbed_trace.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -123,9 +124,9 @@ private:
         /* you can read in the real value but here we just simulate a value */
         _heartrate_value++;
 
-        /*  100 <= bpm value <= 175 */
-        if (_heartrate_value == 175) {
-            _heartrate_value = 100;
+        /*  60 <= bpm value < 110 */
+        if (_heartrate_value == 110) {
+            _heartrate_value = 60;
         }
 
         _heartrate_service.updateHeartRate(_heartrate_value);
@@ -159,7 +160,7 @@ private:
     events::EventQueue &_event_queue;
 
     UUID _heartrate_uuid;
-    uint8_t _heartrate_value;
+    uint16_t _heartrate_value;
     HeartRateService _heartrate_service;
 
     uint8_t _adv_buffer[ble::LEGACY_ADVERTISING_MAX_SIZE];
@@ -174,6 +175,8 @@ void schedule_ble_events(BLE::OnEventsToProcessCallbackContext *context)
 
 int main()
 {
+    mbed_trace_init();
+
     BLE &ble = BLE::Instance();
     ble.onEventsToProcess(schedule_ble_events);
 

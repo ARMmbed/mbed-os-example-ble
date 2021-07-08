@@ -113,7 +113,7 @@ private:
     {
         ble_error_t error;
 
-        /* only crate the set first time we advertise */
+        /* only create the set first time we advertise */
         if (_adv_handle == ble::INVALID_ADVERTISING_HANDLE) {
             ble::AdvertisingParameters adv_parameters(
                 ble::advertising_type_t::CONNECTABLE_NON_SCANNABLE_UNDIRECTED,

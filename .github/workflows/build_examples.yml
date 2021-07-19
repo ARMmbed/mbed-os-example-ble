@@ -1,0 +1,31 @@
+name: Build examples
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 6'
+  pull_request:
+jobs:
+  run-conditional-feature-compilation-test:
+    name: Build BLE examples
+    runs-on: ubuntu-latest
+    container: mbedos/mbed-os-env:latest
+    strategy:
+      matrix:
+        MBED_TARGET: ["DISCO_L475VG_IOT01A", "NRF52840_DK"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Deploy
+        run: |
+          git clone https://github.com/ARMmbed/mbed-os.git
+          for i in BLE_* ; do cd $i ; mbed config root . ; rm -rf mbed-os ; ln -s $PWD/../mbed-os mbed-os ; mbed update ; cd .. ; done
+
+      - name: Build mbed-cli v1
+        run: |
+          for i in BLE_* ; do cd $i ; mbed compile -t GCC_ARM -m ${{ matrix.MBED_TARGET }} || exit 1 ; cd .. ; done
+
+      - name: Build cmake
+        run: |
+          python3 -m pip install mbed-tools --upgrade # remove after docker image is updated to contain new tools
+          for i in BLE_* ; do cd $i ; mbed-tools compile -t GCC_ARM -m ${{ matrix.MBED_TARGET }} || exit 1 ; cd .. ; done

@@ -1,0 +1,37 @@
+{
+    "target_overrides": {
+        "*": {
+            "platform.stdio-baud-rate": 115200,
+            "ble.ble-role-observer": true,
+            "ble.ble-role-broadcaster": true,
+            "ble.ble-role-central": true,
+            "ble.ble-role-peripheral": true,
+            "ble.ble-feature-gatt-client": true,
+            "ble.ble-feature-gatt-server": true,
+            "ble.ble-feature-security": false,
+            "ble.ble-feature-secure-connections": false,
+            "ble.ble-feature-signing": false,
+            "ble.ble-feature-whitelist": false,
+            "ble.ble-feature-privacy": false,
+            "ble.ble-feature-phy-management": false,
+            "ble.ble-feature-extended-advertising": false,
+            "ble.ble-feature-periodic-advertising": false
+        },
+        "K64F": {
+            "target.components_add": ["BlueNRG_MS"],
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO"]
+        },
+        "NUCLEO_F401RE": {
+            "target.components_add": ["BlueNRG_MS"],
+            "target.features_add": ["BLE"],
+            "target.extra_labels_add": ["CORDIO"]
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"]
+        },
+        "NRF52_DK": {
+            "target.features_add": ["BLE"]
+        }
+    }
+}

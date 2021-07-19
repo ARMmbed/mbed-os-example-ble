@@ -113,35 +113,38 @@ private:
     {
         ble_error_t error;
 
-        ble::AdvertisingParameters adv_parameters(
-            ble::advertising_type_t::CONNECTABLE_NON_SCANNABLE_UNDIRECTED,
-            ble::adv_interval_t(ble::millisecond_t(100))
-        );
+        /* only create the set first time we advertise */
+        if (_adv_handle == ble::INVALID_ADVERTISING_HANDLE) {
+            ble::AdvertisingParameters adv_parameters(
+                ble::advertising_type_t::CONNECTABLE_NON_SCANNABLE_UNDIRECTED,
+                ble::adv_interval_t(ble::millisecond_t(10))
+            );
 
-        adv_parameters.setUseLegacyPDU(false);
+            adv_parameters.setUseLegacyPDU(false);
 
-        error = _ble.gap().createAdvertisingSet(
-            &_adv_handle,
-            adv_parameters
-        );
+            error = _ble.gap().createAdvertisingSet(
+                &_adv_handle,
+                adv_parameters
+            );
 
-        if (error) {
-            print_error(error, "Gap::createAdvertisingSet() failed\r\n");
-            return;
-        }
+            if (error) {
+                print_error(error, "Gap::createAdvertisingSet() failed\r\n");
+                return;
+            }
 
-        _adv_data_builder.setFlags();
-        _adv_data_builder.setName(DEVICE_NAME);
+            _adv_data_builder.setFlags();
+            _adv_data_builder.setName(DEVICE_NAME);
 
-        /* Set payload for the set */
-        error = _ble.gap().setAdvertisingPayload(
-            _adv_handle,
-            _adv_data_builder.getAdvertisingData()
-        );
+            /* Set payload for the set */
+            error = _ble.gap().setAdvertisingPayload(
+                _adv_handle,
+                _adv_data_builder.getAdvertisingData()
+            );
 
-        if (error) {
-            print_error(error, "Gap::setAdvertisingPayload() failed\r\n");
-            return;
+            if (error) {
+                print_error(error, "Gap::setAdvertisingPayload() failed\r\n");
+                return;
+            }
         }
 
         /* since we have two boards which might start running this example at the same time
@@ -360,10 +363,20 @@ private:
         }
     }
 
+    void onAdvertisingEnd(const ble::AdvertisingEndEvent &event) override
+    {
+        printf("Advertising ended.\r\n");
+        if (!event.isConnected()) {
+            printf("No device connected to us, switch modes.\r\n");
+            start_role();
+        }
+    }
+
     void onScanTimeout(const ble::ScanTimeoutEvent&) override
     {
+        printf("Scanning ended\r\n");
         if (!_is_connecting_or_syncing) {
-            printf("Scanning ended, failed to find peer\r\n");
+            printf("Failed to find peer\r\n");
             start_role();
         }
     }

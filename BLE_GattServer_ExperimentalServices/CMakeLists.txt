@@ -9,6 +9,8 @@ set(APP_TARGET BLE_GattServer_ExperimentalServices)
 
 include(${MBED_PATH}/tools/cmake/app.cmake)
 
+project(${APP_TARGET})
+
 add_subdirectory(${MBED_PATH})
 
 add_subdirectory(mbed-os-ble-utils)
@@ -16,8 +18,6 @@ add_subdirectory(mbed-os-experimental-ble-services/services/CurrentTime)
 add_subdirectory(mbed-os-experimental-ble-services/services/LinkLoss)
 
 add_executable(${APP_TARGET})
-
-project(${APP_TARGET})
 
 target_sources(${APP_TARGET}
     PRIVATE

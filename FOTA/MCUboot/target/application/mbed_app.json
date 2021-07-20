@@ -1,0 +1,47 @@
+{
+    "config": {
+        "version-number": {
+            "value": "\"0.1.0\""
+        }
+    },
+    "target_overrides": {
+        "*": {
+            "platform.stdio-convert-newlines": true,
+            "platform.stdio-baud-rate": 115200,
+            "mbed-trace.enable": true,
+            "mcuboot.bootloader-build": false,
+            "mcuboot.log-level": "MCUBOOT_LOG_LEVEL_DEBUG",
+            "ble-api-implementation.max-characteristic-authorisation-count": 100
+        },
+        "DISCO_L475VG_IOT01A": {
+            "target.features_add": ["BLE"],
+            "cordio.desired-att-mtu": 200,
+            "cordio.rx-acl-buffer-size": 204,
+            "target.mbed_app_start": "0x8021000",
+            "target.mbed_app_size": "0xBE000",
+            "mcuboot.primary-slot-address": "0x8020000",
+            "mcuboot.slot-size": "0xC0000",
+            "mcuboot.scratch-address": "0x80E0000",
+            "mcuboot.scratch-size": "0x20000",
+            "mcuboot.max-img-sectors": "0x180",
+            "mcuboot.read-granularity": 1,
+            "qspif.QSPI_MIN_PROG_SIZE": 1
+        },
+        "NRF52840_DK": {
+            "target.features_add": ["BLE"],
+            "cordio.desired-att-mtu": 200,
+            "cordio.rx-acl-buffer-size": 204,
+            "cordio-ll.max-acl-size": 204,
+            "cordio-nordic-ll.wsf-pool-buffer-size": 8192,
+            "target.mbed_app_start": "0x21000",
+            "target.mbed_app_size": "0xBE000",
+            "mcuboot.primary-slot-address": "0x20000",
+            "mcuboot.slot-size": "0xC0000",
+            "mcuboot.scratch-address": "0xE0000",
+            "mcuboot.scratch-size": "0x20000",
+            "mcuboot.max-img-sectors": "0x180",
+            "mcuboot.read-granularity": 4,
+            "qspif.QSPI_MIN_PROG_SIZE": 4
+        }
+    }
+}
